@@ -23,7 +23,7 @@ def get_version(rel_path):
 long_description = read("README.md")
 
 setuptools.setup(
-    name="EventEngine",
+    name="PyEventEngine",
     version=get_version(os.path.join('EventEngine', '__init__.py')),
     author="Bolun.Han",
     author_email="Bolun.Han@outlook.com",
@@ -37,9 +37,12 @@ setuptools.setup(
     },
     classifiers=[
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.8',
+    license='MIT',
     install_requires=[
     ]
 )

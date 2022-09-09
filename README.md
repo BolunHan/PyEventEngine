@@ -7,6 +7,10 @@ python native event engine
 ```shell
 pip install git+https://github.com/BolunHan/PyEventEngine.git
 ```
+or
+```shell
+pip install PyEventEngine
+```
 
 # Use
 

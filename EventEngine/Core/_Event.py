@@ -301,24 +301,28 @@ class EventEngine(EventEngineBase):
 
             if sleep_time > 0:
                 time.sleep(sleep_time)
-            self.put(topic=topic)
+            self.put(topic=topic, interval=interval, trigger_time=scheduled_time)
 
             while scheduled_time < datetime.datetime.utcnow():
                 scheduled_time += datetime.timedelta(seconds=interval)
 
     def _minute_timer(self, topic: Topic):
         while self._active:
-            t = datetime.datetime.utcnow()
-            sleep_time = 60 - (t.second + t.microsecond / 1000000.0)
+            t = time.time()
+            scheduled_time = t // 60 * 60
+            next_time = scheduled_time + 60
+            sleep_time = next_time - t
             time.sleep(sleep_time)
-            self.put(topic=topic)
+            self.put(topic=topic, interval=60., timestamp=scheduled_time)
 
     def _second_timer(self, topic: Topic):
         while self._active:
-            t = datetime.datetime.utcnow()
-            sleep_time = 1 - t.microsecond / 1000000.0
+            t = time.time()
+            scheduled_time = t // 1
+            next_time = scheduled_time + 1
+            sleep_time = next_time - t
             time.sleep(sleep_time)
-            self.put(topic=topic)
+            self.put(topic=topic, interval=1., timestamp=scheduled_time)
 
     def stop(self) -> None:
         super().stop()

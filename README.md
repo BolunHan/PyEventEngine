@@ -7,7 +7,9 @@ python native event engine
 ```shell
 pip install git+https://github.com/BolunHan/PyEventEngine.git
 ```
+
 or
+
 ```shell
 pip install PyEventEngine
 ```
@@ -59,6 +61,30 @@ EVENT_ENGINE.register_handler(topic=RegularTopic('RegularTopic.*'), handler=test
 # publish message
 EVENT_ENGINE.put(topic=Topic('RegularTopic.ChildTopic0'), msg='topic called')
 time.sleep(1)
+EVENT_ENGINE.stop()
+```
+
+## timer topic
+
+```python
+# init event engine
+import time
+from EventEngine import EventEngine, Topic, RegularTopic
+
+EVENT_ENGINE = EventEngine()
+EVENT_ENGINE.start()
+
+
+# register handler
+def test_handler(**kwargs):
+    print(kwargs)
+
+
+topic = EVENT_ENGINE.get_timer(interval=1)
+EVENT_ENGINE.register_handler(topic=topic, handler=test_handler)
+
+# publish message
+time.sleep(5)
 EVENT_ENGINE.stop()
 ```
 

@@ -137,6 +137,10 @@ class EventEngineBase(object):
         """
         Start event engine to process events and generate timer events.
         """
+        if self._active:
+            LOGGER.warning('EventEngine already started!')
+            return
+
         self._active = True
         self._engine.start()
 
@@ -144,6 +148,10 @@ class EventEngineBase(object):
         """
         Stop event engine.
         """
+        if not self._active:
+            LOGGER.warning('EventEngine already stopped!')
+            return
+
         self._active = False
         self._engine.join()
 

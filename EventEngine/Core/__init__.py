@@ -1,9 +1,10 @@
 from __future__ import annotations
+
 import logging
 import sys
 import time
 
-__all__ = ['LOGGER', 'LOG_LEVEL', 'LOG_LEVEL_EVENT', 'Topic', 'RegularTopic', 'PatternTopic', 'EventHook', 'EventEngine']
+__all__ = ['set_logger', 'LOG_LEVEL_EVENT', 'Topic', 'RegularTopic', 'PatternTopic', 'EventHook', 'EventEngine']
 LOGGER: logging.Logger | None = None
 LOG_LEVEL = logging.INFO
 LOG_LEVEL_EVENT = LOG_LEVEL - 1
@@ -49,7 +50,7 @@ class ColoredFormatter(logging.Formatter):
 
 
 def get_logger(**kwargs) -> logging.Logger:
-    level = kwargs.get('level', logging.INFO)
+    level = kwargs.get('level', LOG_LEVEL)
     stream_io = kwargs.get('stream_io', sys.stdout)
     formatter = kwargs.get('formatter', ColoredFormatter())
     global LOGGER

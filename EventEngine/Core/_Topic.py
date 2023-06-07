@@ -90,7 +90,7 @@ class PatternTopic(Topic):
         return self.format_map(kwargs)
 
     @classmethod
-    def string_to_dict(cls, target: str, pattern: str):
+    def extract_mapping(cls, target: str, pattern: str):
         pattern = re.escape(pattern)
         regex = re.sub(r'\\{(.+?)\\}', r'(?P<_\1>.+)', pattern)
         match = re.match(regex, target)
@@ -115,7 +115,7 @@ class PatternTopic(Topic):
 
     def match(self, topic: str) -> Topic | None:
         try:
-            keyword_dict = self.string_to_dict(target=topic, pattern=self._value)
+            keyword_dict = self.extract_mapping(target=topic, pattern=self._value)
             match = Topic(topic=topic)
             match.update(keyword_dict)
             return match

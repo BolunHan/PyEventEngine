@@ -4,7 +4,7 @@ import logging
 import sys
 import time
 
-__all__ = ['set_logger', 'LOG_LEVEL_EVENT', 'Topic', 'RegularTopic', 'PatternTopic', 'EventHook', 'EventEngine']
+__all__ = ['set_logger', 'LOG_LEVEL_EVENT', 'Topic', 'RegularTopic', 'PatternTopic', 'EventHook', 'EventEngine', 'LOGGER']
 LOGGER: logging.Logger | None = None
 LOG_LEVEL = logging.INFO
 LOG_LEVEL_EVENT = LOG_LEVEL - 1
@@ -86,5 +86,12 @@ def set_logger(logger: logging.Logger):
 
 _ = get_logger()
 
-from ._Topic import Topic, RegularTopic, PatternTopic
+# use c++ optimized module
+try:
+    from ._Topic_c import Topic, RegularTopic, PatternTopic
+except Exception as _:
+    from ._Topic import Topic, RegularTopic, PatternTopic
+
+    LOGGER.warning(_)
+
 from ._Event import EventHook, EventEngine

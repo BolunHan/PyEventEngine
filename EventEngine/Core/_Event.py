@@ -7,8 +7,7 @@ import time
 import traceback
 from typing import Iterable
 
-from . import LOGGER, LOG_LEVEL_EVENT
-from ._Topic import Topic
+from . import LOGGER, LOG_LEVEL_EVENT, Topic
 
 
 class EventHookBase(object):

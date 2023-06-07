@@ -1,6 +1,7 @@
-import setuptools
-import os
 import codecs
+import os
+
+import setuptools.extension
 
 
 def read(rel_path):
@@ -43,6 +44,8 @@ setuptools.setup(
     ],
     python_requires='>=3.8',
     license='MIT',
-    install_requires=[
-    ]
+    install_requires=[],
+    ext_modules=[
+        setuptools.extension.Extension(r'EventEngine.topic_api', sources=[r'EventEngine/cpp/topic_api.cpp'], include_dirs=[], language='c++', optional=True),
+    ],
 )

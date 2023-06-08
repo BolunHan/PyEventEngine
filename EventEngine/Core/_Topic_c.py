@@ -2,12 +2,20 @@ from __future__ import annotations
 
 import ctypes
 import pathlib
+import platform
 import re
 
 __all__ = ['Topic', 'RegularTopic', 'PatternTopic']
 
 topic_lib = None
-package_name = '^topic_api(.*).so$'
+
+if platform.system() == 'Windows':
+    package_name = 'topic_api.(.*).pyd'
+elif platform.system() == 'Darwin':
+    package_name = '^topic_api(.*).so$'
+else:
+    package_name = '^topic_api(.*).so$'
+
 root_dir = pathlib.Path(__file__).parent.parent
 
 for _ in root_dir.iterdir():

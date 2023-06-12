@@ -89,18 +89,45 @@ class PatternTopic(Topic):
     def __call__(self, **kwargs):
         return self.format_map(kwargs)
 
+    # @classmethod
+    # def extract_mapping(cls, target: str, pattern: str):
+    #     pattern = re.escape(pattern)
+    #     regex = re.sub(r'\\{(.+?)\\}', r'(?P<_\1>.+)', pattern)
+    #     match = re.match(regex, target)
+    #     if match:
+    #         values = list(match.groups())
+    #         keys = re.findall(r'\\{(.+?)\\}', pattern)
+    #         m = dict(zip(keys, values))
+    #         return m
+    #     else:
+    #         raise Topic.Error(f'pattern {pattern} not in string {target} found!')
+
     @classmethod
-    def extract_mapping(cls, target: str, pattern: str):
-        pattern = re.escape(pattern)
-        regex = re.sub(r'\\{(.+?)\\}', r'(?P<_\1>.+)', pattern)
-        match = re.match(regex, target)
-        if match:
-            values = list(match.groups())
-            keys = re.findall(r'\\{(.+?)\\}', pattern)
-            m = dict(zip(keys, values))
-            return m
-        else:
-            raise Topic.Error(f'pattern {pattern} not in string {target} found!')
+    def extract_mapping(cls, target, pattern):
+        dictionary = {}
+
+        result_parts = target.split('.')
+        pattern_parts = pattern.split('.')
+
+        # Check if the number of parts in result and pattern are the same
+        if len(result_parts) != len(pattern_parts):
+            return dictionary
+
+        # Generate the mapping dictionary
+        num_parts = len(result_parts)
+        for i in range(num_parts):
+            result_part = result_parts[i]
+            pattern_part = pattern_parts[i]
+
+            if pattern_part[0] == '{' and pattern_part[-1] == '}':
+                content = pattern_part[1:-1]
+                dictionary[content] = result_part
+            else:
+                if result_part != pattern_part:
+                    dictionary.clear()
+                    return dictionary
+
+        return dictionary
 
     def format_map(self, mapping: dict) -> Topic:
         for key in self.keys():

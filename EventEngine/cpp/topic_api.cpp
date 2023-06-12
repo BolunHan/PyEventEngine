@@ -40,9 +40,18 @@ class RegularTopic : public Topic {
 public:
     explicit RegularTopic(const std::string &pattern) : Topic(pattern) {}
 
-    Topic match(const std::string &topic) const override {
-        std::regex regex(_value);
+    static int is_match(const std::string &topic, const std::string &pattern) {
+        std::regex regex(pattern);
         if (std::regex_match(topic, regex)) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    Topic match(const std::string &topic) const override {
+        int result = is_match(topic, _value);
+        if (result == 1) {
             Topic match(topic);
             match["pattern"] = _value;
             return match;
@@ -99,18 +108,17 @@ public:
     }
 
     Topic match(const std::string &topic) const override {
-        try {
-            std::unordered_map<std::string, std::string> keyword_dict = extract_mapping(topic, _value);
-            Topic match(topic);
-            match.insert(keyword_dict.begin(), keyword_dict.end());
-            return match;
-        } catch (const Error &) {
+        std::unordered_map<std::string, std::string> keyword_dict = extract_mapping(topic, _value);
+        if (keyword_dict.empty()) {
             return Topic("");
         }
+
+        Topic match(topic);
+        match.insert(keyword_dict.begin(), keyword_dict.end());
+        return match;
     }
 
-    static std::unordered_map<std::string, std::string>
-    extract_mapping(const std::string &target, const std::string &pattern) {
+    static std::unordered_map<std::string, std::string> extract_mapping(const std::string &target, const std::string &pattern) {
         std::unordered_map<std::string, std::string> dictionary;
 
         std::vector<std::string> resultParts;
@@ -142,7 +150,7 @@ public:
 
         // Check if the number of parts in result and pattern are the same
         if (resultParts.size() != patternParts.size()) {
-            throw Error("Pattern not match");
+            return dictionary;
         }
 
         // Generate the mapping dictionary
@@ -157,11 +165,10 @@ public:
             } else {
                 if (resultPart != patternPart) {
                     dictionary.clear();
-                    throw Error("Pattern not match");
+                    return dictionary;
                 }
             }
         }
-
         return dictionary;
     }
 };
@@ -209,8 +216,14 @@ std::vector<std::string> *get_pattern_topic_keys(const PatternTopic *topic) {
     return new std::vector<std::string>(topic->keys());
 }
 
-void extract_mapping(const char *target, const char *pattern, std::vector<std::string> *keys,
-                     std::vector<std::string> *values) {
+int is_regular_match(const char *topic, const char *pattern) {
+    std::string topicStr(topic);
+    std::string patternStr(pattern);
+    int result = RegularTopic::is_match(topicStr, patternStr);
+    return result;
+}
+
+void extract_mapping(const char *target, const char *pattern, std::vector<std::string> *keys, std::vector<std::string> *values) {
     std::string target_str(target);
     std::string pattern_str(pattern);
 
@@ -234,7 +247,7 @@ int vector_size(const std::vector<std::string> *vec) {
     return vec->size();
 }
 
-void delete_vector(std::vector<std::string> *vec) {
+void delete_vector(const std::vector<std::string> *vec) {
     delete vec;
 }
 }

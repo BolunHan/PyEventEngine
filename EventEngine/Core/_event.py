@@ -1,13 +1,22 @@
-from __future__ import annotations
-
 import datetime
-import queue
-import threading
+import enum
+import inspect
 import time
 import traceback
-from typing import Iterable
+from collections import deque
+from logging import Logger
+from threading import Thread, Semaphore
+from typing import Iterable, TypedDict, NotRequired, Callable
 
-from . import LOGGER, LOG_LEVEL_EVENT, Topic
+from . import LOGGER, LOG_LEVEL_EVENT, Topic, DEBUG
+
+LOGGER = LOGGER.getChild('Event')
+
+
+class EventDict(TypedDict):
+    topic: str
+    args: NotRequired[tuple]
+    kwargs: NotRequired[dict]
 
 
 class EventHookBase(object):
@@ -17,31 +26,19 @@ class EventHookBase(object):
     and a list of handler to process data
     """
 
-    def __init__(self, topic: Topic, handler: list[callable] | callable | None = None):
+    def __init__(self, topic: Topic, logger: Logger = None, max_size: int = None):
         self.topic = topic
-
-        if callable(handler):
-            self.handlers = [handler]
-        elif isinstance(handler, Iterable):
-            self.handlers = []
-            for hdl in handler:
-                if callable(hdl):
-                    self.handlers.append(hdl)
-                else:
-                    raise ValueError(f'invalid handler {hdl}')
-        elif handler is None:
-            self.handlers = []
-        else:
-            raise ValueError(f'Invalid handler {handler}')
+        self.logger = LOGGER.getChild(f'EventHook.{topic}') if logger is None else logger
+        self.handlers: deque[Callable] = deque(maxlen=max_size)
 
     def __call__(self, *args, **kwargs):
         self.trigger(topic=self.topic, args=args, kwargs=kwargs)
 
-    def __iadd__(self, handler):
+    def __iadd__(self, handler: Callable):
         self.add_handler(handler)
         return self
 
-    def __isub__(self, handler):
+    def __isub__(self, handler: Callable):
         self.remove_handler(handler)
         return self
 
@@ -56,88 +53,134 @@ class EventHookBase(object):
             try:
                 try:
                     handler(topic=topic, *args, **kwargs)
-                except TypeError:
-                    handler(*args, **kwargs)
+                except TypeError as e:
+                    if e.__str__().endswith("unexpected keyword argument 'topic'"):
+                        handler(*args, **kwargs)
+                    else:
+                        raise e
             except Exception as _:
-                LOGGER.error(traceback.format_exc())
+                self.logger.error(traceback.format_exc())
 
-    def add_handler(self, handler: callable):
+    def add_handler(self, handler: Callable):
+        if handler in self.handlers:
+            LOGGER.warning(f'Handler {handler} already in {self}. This action might cause it to trigger twice.')
         self.handlers.append(handler)
 
-    def remove_handler(self, handler: callable):
-        self.handlers.remove(handler)
+    def remove_handler(self, handler: Callable):
+        try:
+            self.handlers.remove(handler)
+        except ValueError as e:
+            self.logger.error(f'Handler {handler} not found in {self}.')
 
 
 class EventHook(EventHookBase):
-    def __init__(self, topic, handler):
-        self.logger = LOGGER.getChild(f'EventHook.{topic}')
-        super().__init__(topic=topic, handler=handler)
+    def __init__(self, topic: Topic, logger: Logger = None, max_size: int = None, handler: list[Callable] | Callable | None = None):
+        super().__init__(topic=topic, logger=logger, max_size=max_size)
+        self.with_topic: deque[bool] = deque()
+
+        if handler is None:
+            pass
+        elif callable(handler):
+            self.add_handler(handler)
+        elif isinstance(handler, Iterable):
+            for _handler in handler:
+                self.add_handler(handler=_handler)
+        else:
+            raise ValueError(f'Invalid handler {handler}, expect a Callable or a list of Callable.')
 
     def trigger(self, topic: Topic, args: tuple = None, kwargs: dict = None):
         ts = time.time()
-
         if args is None:
             args = ()
 
         if kwargs is None:
             kwargs = {}
 
-        for handler in self.handlers:
+        for handler, with_topic in zip(self.handlers, self.with_topic):
             try:
-                try:
+                if with_topic:
                     handler(topic=topic, *args, **kwargs)
-                except TypeError:
+                else:
                     handler(*args, **kwargs)
             except Exception as _:
                 self.logger.error(traceback.format_exc())
 
-        self.logger.log(LOG_LEVEL_EVENT, f'EventHook {self.topic} tasks triggered {len(self.handlers):,} handlers, complete in {(time.time() - ts) * 1000:.3f}ms')
+        if DEBUG:
+            self.logger.log(LOG_LEVEL_EVENT, f'EventHook {self.topic} tasks triggered {len(self.handlers):,} handlers, complete in {(time.time() - ts) * 1000:.3f}ms.')
+
+    def add_handler(self, handler: Callable, with_topic: bool = None):
+        sig = inspect.signature(handler)
+
+        if with_topic is None:
+            for param in sig.parameters.values():
+                if param.name == 'topic' or param.kind == param.VAR_KEYWORD:
+                    with_topic = True
+                    break
+
+        super().add_handler(handler=handler)
+        self.with_topic.append(with_topic)
+
+    def remove_handler(self, handler: Callable):
+        try:
+            idx = self.handlers.index(handler)
+            self.handlers.__delitem__(idx)
+            self.with_topic.__delitem__(idx)
+        except ValueError as e:
+            pass
 
 
 class EventEngineBase(object):
     EventHook = EventHook
 
-    def __init__(self, max_size=0):
-        self.lock = threading.Lock()
-
-        self._max_size = max_size
-        self._queue: queue.Queue = queue.Queue(maxsize=self._max_size)
+    def __init__(self, logger: Logger = None, buffer_size: int = 0):
+        self.logger = LOGGER.getChild(f'EventEngine') if logger is None else logger
+        self._buffer_size = buffer_size
+        self._put_lock = Semaphore(self._buffer_size)
+        self._get_lock = Semaphore(0)
+        self._deque: deque[EventDict] = deque(maxlen=buffer_size if buffer_size else None)
         self._active: bool = False
-        self._engine: threading.Thread = threading.Thread(target=self._run, name='EventEngine')
+        self._engine: Thread = Thread(target=self._run, name='EventEngine')
         self._event_hooks: dict[Topic, EventHook] = {}
+
+        if buffer_size and buffer_size < 8:
+            self.logger.info(f'buffer_size={buffer_size} too small. This might cause a dead lock.')
 
     def _run(self) -> None:
         """
         Get event from queue and then process it.
         """
         while self._active:
+            self._get_lock.acquire(blocking=True, timeout=None)
+
             try:
-                event_dict = self._queue.get(block=True, timeout=1)
-                topic = event_dict['topic']
-                args = event_dict.get('args', ())
-                kwargs = event_dict.get('kwargs', {})
-                self._process(topic, *args, **kwargs)
-            except queue.Empty:
-                pass
+                event_dict = self._deque.pop()
+            except IndexError as e:
+                if not self._active:
+                    return
+                raise e
+
+            topic = event_dict['topic']
+            args = event_dict.get('args', ())
+            kwargs = event_dict.get('kwargs', {})
+            self._process(topic=topic, *args, **kwargs)
+
+            if self._buffer_size:
+                self._put_lock.release()
 
     def _process(self, topic: str, *args, **kwargs) -> None:
         """
         distribute data to registered event hook in the order of registration
         """
-        for _ in list(self._event_hooks):
-            m = _.match(topic=topic)
-            if m:
-                event_hook = self._event_hooks.get(_)
-
-                if event_hook is not None:
-                    event_hook.trigger(topic=m, args=args, kwargs=kwargs)
+        for event_topic, event_hook in self._event_hooks.items():
+            if matched_topic := event_topic.match(topic=topic):
+                event_hook.trigger(topic=matched_topic, args=args, kwargs=kwargs)
 
     def start(self) -> None:
         """
         Start event engine to process events and generate timer events.
         """
         if self._active:
-            LOGGER.warning('EventEngine already started!')
+            self.logger.warning(f'{self} already started!')
             return
 
         self._active = True
@@ -148,10 +191,11 @@ class EventEngineBase(object):
         Stop event engine.
         """
         if not self._active:
-            LOGGER.warning('EventEngine already stopped!')
+            self.logger.warning('EventEngine already stopped!')
             return
 
         self._active = False
+        self._get_lock.release()
         self._engine.join()
 
     def put(self, topic: str | Topic, block: bool = True, timeout: float = None, *args, **kwargs):
@@ -181,6 +225,9 @@ class EventEngineBase(object):
         elif not isinstance(topic, str):
             raise ValueError(f'Invalid topic {topic}')
 
+        if self._buffer_size:
+            self._put_lock.acquire()
+
         event_dict = {'topic': topic}
 
         if args is not None:
@@ -189,7 +236,9 @@ class EventEngineBase(object):
         if kwargs is not None:
             event_dict['kwargs'] = kwargs
 
-        self._queue.put(event_dict, block=block, timeout=timeout)
+        self._deque.append(event_dict)
+
+        self._get_lock.release()
 
     def register_hook(self, hook: EventHook) -> None:
         """
@@ -208,7 +257,7 @@ class EventEngineBase(object):
         if topic in self._event_hooks:
             self._event_hooks.pop(topic)
 
-    def register_handler(self, topic: Topic, handler: Iterable[callable] | callable) -> None:
+    def register_handler(self, topic: Topic, handler: Iterable[Callable] | Callable) -> None:
         """
         Register one or more handler for a specific topic
         """
@@ -217,11 +266,11 @@ class EventEngineBase(object):
             raise TypeError(f'Invalid topic {topic}')
 
         if topic not in self._event_hooks:
-            self._event_hooks[topic] = self.EventHook(topic=topic, handler=handler)
+            self._event_hooks[topic] = self.EventHook(topic=topic, handler=handler, logger=self.logger.getChild(topic.value))
         else:
             self._event_hooks[topic].add_handler(handler)
 
-    def unregister_handler(self, topic: Topic, handler: callable) -> None:
+    def unregister_handler(self, topic: Topic, handler: Callable) -> None:
         """
         Unregister an existing handler function.
         """
@@ -229,23 +278,18 @@ class EventEngineBase(object):
             self._event_hooks[topic].remove_handler(handler=handler)
 
     @property
-    def max_size(self):
-        return self._max_size
-
-    @max_size.setter
-    def max_size(self, size: int):
-        self._max_size = size
-        self._queue.maxsize = size
+    def buffer_size(self):
+        return self._buffer_size
 
 
 class EventEngine(EventEngineBase):
     EventHook = EventHook
 
-    def __init__(self, max_size=0):
-        super().__init__(max_size=max_size)
-        self.timer: dict[float | str, threading.Thread] = {}
+    def __init__(self, buffer_size=0):
+        super().__init__(buffer_size=buffer_size)
+        self.timer: dict[float | str, Thread] = {}
 
-    def register_handler(self, topic, handler):
+    def register_handler(self, topic: Topic | str | enum.Enum, handler: Callable):
         topic = Topic.cast(topic)
         super().register_handler(topic=topic, handler=handler)
 
@@ -277,20 +321,20 @@ class EventEngine(EventEngineBase):
 
         if interval == 1:
             topic = Topic('EventEngine.Internal.Timer.Second')
-            timer = threading.Thread(target=self._second_timer, kwargs={'topic': topic})
+            timer = Thread(target=self._second_timer, kwargs={'topic': topic})
         elif interval == 60:
             topic = Topic('EventEngine.Internal.Timer.Minute')
-            timer = threading.Thread(target=self._minute_timer, kwargs={'topic': topic})
+            timer = Thread(target=self._minute_timer, kwargs={'topic': topic})
         else:
             topic = Topic(f'EventEngine.Internal.Timer.{interval}')
-            timer = threading.Thread(target=self._run_timer, kwargs={'interval': interval, 'topic': topic, 'activate_time': activate_time})
+            timer = Thread(target=self._run_timer, kwargs={'interval': interval, 'topic': topic, 'activate_time': activate_time})
 
         if interval not in self.timer:
             self.timer[interval] = timer
             timer.start()
         else:
             if activate_time is not None:
-                LOGGER.debug(f'Timer thread with interval [{datetime.timedelta(seconds=interval)}] already initialized! Argument [activate_time] takes no effect!')
+                self.logger.debug(f'Timer thread with interval [{datetime.timedelta(seconds=interval)}] already initialized! Argument [activate_time] takes no effect!')
 
         return topic
 

@@ -103,12 +103,10 @@ def init_test_case():
         {'dtype': 'TradeData', 'ticker': 'APPL', 'price': 95, 'volume': 200},
     ]
 
-    _ = 0
-    for market_data in history:
+    for _, market_data in enumerate(history, start=1):
         EVENT_ENGINE.put(topic=TOPIC.push(market_data), market_data=market_data)
-        LOGGER.info(f'{_} / {len(history)}')
+        LOGGER.info(f'task {_} / {len(history)}...')
         time.sleep(1)
-        _ += 1
 
 
 if __name__ == '__main__':

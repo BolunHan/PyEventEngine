@@ -5,7 +5,7 @@ import pathlib
 import platform
 import re
 
-from ._Topic import Topic, RegularTopic as RegularTopicBase, PatternTopic as PatternTopicBase
+from ._topic import Topic, RegularTopic as RegularTopicBase, PatternTopic as PatternTopicBase
 
 __all__ = ['Topic', 'RegularTopic', 'PatternTopic']
 

@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 import re
 from enum import Enum
 from string import Formatter
+from typing import Self, Type
 
 
 class Topic(dict):
@@ -30,29 +29,33 @@ class Topic(dict):
     def __hash__(self):
         return self.value.__hash__()
 
-    def match(self, topic: str) -> Topic | None:
+    def match(self, topic: str) -> Self | None:
         if self._value == topic:
-            return self.__class__(topic=topic)
+            # return self.__class__(topic=topic)
+            return self
         else:
             return None
 
     @classmethod
-    def cast(cls, topic: Topic | str | Enum, dtype=None) -> Topic:
-        if isinstance(topic, Enum):
-            topic = topic.value
-        elif isinstance(topic, Topic):
+    def cast(cls, topic: Self | str | Enum, dtype: Type[Self] = None) -> Self:
+        if isinstance(topic, cls):
             return topic
-
-        if dtype is None:
-            if re.search(r'{(.+?)}', topic):
-                t = PatternTopic(pattern=topic)
-            elif '*' in topic or '+' in topic or '|' in topic:
-                re.compile(pattern=topic)
-                t = RegularTopic(pattern=topic)
+        elif isinstance(topic, Enum):
+            t = topic.value
+            return cls.cast(t)
+        elif isinstance(topic, str):
+            if dtype is None:
+                if re.search(r'{(.+?)}', topic):
+                    t = PatternTopic(pattern=topic)
+                elif '*' in topic or '+' in topic or '|' in topic:
+                    re.compile(pattern=topic)
+                    t = RegularTopic(pattern=topic)
+                else:
+                    t = Topic(topic=topic)
             else:
-                t = Topic(topic=topic)
+                t = dtype(topic)
         else:
-            t = dtype(topic)
+            raise NotImplementedError(f'Can not cast {topic} into {cls}.')
 
         return t
 
@@ -103,7 +106,7 @@ class PatternTopic(Topic):
     #         raise Topic.Error(f'pattern {pattern} not in string {target} found!')
 
     @classmethod
-    def extract_mapping(cls, target, pattern):
+    def extract_mapping(cls, target: str, pattern: str):
         dictionary = {}
 
         result_parts = target.split('.')
@@ -114,18 +117,14 @@ class PatternTopic(Topic):
             return dictionary
 
         # Generate the mapping dictionary
-        num_parts = len(result_parts)
-        for i in range(num_parts):
-            result_part = result_parts[i]
-            pattern_part = pattern_parts[i]
-
+        for result_part, pattern_part in zip(result_parts, pattern_parts):  # type: str
             if pattern_part[0] == '{' and pattern_part[-1] == '}':
                 content = pattern_part[1:-1]
                 dictionary[content] = result_part
             else:
                 if result_part != pattern_part:
                     dictionary.clear()
-                    return dictionary
+                    break
 
         return dictionary
 

@@ -38,6 +38,8 @@ def init_test_pattern():
 
 if __name__ == '__main__':
     EVENT_ENGINE.start()
+    LOGGER.info('Testing event engine with Topic...')
     init_test()
-    # init_test_pattern()
+    LOGGER.info('Testing event engine with PatternTopic...')
+    init_test_pattern()
     EVENT_ENGINE.stop()

@@ -1,13 +1,12 @@
-from __future__ import annotations
-
 import logging
 import sys
 import time
 
 __all__ = ['set_logger', 'LOG_LEVEL_EVENT', 'Topic', 'RegularTopic', 'PatternTopic', 'EventHook', 'EventEngine', 'LOGGER', 'use_cpp_override']
 LOGGER: logging.Logger | None = None
+DEBUG = False
 LOG_LEVEL = logging.INFO
-LOG_LEVEL_EVENT = LOG_LEVEL - 1
+LOG_LEVEL_EVENT = LOG_LEVEL - 5
 
 
 class ColoredFormatter(logging.Formatter):
@@ -83,16 +82,18 @@ def set_logger(logger: logging.Logger):
     global LOGGER
     LOGGER = logger
 
+    _event.LOGGER = LOGGER.getChild('Event')
+
 
 def use_cpp_override():
     try:
-        from ._Topic_c import Topic, RegularTopic, PatternTopic
-        from . import _Topic as _Topic_native
+        from ._topic_c import Topic, RegularTopic, PatternTopic
+        from . import _topic as _Topic_native
     except Exception as _:
         LOGGER.warning(_)
 
 
 _ = get_logger()
 
-from ._Topic import Topic, RegularTopic, PatternTopic
-from ._Event import EventHook, EventEngine
+from ._topic import Topic, RegularTopic, PatternTopic
+from ._event import EventHook, EventEngine

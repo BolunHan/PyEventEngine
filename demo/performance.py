@@ -1,6 +1,6 @@
 import time
 
-from EventEngine import Topic, EventEngine, LOGGER, PatternTopic
+from event_engine import Topic, EventEngine, LOGGER, PatternTopic
 
 BUFFER_SIZE = 1024
 EVENT_ENGINE = EventEngine(buffer_size=BUFFER_SIZE)

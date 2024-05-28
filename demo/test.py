@@ -1,6 +1,6 @@
 import time
 
-from EventEngine import Topic, PatternTopic, EventEngine, LOGGER
+from event_engine import Topic, PatternTopic, EventEngine, LOGGER
 from types import SimpleNamespace
 
 

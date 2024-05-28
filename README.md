@@ -21,7 +21,7 @@ pip install PyEventEngine
 ```python
 # init event engine
 import time
-from EventEngine import EventEngine, Topic
+from event_engine import EventEngine, Topic
 
 EVENT_ENGINE = EventEngine()
 EVENT_ENGINE.start()
@@ -45,7 +45,7 @@ EVENT_ENGINE.stop()
 ```python
 # init event engine
 import time
-from EventEngine import EventEngine, Topic, RegularTopic
+from event_engine import EventEngine, Topic, RegularTopic
 
 EVENT_ENGINE = EventEngine()
 EVENT_ENGINE.start()
@@ -69,7 +69,7 @@ EVENT_ENGINE.stop()
 ```python
 # init event engine
 import time
-from EventEngine import EventEngine, Topic, RegularTopic
+from event_engine import EventEngine, Topic, RegularTopic
 
 EVENT_ENGINE = EventEngine()
 EVENT_ENGINE.start()

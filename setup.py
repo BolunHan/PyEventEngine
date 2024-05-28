@@ -25,7 +25,7 @@ long_description = read("README.md")
 
 setuptools.setup(
     name="PyEventEngine",
-    version=get_version(os.path.join('EventEngine', '__init__.py')),
+    version=get_version(os.path.join('event_engine', '__init__.py')),
     author="Bolun.Han",
     author_email="Bolun.Han@outlook.com",
     description="Basic event engine",
@@ -48,6 +48,6 @@ setuptools.setup(
     license='MIT',
     install_requires=[],
     ext_modules=[
-        setuptools.extension.Extension(r'EventEngine.topic_api', sources=[r'EventEngine/cpp/topic_api.cpp'], include_dirs=[], language='c++', optional=True),
+        setuptools.extension.Extension(r'event_engine.topic_api', sources=[r'event_engine/cpp/topic_api.cpp'], include_dirs=[], language='c++', optional=True),
     ],
 )

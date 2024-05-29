@@ -153,7 +153,7 @@ class EventEngineBase(object):
             self._get_lock.acquire(blocking=True, timeout=None)
 
             try:
-                event_dict = self._deque.pop()
+                event_dict = self._deque.popleft()
             except IndexError as e:
                 if not self._active:
                     return

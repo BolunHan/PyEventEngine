@@ -86,6 +86,9 @@ class PatternTopic(Topic):
     topic for event hook. e.g. "TickData.{symbol}.{market}.{flag}"
     """
 
+    class NotMatchError(Topic.Error):
+        pass
+
     def __init__(self, pattern: str):
         super().__init__(topic=pattern)
 
@@ -106,7 +109,7 @@ class PatternTopic(Topic):
     #         raise Topic.Error(f'pattern {pattern} not in string {target} found!')
 
     @classmethod
-    def extract_mapping(cls, target: str, pattern: str):
+    def extract_mapping(cls, target: str, pattern: str) -> dict[str, str]:
         dictionary = {}
 
         result_parts = target.split('.')
@@ -114,17 +117,17 @@ class PatternTopic(Topic):
 
         # Check if the number of parts in result and pattern are the same
         if len(result_parts) != len(pattern_parts):
-            return dictionary
+            raise cls.NotMatchError(f'Target {target} not match with pattern {pattern}.')
 
         # Generate the mapping dictionary
-        for result_part, pattern_part in zip(result_parts, pattern_parts):  # type: str
+        for result_part, pattern_part in zip(result_parts, pattern_parts):
             if pattern_part[0] == '{' and pattern_part[-1] == '}':
-                content = pattern_part[1:-1]
+                content: str = pattern_part[1:-1]
                 dictionary[content] = result_part
             else:
                 if result_part != pattern_part:
                     dictionary.clear()
-                    break
+                    raise cls.NotMatchError(f'Target {target} not match with pattern {pattern}.')
 
         return dictionary
 
@@ -145,7 +148,7 @@ class PatternTopic(Topic):
             match = Topic(topic=topic)
             match.update(keyword_dict)
             return match
-        except self.Error as _:
+        except self.NotMatchError as _:
             return None
 
     @property

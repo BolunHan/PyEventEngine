@@ -281,6 +281,10 @@ class EventEngineBase(object):
     def buffer_size(self):
         return self._buffer_size
 
+    @property
+    def active(self) -> bool:
+        return self._active
+
 
 class EventEngine(EventEngineBase):
     EventHook = EventHook

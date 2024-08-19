@@ -2,7 +2,6 @@ import codecs
 import os
 
 import setuptools.extension
-from bokeh.embed import standalone
 
 
 def read(rel_path):

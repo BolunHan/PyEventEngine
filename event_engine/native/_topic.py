@@ -116,7 +116,7 @@ class PatternTopic(Topic):
         pattern_parts = pattern.split('.')
 
         # Check if the number of parts in result and pattern are the same
-        if len(result_parts) != len(pattern_parts):
+        if len(result_parts) < len(pattern_parts):
             raise cls.NotMatchError(f'Target {target} not match with pattern {pattern}.')
 
         # Generate the mapping dictionary

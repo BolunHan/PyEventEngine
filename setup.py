@@ -49,5 +49,18 @@ setuptools.setup(
     install_requires=[],
     ext_modules=[
         setuptools.extension.Extension(r'event_engine.topic_api', sources=[r'event_engine/cpp/topic_api.cpp'], include_dirs=[], language='c++', optional=True),
+        setuptools.extension.Extension(r'event_engine.event_api', sources=[r'event_engine/cpp/event_api.cpp'], include_dirs=[], language='c++', optional=True)
     ],
+    command_options={
+        'nuitka': {
+            # boolean option, e.g. if you cared for C compilation commands
+            '--show-scons': ("setup.py", True),
+            # options without value, e.g. enforce using Clang
+            '--clang': ("setup.py", None),
+            # options with single values, e.g. enable a plugin of Nuitka
+            # '--enable-plugin': ("setup.py", "pyside2"),
+            # options with several values, e.g. avoiding including modules
+            # '--nofollow-import-to': ("setup.py", ["*.tests", "*.distutils"]),
+        }
+    }
 )

@@ -44,13 +44,13 @@ setuptools.setup(
         "Programming Language :: Python :: 3.12",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.8',
+    python_requires='>=3.12',
     license='MIT',
     install_requires=[],
-    ext_modules=[
-        setuptools.extension.Extension(r'event_engine.topic_api', sources=[r'event_engine/cpp/topic_api.cpp'], include_dirs=[], language='c++', optional=True),
-        setuptools.extension.Extension(r'event_engine.event_api', sources=[r'event_engine/cpp/event_api.cpp'], include_dirs=[], language='c++', optional=True)
-    ],
+    # ext_modules=[
+    #     setuptools.extension.Extension(r'event_engine.topic_api', sources=[r'event_engine/cpp/topic_api.cpp'], include_dirs=[], language='c++', optional=True),
+    #     setuptools.extension.Extension(r'event_engine.event_api', sources=[r'event_engine/cpp/event_api.cpp'], include_dirs=[], language='c++', optional=True)
+    # ],
     command_options={
         'nuitka': {
             # boolean option, e.g. if you cared for C compilation commands

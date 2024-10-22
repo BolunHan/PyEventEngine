@@ -139,7 +139,7 @@ class EventEngineBase(object):
         self._get_lock = Semaphore(0)
         self._deque: deque[EventDict] = deque(maxlen=buffer_size if buffer_size else None)
         self._active: bool = False
-        self._engine: Thread = Thread(target=self._run, name='EventEngine')
+        self._engine: Thread = None
         self._event_hooks: dict[Topic, EventHook] = {}
 
         if buffer_size and buffer_size < 8:
@@ -184,6 +184,7 @@ class EventEngineBase(object):
             return
 
         self._active = True
+        self._engine = Thread(target=self._run, name='EventEngine')
         self._engine.start()
 
     def stop(self) -> None:
@@ -197,6 +198,18 @@ class EventEngineBase(object):
         self._active = False
         self._get_lock.release()
         self._engine.join()
+
+    def clear(self) -> None:
+        if self._active:
+            self.logger.error('EventEngine must be stopped before cleared!')
+            return
+
+        self._event_hooks.clear()
+        self._deque.clear()
+
+        if self._buffer_size:
+            self._put_lock._value = self._buffer_size
+            self._get_lock._value = 0
 
     def put(self, topic: str | Topic, block: bool = True, timeout: float = None, *args, **kwargs):
         """
@@ -384,3 +397,9 @@ class EventEngine(EventEngineBase):
 
         for timer in self.timer.values():
             timer.join()
+
+    def clear(self) -> None:
+        for t in self.timer.values():
+            t.join(timeout=0)
+
+        self.timer.clear()

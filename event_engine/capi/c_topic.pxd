@@ -58,6 +58,7 @@ cdef extern from "c_topic.h":
         uint64_t hash
         char* key
         size_t key_len
+        int is_exact
         MemoryAllocator* allocator
 
     ctypedef struct TopicPartMatchResult:

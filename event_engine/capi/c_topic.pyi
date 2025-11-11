@@ -510,3 +510,7 @@ class PyTopic:
             - Mutating `value` is an expensive operation (de-register / re-register). Avoid frequent calls.
             - Prefer lazy-init: create an empty topic and set `value` once when needed.
         """
+
+    @property
+    def is_exact(self) -> bool:
+        """bool: True if the topic consists only of exact parts (no wildcards, ranges, or patterns)."""

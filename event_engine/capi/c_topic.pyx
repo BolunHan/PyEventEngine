@@ -629,6 +629,8 @@ cdef class PyTopic:
                     curr = curr.header.next
                 curr.header.next = part
             topic.n += 1
+            if part.header.ttype != TopicType.TOPIC_PART_EXACT:
+                self.header.is_exact = 0
         else:
             self.c_append(part)
         self.c_update_literal()
@@ -649,3 +651,7 @@ cdef class PyTopic:
             cdef int assign_ret = c_topic_assign(self.header, topic_ptr, topic_length)
             if assign_ret:
                 raise ValueError(f'Failed to assign topic "{value}", check if syntax is correct!')
+
+    property is_exact:
+        def __get__(self) -> bint:
+            return self.header.is_exact

@@ -98,6 +98,7 @@ typedef struct Topic {
     uint64_t hash;           // cached hash (for fast compare)
     char* key;               // interned key string, e.g., "a.b.c"
     size_t key_len;
+    int is_exact;
     MemoryAllocator* allocator;  // allocator used for all internal allocations
 } Topic;
 
@@ -253,6 +254,7 @@ static inline Topic* c_topic_new(const char* key, size_t key_len, MemoryAllocato
     topic->hash = 0;
     topic->key = NULL;
     topic->key_len = 0;
+    topic->is_exact = 1; // Always initialize as exact
     topic->allocator = allocator;
 
     // If no key provided, return empty topic and not internalized
@@ -360,6 +362,7 @@ static inline int c_topic_free(Topic* topic, int free_self) {
     topic->parts = NULL;
     topic->n = 0;
     topic->hash = 0;
+    topic->is_exact = 1; // Always reset to exact
 
     if (free_self) {
         if (allocator && allocator->active) {
@@ -562,6 +565,9 @@ static inline int c_topic_append(Topic* topic, const char* s, size_t len, TopicT
     }
 
     topic->n += 1;
+    if (ttype != TOPIC_PART_EXACT) {
+        topic->is_exact = 0;
+    }
     return 0;
 }
 

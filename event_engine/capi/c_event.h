@@ -1,15 +1,28 @@
 #ifndef C_EVENT_H
 #define C_EVENT_H
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <pthread.h>
 #include <errno.h>
-#include <string.h>
+#include <linux/time.h>
+#include <pthread.h>
+#include <sched.h>
 #include <stdatomic.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-#include "c_topic.h"
 #include "c_allocator.h"
+#include "c_topic.h"
+
+/* Default capacity if not provided elsewhere */
+#ifndef DEFAULT_MQ_CAPACITY
+#define DEFAULT_MQ_CAPACITY 0x0fff
+#endif
+
+/* Hybrid spin limit (number of busy iterations before blocking) */
+#ifndef HYBRID_SPIN_LIMIT
+#define HYBRID_SPIN_LIMIT 0xffff
+#endif
 
 /* @brief Message payload stored in the queue
  *
@@ -48,13 +61,13 @@ typedef struct MessageQueue {
  * Signatures and Documentation
  * --------------------------------------------------------------------*/
 
-/**
- * @brief Create a new message queue.
- * @param capacity maximum number of entries (must be > 0)
- * @param topic optional Topic to bind the queue to (may be NULL)
- * @param allocator optional MemoryAllocator for internal allocations (may be NULL)
- * @return pointer to newly allocated MessageQueue or NULL on allocation failure
- */
+ /**
+  * @brief Create a new message queue.
+  * @param capacity maximum number of entries (must be > 0)
+  * @param topic optional Topic to bind the queue to (may be NULL)
+  * @param allocator optional MemoryAllocator for internal allocations (may be NULL)
+  * @return pointer to newly allocated MessageQueue or NULL on allocation failure
+  */
 static inline MessageQueue* c_mq_new(size_t capacity, Topic* topic, MemoryAllocator* allocator);
 
 /**
@@ -69,20 +82,22 @@ static inline MessageQueue* c_mq_new(size_t capacity, Topic* topic, MemoryAlloca
 static inline int c_mq_free(MessageQueue* mq, int free_self);
 
 /**
- * @brief Non-blocking put into the queue.
+ * @brief Put into the queue with optional timeout.
  * @param mq queue pointer
  * @param msg pointer to MessagePayload (caller-owned)
- * @return 0 on success, -1 if queue full or invalid args
+ * @param timeout_seconds if <= 0 -> non-blocking; if > 0 -> wait up to timeout seconds
+ * @return 0 on success, -1 on timeout/invalid args
  */
-static inline int c_mq_put(MessageQueue* mq, MessagePayload* msg);
+static inline int c_mq_put(MessageQueue* mq, MessagePayload* msg, double timeout_seconds);
 
 /**
- * @brief Non-blocking get from the queue.
+ * @brief Get from the queue with optional timeout.
  * @param mq queue pointer
  * @param out_msg out parameter to receive MessagePayload*
- * @return 0 on success, -1 if queue empty or invalid args
+ * @param timeout_seconds if <= 0 -> non-blocking; if > 0 -> wait up to timeout seconds
+ * @return 0 on success, -1 on timeout/invalid args
  */
-static inline int c_mq_get(MessageQueue* mq, MessagePayload** out_msg);
+static inline int c_mq_get(MessageQueue* mq, MessagePayload** out_msg, double timeout_seconds);
 
 /**
  * @brief Blocking put; waits until space available.
@@ -100,11 +115,51 @@ static inline int c_mq_put_await(MessageQueue* mq, MessagePayload* msg);
  */
 static inline int c_mq_get_await(MessageQueue* mq, MessagePayload** out_msg);
 
+/**
+ * @brief Busy-looping put (spin until space).
+ * @return 0 on success, -1 on invalid args
+ */
+static inline int c_mq_put_busy(MessageQueue* mq, MessagePayload* msg);
+
+/**
+ * @brief Busy-looping get (spin until item).
+ * @return 0 on success, -1 on invalid args
+ */
+static inline int c_mq_get_busy(MessageQueue* mq, MessagePayload** out_msg);
+
+/**
+ * @brief Hybrid put: busy-spin for a short while then block.
+ * @return 0 on success, -1 on invalid args
+ */
+static inline int c_mq_put_hybrid(MessageQueue* mq, MessagePayload* msg);
+
+/**
+ * @brief Hybrid get: busy-spin for a short while then block.
+ * @return 0 on success, -1 on invalid args
+ */
+static inline int c_mq_get_hybrid(MessageQueue* mq, MessagePayload** out_msg);
+
 /* ----------------------------------------------------------------------
  * Implementations
  * --------------------------------------------------------------------*/
 
- /* Create a new queue. Returns NULL on allocation failure. */
+ /* Helper: add seconds (fractional allowed) to timespec */
+static inline void timespec_add_seconds(struct timespec* ts, double seconds) {
+    time_t sec = (time_t) seconds;
+    long nsec = (long) ((seconds - (double) sec) * 1e9);
+    ts->tv_sec += sec;
+    ts->tv_nsec += nsec;
+    if (ts->tv_nsec >= 1000000000L) {
+        ts->tv_sec += 1;
+        ts->tv_nsec -= 1000000000L;
+    }
+    else if (ts->tv_nsec < 0) {
+        ts->tv_sec -= 1;
+        ts->tv_nsec += 1000000000L;
+    }
+}
+
+/* Create a new queue. Returns NULL on allocation failure. */
 static inline MessageQueue* c_mq_new(size_t capacity, Topic* topic, MemoryAllocator* allocator) {
     if (capacity == 0) return NULL;
 
@@ -115,7 +170,7 @@ static inline MessageQueue* c_mq_new(size_t capacity, Topic* topic, MemoryAlloca
         mq = (MessageQueue*) c_heap_request(allocator, total_bytes);
     }
     else {
-        mq = (MessageQueue*) calloc(total_bytes, sizeof(char));
+        mq = (MessageQueue*) calloc(1, total_bytes);
     }
     if (!mq) return NULL;
 
@@ -134,7 +189,7 @@ static inline MessageQueue* c_mq_new(size_t capacity, Topic* topic, MemoryAlloca
 /* Destroy queue. Does not free message payloads pointed to by entries. */
 static inline int c_mq_free(MessageQueue* mq, int free_self) {
     if (!mq) {
-        return 1;
+        return -1;
     }
 
     pthread_mutex_lock(&mq->mutex);
@@ -152,46 +207,111 @@ static inline int c_mq_free(MessageQueue* mq, int free_self) {
             free(mq);
         }
     }
+    return 0;
 }
 
-/* Non-blocking put. Returns 0 on success, -1 if queue is full or invalid args. */
-static inline int c_mq_put(MessageQueue* mq, MessagePayload* msg) {
+/* Non-blocking or timed put. Returns 0 on success, -1 on full/timeout/invalid args. */
+static inline int c_mq_put(MessageQueue* mq, MessagePayload* msg, double timeout_seconds) {
     if (!mq || !msg) return -1;
-    int ret = 0;
+    int ret = -1;
     pthread_mutex_lock(&mq->mutex);
 
-    if (mq->count == mq->capacity) {
-        ret = -1; /* full */
+    /* Non-blocking if timeout_seconds <= 0 */
+    if (timeout_seconds <= 0.0) {
+        if (mq->count == mq->capacity) {
+            ret = -1; /* full */
+        }
+        else {
+            mq->buf[mq->tail] = msg;
+            mq->tail = (mq->tail + 1) % mq->capacity;
+            mq->count++;
+            pthread_cond_signal(&mq->not_empty);
+            ret = 0;
+        }
+        pthread_mutex_unlock(&mq->mutex);
+        return ret;
     }
-    else {
-        mq->buf[mq->tail] = msg;
-        mq->tail = (mq->tail + 1) % mq->capacity;
-        mq->count++;
-        pthread_cond_signal(&mq->not_empty);
-        ret = 0;
+
+    /* Timed wait */
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    timespec_add_seconds(&ts, timeout_seconds);
+
+    while (mq->count == mq->capacity) {
+        int rc = pthread_cond_timedwait(&mq->not_full, &mq->mutex, &ts);
+        if (rc == ETIMEDOUT) {
+            ret = -1;
+            pthread_mutex_unlock(&mq->mutex);
+            return ret;
+        }
+        if (rc != 0 && rc != EINTR) {
+            ret = -1;
+            pthread_mutex_unlock(&mq->mutex);
+            return ret;
+        }
+        /* if EINTR, loop and re-check time/condition */
     }
+
+    /* space available */
+    mq->buf[mq->tail] = msg;
+    mq->tail = (mq->tail + 1) % mq->capacity;
+    mq->count++;
+    pthread_cond_signal(&mq->not_empty);
+    ret = 0;
 
     pthread_mutex_unlock(&mq->mutex);
     return ret;
 }
 
-/* Non-blocking get. On success *out_msg is set and returns 0. Returns -1 if empty or invalid args. */
-static inline int c_mq_get(MessageQueue* mq, MessagePayload** out_msg) {
+/* Non-blocking or timed get. On success *out_msg is set and returns 0. Returns -1 if empty/timeout/invalid args. */
+static inline int c_mq_get(MessageQueue* mq, MessagePayload** out_msg, double timeout_seconds) {
     if (!mq || !out_msg) return -1;
-    int ret = 0;
+    int ret = -1;
     pthread_mutex_lock(&mq->mutex);
 
-    if (mq->count == 0) {
-        ret = -1; /* empty */
+    /* Non-blocking if timeout_seconds <= 0 */
+    if (timeout_seconds <= 0.0) {
+        if (mq->count == 0) {
+            ret = -1; /* empty */
+        }
+        else {
+            *out_msg = mq->buf[mq->head];
+            mq->buf[mq->head] = NULL;
+            mq->head = (mq->head + 1) % mq->capacity;
+            mq->count--;
+            pthread_cond_signal(&mq->not_full);
+            ret = 0;
+        }
+        pthread_mutex_unlock(&mq->mutex);
+        return ret;
     }
-    else {
-        *out_msg = mq->buf[mq->head];
-        mq->buf[mq->head] = NULL;
-        mq->head = (mq->head + 1) % mq->capacity;
-        mq->count--;
-        pthread_cond_signal(&mq->not_full);
-        ret = 0;
+
+    /* Timed wait */
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    timespec_add_seconds(&ts, timeout_seconds);
+
+    while (mq->count == 0) {
+        int rc = pthread_cond_timedwait(&mq->not_empty, &mq->mutex, &ts);
+        if (rc == ETIMEDOUT) {
+            ret = -1;
+            pthread_mutex_unlock(&mq->mutex);
+            return ret;
+        }
+        if (rc != 0 && rc != EINTR) {
+            ret = -1;
+            pthread_mutex_unlock(&mq->mutex);
+            return ret;
+        }
+        /* if EINTR, loop and re-check time/condition */
     }
+
+    *out_msg = mq->buf[mq->head];
+    mq->buf[mq->head] = NULL;
+    mq->head = (mq->head + 1) % mq->capacity;
+    mq->count--;
+    pthread_cond_signal(&mq->not_full);
+    ret = 0;
 
     pthread_mutex_unlock(&mq->mutex);
     return ret;
@@ -231,6 +351,88 @@ static inline int c_mq_get_await(MessageQueue* mq, MessagePayload** out_msg) {
 
     pthread_mutex_unlock(&mq->mutex);
     return 0;
+}
+
+/* Busy-looping put (spin until space). */
+static inline int c_mq_put_busy(MessageQueue* mq, MessagePayload* msg) {
+    if (!mq || !msg) return -1;
+    for (;;) {
+        pthread_mutex_lock(&mq->mutex);
+        if (mq->count < mq->capacity) {
+            mq->buf[mq->tail] = msg;
+            mq->tail = (mq->tail + 1) % mq->capacity;
+            mq->count++;
+            pthread_cond_signal(&mq->not_empty);
+            pthread_mutex_unlock(&mq->mutex);
+            return 0;
+        }
+        pthread_mutex_unlock(&mq->mutex);
+        sched_yield();
+    }
+    /* unreachable */
+    return -1;
+}
+
+/* Busy-looping get (spin until item). */
+static inline int c_mq_get_busy(MessageQueue* mq, MessagePayload** out_msg) {
+    if (!mq || !out_msg) return -1;
+    for (;;) {
+        pthread_mutex_lock(&mq->mutex);
+        if (mq->count > 0) {
+            *out_msg = mq->buf[mq->head];
+            mq->buf[mq->head] = NULL;
+            mq->head = (mq->head + 1) % mq->capacity;
+            mq->count--;
+            pthread_cond_signal(&mq->not_full);
+            pthread_mutex_unlock(&mq->mutex);
+            return 0;
+        }
+        pthread_mutex_unlock(&mq->mutex);
+        sched_yield();
+    }
+    /* unreachable */
+    return -1;
+}
+
+/* Hybrid put: busy-spin for HYBRID_SPIN_LIMIT iterations then block */
+static inline int c_mq_put_hybrid(MessageQueue* mq, MessagePayload* msg) {
+    if (!mq || !msg) return -1;
+    for (int i = 0; i < HYBRID_SPIN_LIMIT; ++i) {
+        pthread_mutex_lock(&mq->mutex);
+        if (mq->count < mq->capacity) {
+            mq->buf[mq->tail] = msg;
+            mq->tail = (mq->tail + 1) % mq->capacity;
+            mq->count++;
+            pthread_cond_signal(&mq->not_empty);
+            pthread_mutex_unlock(&mq->mutex);
+            return 0;
+        }
+        pthread_mutex_unlock(&mq->mutex);
+        sched_yield();
+    }
+    /* fallback to blocking wait */
+    return c_mq_put_await(mq, msg);
+}
+
+/* Hybrid get: busy-spin for HYBRID_SPIN_LIMIT iterations then block */
+static inline int c_mq_get_hybrid(MessageQueue* mq, MessagePayload** out_msg) {
+    if (!mq || !out_msg) return -1;
+    for (int i = 0; i < HYBRID_SPIN_LIMIT; ++i) {
+        pthread_mutex_lock(&mq->mutex);
+        if (mq->count > 0) {
+            *out_msg = mq->buf[mq->head];
+            mq->buf[mq->head] = NULL;
+            mq->head = (mq->head + 1) % mq->capacity;
+            mq->count--;
+            pthread_cond_signal(&mq->not_full);
+            pthread_mutex_unlock(&mq->mutex);
+            return 0;
+        }
+        pthread_mutex_unlock(&mq->mutex);
+        sched_yield();
+    }
+    /* fallback to blocking wait */
+    return c_mq_get_await(mq, out_msg);
 }
 
 #endif /* C_EVENT_H */

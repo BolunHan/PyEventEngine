@@ -595,7 +595,6 @@ cdef class PyTopic:
 
     cpdef PyTopicMatchResult match(self, PyTopic other):
         cdef TopicPartMatchResult* match_res = c_topic_match(self.header, other.header, NULL)
-        print('matched')
         return PyTopicMatchResult.c_from_header(match_res, True)
 
     property value:

@@ -573,15 +573,16 @@ static inline int c_topic_parse(Topic* topic, const char* key, size_t key_len) {
     size_t i = 0;
     while (i < key_len) {
         /* Check for pattern: "./" */
-        if (i + 1 < key_len && key[i] == DEFAULT_TOPIC_SEP && key[i + 1] == DEFAULT_PATTERN_DELIM) {
+        if ((i == 0 && key[0] == DEFAULT_PATTERN_DELIM) ||
+            (i + 1 < key_len && key[i] == DEFAULT_TOPIC_SEP && key[i + 1] == DEFAULT_PATTERN_DELIM)) {
 
-            size_t content_start = i + 2;
+            size_t content_start = key[i] == DEFAULT_TOPIC_SEP ? i + 2 : 1;
             size_t j = content_start;
             uint8_t found_close = 0;
 
-            while (j + 1 < key_len) {
-                if (key[j] == DEFAULT_PATTERN_DELIM &&
-                    key[j + 1] == DEFAULT_TOPIC_SEP) {
+            while (j < key_len) {
+                if ((j == key_len - 1 && key[j] == DEFAULT_PATTERN_DELIM) ||
+                    (j + 1 < key_len && key[j] == DEFAULT_PATTERN_DELIM && key[j + 1] == DEFAULT_TOPIC_SEP)) {
                     /* Found closing "/." */
                     size_t content_len = j - content_start;
                     if (c_topic_append(topic, key + content_start, content_len, TOPIC_PART_PATTERN) != 0) {

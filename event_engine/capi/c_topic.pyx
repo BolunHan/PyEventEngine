@@ -192,7 +192,7 @@ cdef class PyTopicPartRange(PyTopicPart):
 
         for option in options:
             option_ptr = PyUnicode_AsUTF8AndSize(option, &option_length)
-            memcpy(<void*> internal + start, <void*> option_ptr, option_length)
+            memcpy(<char*> internal + start, <void*> option_ptr, option_length)
             option_array[i] = <char*> internal + start
             if not option_array[i]:
                 free(internal)
@@ -312,7 +312,6 @@ cpdef Allocator init_allocator(size_t init_capacity=DEFAULT_ALLOC_PAGE, bint wit
 
 
 cdef class PyTopicMatchResult:
-
     def __cinit__(self, size_t n_parts=0, bint alloc=False, Allocator allocator=None, **kwargs):
         if not alloc:
             if n_parts:

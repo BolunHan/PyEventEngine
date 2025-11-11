@@ -1,0 +1,34 @@
+[build-system]
+requires = ["cython"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PyEventEngine"
+dynamic = ["version"]
+description = "Python Basic EventEngine"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Han Bolun", email = "Bolun.Han@outlook.com" }]
+#license = { text = "PROPRIETARY" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: OS Independent",
+]
+
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/BolunHan/PyEventEngine"
+Repository = "https://github.com/BolunHan/PyEventEngine"
+Issues = "https://github.com/BolunHan/PyEventEngine/issues"
+
+[tool.setuptools.packages.find]
+
+[tool.setuptools.package-data]
+"event_engine.capi" = ["*.pxd", "*.h"]
+
+[tool.setuptools.dynamic]
+version = { attr = "event_engine.__version__" }

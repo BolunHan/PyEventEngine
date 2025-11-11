@@ -1,7 +1,10 @@
 import codecs
 import os
 
-import setuptools.extension
+import setuptools
+from Cython.Build import cythonize
+from setuptools.command.build_ext import build_ext
+from setuptools.extension import Extension
 
 
 def read(rel_path):
@@ -21,46 +24,62 @@ def get_version(rel_path):
     raise RuntimeError("Unable to find version string.")
 
 
-long_description = read("README.md")
+cython_extension = []
+ext_modules = []
+opt_flags = []
+with_annotation = False
+
+match os.environ.get("PYEE_OPT", "").lower():
+    case "debug":
+        with_annotation = True
+        opt_flags = ["-g", "-O0"]
+    case "size":
+        opt_flags = ["-Os"]
+    case "fast":
+        opt_flags = ["-O3", "-ffast-math"]
+    case "none":
+        opt_flags = []
+    case _:  # default to -O3
+        opt_flags = ["-O3"]
+
+cython_extension.extend(
+    [
+        Extension(
+            name="event_engine.capi.c_allocator",
+            sources=["event_engine/capi/c_allocator.pyx"],
+            extra_compile_args=opt_flags,
+        ),
+        Extension(
+            name="event_engine.capi.c_bytemap",
+            sources=["event_engine/capi/c_bytemap.pyx"],
+            extra_compile_args=opt_flags,
+        ),
+        Extension(
+            name="event_engine.capi.c_topic",
+            sources=["event_engine/capi/c_topic.pyx"],
+            extra_compile_args=opt_flags,
+        ),
+    ]
+)
+
+
+class BuildExtWithConfig(build_ext):
+    def build_extensions(self):
+        macros = []
+        for macro in ["DEBUG"]:
+            val = os.environ.get(macro)
+            if val:
+                print(f'Compile-time variable {macro} overridden with value {val}')
+                macros.append((macro, val))
+        for ext in self.extensions:
+            ext.define_macros = macros
+        build_ext.build_extensions(self)
+
+
+ext_modules.extend(cythonize(cython_extension, annotate=with_annotation, compiler_directives={"language_level": "3"}))
 
 setuptools.setup(
     name="PyEventEngine",
-    version=get_version(os.path.join('event_engine', '__init__.py')),
-    author="Bolun.Han",
-    author_email="Bolun.Han@outlook.com",
-    description="Basic event engine",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/BolunHan/PyEventEngine.git",
-    packages=setuptools.find_packages(),
-    include_package_data=True,
-    package_data={
-    },
-    classifiers=[
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Operating System :: OS Independent",
-    ],
-    python_requires='>=3.12',
-    license='MIT',
-    install_requires=[],
-    # ext_modules=[
-    #     setuptools.extension.Extension(r'event_engine.topic_api', sources=[r'event_engine/cpp/topic_api.cpp'], include_dirs=[], language='c++', optional=True),
-    #     setuptools.extension.Extension(r'event_engine.event_api', sources=[r'event_engine/cpp/event_api.cpp'], include_dirs=[], language='c++', optional=True)
-    # ],
-    command_options={
-        'nuitka': {
-            # boolean option, e.g. if you cared for C compilation commands
-            '--show-scons': ("setup.py", True),
-            # options without value, e.g. enforce using Clang
-            '--clang': ("setup.py", None),
-            # options with single values, e.g. enable a plugin of Nuitka
-            # '--enable-plugin': ("setup.py", "pyside2"),
-            # options with several values, e.g. avoiding including modules
-            # '--nofollow-import-to': ("setup.py", ["*.tests", "*.distutils"]),
-        }
-    }
+    ext_modules=ext_modules,
+    cmdclass={"build_ext": BuildExtWithConfig},
 )

@@ -1,91 +1,78 @@
-from typing import Any, overload
-
-from .c_bytemap import ByteMap
-from .c_retick import OrderQueue, OrderMap, OrderBook, ReTick
+from typing import Any
 
 
 class Allocator:
-    """Manages a memory buffer and allocates space for objects within it.
+    """
+    Manage a raw memory buffer and allocate/recycle regions inside it.
 
-    Tracks allocated objects by their memory address.
-
-    The Allocator is designed to use a shared memory. So that ReTick module can easily be shared with processes.
+    This stub matches the public surface of the Cython implementation in
+    `c_allocator.pyx`. Only the runtime-visible methods/properties are declared.
 
     Attributes:
-        buffer: The buffer object assigned to this allocator.
-        addr: The address of the buffer assigned to this allocator.
-        overhead: The size of the memory overhead for each allocated object.
-        offset_map: All the instances init from this allocator. The memory address offset (to the allocator buffer) as keys and python instance as values.
-        address_map: All the instances init from this allocator. The actual memory address as keys and python instance as values.
+        buffer: underlying Python buffer/shm object (if any).
+        addr: numeric address/id of the underlying allocator structure.
+        address_map: mapping from uintptr addresses to Python instances registered with the allocator.
     """
+
     buffer: object
     addr: int
-    overhead: int
     address_map: dict[int, Any]
 
-    def __init__(self, buffer: Any, capacity: int = 0) -> None:
-        """Initialize the Allocator with a buffer and its capacity.
-
-        Note that the provided buffer will be zeroed on init. But only limited within the capacity if provided.
-        The allocator will only use the size of the buffer within the capacity too.
-        If a capacity is provided greater than the length of the buffer, it will be trimmed to prevent overflow.
+    def __init__(self, buffer: Any = None, capacity: int = 0) -> None:
+        """
+        Initialize Allocator.
 
         Args:
-            buffer: A Python object supporting the buffer protocol.
-            capacity: The max size of the buffer can be used, in bytes. If not provided, capacity will be inferred from buffer.
+            buffer: optional Python object supporting the buffer protocol (bytearray, RawArray, etc).
+                    If omitted the allocator will create an internal extendable allocator.
+            capacity: maximum usable bytes of the provided buffer (0 means use full buffer).
         """
 
     def __len__(self) -> int:
-        """Get the total capacity of the allocator's buffer.
-
-        Returns:
-            The size of the buffer in bytes.
-        """
+        """Return total capacity (in bytes) managed by this allocator."""
 
     @classmethod
     def get_buffer(cls, size: int) -> Allocator:
-        """Get the allocator backed by bytearray for the given size."""
-        ...
+        """Create an Allocator backed by a `bytearray` of `size` bytes."""
 
     @classmethod
     def get_shm(cls, size: int) -> Allocator:
-        """Get the allocator backed by SHM for the given size."""
-        ...
+        """Create an Allocator backed by a multiprocessing shared memory RawArray of `size` bytes."""
 
-    @overload
-    def init_from_buffer(self, constructor: type[ByteMap], price: float, init_capacity: int = ...) -> ByteMap: ...
-
-    @overload
-    def init_from_buffer(self, constructor: type[OrderQueue], price: float, init_capacity: int = ...) -> OrderQueue: ...
-
-    @overload
-    def init_from_buffer(self, constructor: type[OrderMap], init_capacity: int = ...) -> OrderMap: ...
-
-    @overload
-    def init_from_buffer(self, constructor: type[OrderBook], side: int, price: float, tick_size: float = ..., n_alloc_slots: int = ..., init_orderbook_capacity: int = ..., init_orderqueue_capacity: int = ..., init_ordermap_capacity: int = ...) -> OrderBook: ...
-
-    @overload
-    def init_from_buffer(self, constructor: type[ReTick], base_price: float, tick_size: float = ..., n_alloc_slots: int = ..., init_orderbook_capacity: int = ..., init_orderqueue_capacity: int = ..., init_ordermap_capacity: int = ...) -> ReTick: ...
-
-    def init_from_buffer(self, constructor: Any, *args: Any, **kwargs: Any) -> Any: ...
-
-    def available_bytes(self) -> int:
-        """Get the number of bytes currently available in the buffer.
+    def request(self, size: int) -> memoryview:
+        """
+        Request a contiguous block of memory of `size` bytes from the allocator.
 
         Returns:
-            The number of free bytes.
+            A memoryview of length `size` pointing at the allocated memory.
+        Raises:
+            MemoryError if allocation fails.
         """
+
+    def recycle(self, buffer: memoryview) -> None:
+        """
+        Return previously allocated memory (provided as a memoryview) back to the allocator.
+        """
+
+    def clear(self) -> None:
+        """Clear internal state (registered address map)."""
 
     @property
     def capacity(self) -> int:
-        """int: The total capacity of the allocator's buffer."""
+        """Total capacity (bytes) of the allocator."""
+
+    @property
+    def available_bytes(self) -> int:
+        """Number of free bytes currently available for allocation."""
 
     @property
     def occupied(self) -> int:
-        """int: The number of bytes currently occupied in the buffer."""
+        """Number of bytes currently occupied (capacity - available_bytes)."""
 
     @property
-    def occupied_ratio(self) -> float: ...
+    def occupied_ratio(self) -> float:
+        """Fraction (0.0..1.0) of capacity that is occupied."""
 
     @property
-    def free_ratio(self) -> float: ...
+    def free_ratio(self) -> float:
+        """Fraction (0.0..1.0) of capacity that is free."""

@@ -426,6 +426,7 @@ static inline int c_bytemap_pop(ByteMapHeader* map, const char* key, size_t key_
         idx = (idx + 1) % map->capacity;
         if (idx == start) break;
     }
+    if (out) *out = (void*) C_BYTEMAP_NOT_FOUND;
     return -1;
 }
 

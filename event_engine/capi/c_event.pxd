@@ -1,3 +1,4 @@
+from cpython.datetime cimport datetime
 from cpython.object cimport PyObject
 from libc.stdint cimport uint64_t
 
@@ -84,7 +85,7 @@ cdef class EventHook:
 
     cdef inline void c_trigger_with_topic(self, MessagePayload* msg)
 
-    cdef EventHandler* c_add_handler(self, object py_callable, bint with_topic, bint deduplicate=*)
+    cdef EventHandler* c_add_handler(self, object py_callable, bint with_topic, bint deduplicate)
 
     cdef EventHandler* c_remove_handler(self, object py_callable)
 
@@ -96,3 +97,33 @@ cdef struct HandlerStats:
 
 cdef class EventHookEx(EventHook):
     cdef ByteMapHeader* stats_mapping
+
+
+cdef class EventEngine:
+    cdef MessageQueue* mq
+    cdef ByteMapHeader* exact_topic_hooks
+    cdef ByteMapHeader* generic_topic_hooks
+    cdef MemoryAllocator* payload_allocator
+
+    cdef readonly bint active
+    cdef readonly object engine
+    cdef readonly dict timer
+    cdef readonly uint64_t seq_id
+
+    cdef inline void c_loop(self)
+
+    cdef inline void c_timer(self, double interval, PyTopic topic, datetime activate_time)
+
+    cdef inline void c_publish(self, PyTopic topic, tuple args, dict kwargs, bint block, double timeout)
+
+    cdef inline void c_trigger(self, MessagePayload* msg)
+
+    cdef inline void c_register_hook(self, EventHook hook)
+
+    cdef inline EventHook c_unregister_hook(self, PyTopic topic)
+
+    cdef inline void c_register_handler(self, PyTopic topic, object py_callable, bint deduplicate)
+
+    cdef inline void c_unregister_handler(self, PyTopic topic, object py_callable)
+
+    cdef inline void c_clear(self)

@@ -109,6 +109,8 @@ class TestTopicParsing(unittest.TestCase):
         self.assertEqual(len(parts), 2)
         self._assert_part_pattern(parts[0], 'pat')
         self._assert_part_exact(parts[1], '+')
+        self._assert_part_pattern(PyTopic(r'/^[0-9]{6}\.(SZ|SH)$/.abc.(user|guest|admin)')[0], "^[0-9]{6}\.(SZ|SH)$")
+        self._assert_part_pattern(PyTopic(r'abc.(user|guest|admin)./^[0-9]{6}\.(SZ|SH)$/')[-1], "^[0-9]{6}\.(SZ|SH)$")
 
         # Case 5: + in middle with name
         t = PyTopic(r'a.+b.c')
@@ -201,7 +203,7 @@ class TestTopicMatching(unittest.TestCase):
 
     def test_pattern_match(self):
         t1 = PyTopic(r'log./[0-9]{6}/.+suffix')
-        t2 = PyTopic('log.123456.extra.suffix')
+        t2 = PyTopic.join(['log', '123456', 'extra.suffix'])
         self.assertTrue(t1.match(t2))
 
         t2 = PyTopic('log.123.extra.suffix')  # too short

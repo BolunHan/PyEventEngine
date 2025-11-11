@@ -6,9 +6,11 @@ from cpython.exc cimport PyErr_Clear, PyErr_Fetch, PyErr_ExceptionMatches
 from cpython.object cimport PyCallable_Check
 from cpython.ref cimport Py_INCREF, Py_XDECREF
 from libc.stdlib cimport calloc, free
+from numba.core.types import PyObject
 
+from .c_allocator cimport MemoryAllocator
 from .c_bytemap cimport MapEntry, c_bytemap_new, c_bytemap_free, c_bytemap_set, c_bytemap_get, c_bytemap_pop, DEFAULT_BYTEMAP_CAPACITY, C_BYTEMAP_NOT_FOUND
-from .c_topic cimport PyTopic
+from .c_topic cimport PyTopic, C_ALLOCATOR
 from ..native import LOGGER
 
 LOGGER = LOGGER.getChild('Event')
@@ -537,3 +539,194 @@ cdef class EventHookEx(EventHook):
                     handler_stats = <HandlerStats*> stats
                     yield <object> node.handler, {'calls': handler_stats.calls, 'total_time': handler_stats.total_time}
             node = node.next
+
+
+cdef class EventEngine:
+    cdef MessageQueue* mq
+    cdef ByteMapHeader* exact_topic_hooks_mapping
+    cdef ByteMapHeader* pattern_topic_hooks_mapping
+    cdef readonly bint active
+
+    def __cinit__(self, size_t capacity=DEFAULT_MQ_CAPACITY, object logger=None):
+        self.logger = LOGGER.getChild(f'EventEngine') if logger is None else logger
+        cdef MemoryAllocator* allocator = NULL if C_ALLOCATOR is None else C_ALLOCATOR.allocator
+
+        self.mq = c_mq_new(capacity, NULL, allocator)
+        if not self.mq:
+            raise MemoryError(f'Failed to allocate MessageQueue for {self.__class__.__name__}.')
+
+        self.exact_topic_hooks_mapping = c_bytemap_new(DEFAULT_BYTEMAP_CAPACITY, NULL)
+        if not self.exact_topic_hooks_mapping:
+            c_mq_free(self.mq, 1)
+            self.mq = NULL
+            raise MemoryError(f'Failed to allocate MessageQueue for {self.__class__.__name__}.')
+
+        self.pattern_topic_hooks_mapping = c_bytemap_new(DEFAULT_BYTEMAP_CAPACITY, NULL)
+        if not self.pattern_topic_hooks_mapping:
+            c_mq_free(self.mq, 1)
+            c_bytemap_free(self.exact_topic_hooks_mapping, 1)
+            self.mq = NULL
+            raise MemoryError(f'Failed to allocate MessageQueue for {self.__class__.__name__}.')
+
+    def __dealloc__(self):
+        if self.mq:
+            c_mq_free(self.mq, 1)
+            self.mq = NULL
+
+        if self.exact_topic_hooks_mapping:
+            c_bytemap_free(self.exact_topic_hooks_mapping, 1)
+            self.exact_topic_hooks_mapping = NULL
+
+        if self.pattern_topic_hooks_mapping:
+            c_bytemap_free(self.pattern_topic_hooks_mapping, 1)
+            self.pattern_topic_hooks_mapping = NULL
+
+    cdef void c_loop(self):
+        if not self.mq:
+            raise RuntimeError('Not initialized!')
+
+        cdef MessagePayload* msg = NULL
+        cdef MessageQueue* mq = self.mq
+        cdef int ret_code
+
+        while self.active:
+            ret_code = c_mq_get_hybrid(mq, &msg, DEFAULT_MQ_SPIN_LIMIT, DEFAULT_MQ_TIMEOUT_SECONDS)
+            if ret_code != 0:
+                continue
+            self.c_trigger(msg)
+
+    cdef void c_trigger(self, MessagePayload* msg):
+        cdef MapEntry* entry
+        for entry in self.exact_topic_hooks_mapping:
+            cdef EventHook event_hook = <EventHook> <PyObject*> entry.value
+            if not event_hook:
+                continue
+            if event_topic.match(topic=msg.topic):
+                event_hook.c_trigger_no_topic(msg)
+                event_hook.c_trigger_with_topic(msg)
+        for event_topic, event_hook in self._event_hooks.items():
+            if matched_topic := event_topic.match(topic=topic):
+                event_hook.trigger(topic=matched_topic, args=args, kwargs=kwargs)
+
+    def start(self) -> None:
+        """
+        Start event engine to process events and generate timer events.
+        """
+        if self._active:
+            self.logger.warning(f'{self} already started!')
+            return
+
+        self._active = True
+        self._engine = Thread(target=self._run, name='EventEngine')
+        self._engine.start()
+
+    def stop(self) -> None:
+        """
+        Stop event engine.
+        """
+        if not self._active:
+            self.logger.warning('EventEngine already stopped!')
+            return
+
+        self._active = False
+        self._get_lock.release()
+        self._engine.join()
+
+    def clear(self) -> None:
+        if self._active:
+            self.logger.error('EventEngine must be stopped before cleared!')
+            return
+
+        self._event_hooks.clear()
+        self._deque.clear()
+
+        if self._buffer_size:
+            self._put_lock._value = self._buffer_size
+            self._get_lock._value = 0
+
+    def put(self, topic: str | Topic, block: bool = True, timeout: float = None, *args, **kwargs):
+        """
+        fast way to put an event, kwargs MUST NOT contain "topic", "block" and "timeout" keywords
+        :param topic: the topic to put into engine
+        :param block: block if necessary until a free slot is available
+        :param timeout: If 'timeout' is a non-negative number, it blocks at most 'timeout' seconds and raises the Full exception
+        :param args: args for handlers
+        :param kwargs: kwargs for handlers
+        :return: nothing
+        """
+        self.publish(topic=topic, block=block, timeout=timeout, args=args, kwargs=kwargs)
+
+    def publish(self, topic: str | Topic, block: bool = True, timeout: float = None, args=None, kwargs=None):
+        """
+        safe way to publish an event
+        :param topic: the topic to put into engine
+        :param block: block if necessary until a free slot is available
+        :param timeout: If 'timeout' is a non-negative number, it blocks at most 'timeout' seconds and raises the Full exception
+        :param args: a list / tuple, args for handlers
+        :param kwargs: a dict, kwargs for handlers
+        :return: nothing
+        """
+        if isinstance(topic, Topic):
+            topic = topic.value
+        elif not isinstance(topic, str):
+            raise ValueError(f'Invalid topic {topic}')
+
+        if self._buffer_size:
+            self._put_lock.acquire()
+
+        event_dict = {'topic': topic}
+
+        if args is not None:
+            event_dict['args'] = args
+
+        if kwargs is not None:
+            event_dict['kwargs'] = kwargs
+
+        self._deque.append(event_dict)
+
+        self._get_lock.release()
+
+    def register_hook(self, hook: EventHook) -> None:
+        """
+        register a hook event
+        """
+        if hook.topic in self._event_hooks:
+            for handler in hook.handlers:
+                self._event_hooks[hook.topic].add_handler(handler)
+        else:
+            self._event_hooks[hook.topic] = hook
+
+    def unregister_hook(self, topic: Topic) -> None:
+        """
+        Unregister an existing hook
+        """
+        if topic in self._event_hooks:
+            self._event_hooks.pop(topic)
+
+    def register_handler(self, topic: Topic, handler: Iterable[Callable] | Callable) -> None:
+        """
+        Register one or more handler for a specific topic
+        """
+
+        if not isinstance(topic, Topic):
+            raise TypeError(f'Invalid topic {topic}')
+
+        if topic not in self._event_hooks:
+            self._event_hooks[topic] = self.EventHook(topic=topic, handler=handler, logger=self.logger.getChild(topic.value))
+        else:
+            self._event_hooks[topic].add_handler(handler)
+
+    def unregister_handler(self, topic: Topic, handler: Callable) -> None:
+        """
+        Unregister an existing handler function.
+        """
+        if topic in self._event_hooks:
+            self._event_hooks[topic].remove_handler(handler=handler)
+
+    @property
+    def buffer_size(self):
+        return self._buffer_size
+
+    @property
+    def active(self) -> bool:
+        return self._active

@@ -18,6 +18,10 @@ cdef extern from "<pthread.h>":
 
 
 cdef extern from "c_event.h":
+    const size_t DEFAULT_MQ_CAPACITY
+    const size_t DEFAULT_MQ_SPIN_LIMIT
+    const double DEFAULT_MQ_TIMEOUT_SECONDS
+
     ctypedef struct MessagePayload:
         Topic* topic
         void* args
@@ -40,8 +44,12 @@ cdef extern from "c_event.h":
     int c_mq_free(MessageQueue* mq, int free_self) except -1
     int c_mq_put(MessageQueue* mq, MessagePayload* msg) noexcept
     int c_mq_get(MessageQueue* mq, MessagePayload** out_msg) noexcept
-    int c_mq_put_await(MessageQueue* mq, MessagePayload* msg) noexcept
-    int c_mq_get_await(MessageQueue* mq, MessagePayload** out_msg) noexcept
+    int c_mq_put_await(MessageQueue* mq, MessagePayload* msg, double timeout_seconds) noexcept
+    int c_mq_get_await(MessageQueue* mq, MessagePayload** out_msg, double timeout_seconds) noexcept
+    int c_mq_put_busy(MessageQueue* mq, MessagePayload* msg, size_t max_spin) noexcept
+    int c_mq_get_busy(MessageQueue* mq, MessagePayload** out_msg, size_t max_spin) noexcept
+    int c_mq_put_hybrid(MessageQueue* mq, MessagePayload* msg, size_t max_spin, double timeout_seconds) noexcept
+    int c_mq_get_hybrid(MessageQueue* mq, MessagePayload** out_msg, size_t max_spin, double timeout_seconds) noexcept
 
 
 cdef class PyMessagePayload:

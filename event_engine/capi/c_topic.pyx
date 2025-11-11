@@ -7,12 +7,8 @@ from libc.stdint cimport uint8_t, uintptr_t
 from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy, strlen
 
-from .c_bytemap cimport c_bytemap_new, c_bytemap_free, DEFAULT_BYTEMAP_CAPACITY
-from .c_allocator cimport DEFAULT_ALLOC_PAGE, c_heap_request
-
-GLOBAL_INTERNAL_MAP = NULL
-C_INTERNAL_MAP = None
-C_ALLOCATOR = None
+from .c_bytemap cimport MapEntry, c_bytemap_new, c_bytemap_free, c_bytemap_get, c_bytemap_set, DEFAULT_BYTEMAP_CAPACITY
+from .c_allocator cimport DEFAULT_ALLOC_PAGE
 
 
 class PyTopicType(enum.IntEnum):
@@ -285,19 +281,65 @@ cdef class PyTopicPartPattern(PyTopicPart):
 
 
 cpdef ByteMap init_internal_map(size_t default_capacity=DEFAULT_BYTEMAP_CAPACITY):
-    global C_INTERNAL_MAP, GLOBAL_INTERNAL_MAP
+    global GLOBAL_INTERNAL_MAP, C_ALLOCATOR
+    cdef ByteMapHeader* new_map = c_bytemap_new(default_capacity, C_ALLOCATOR.allocator)
+
     if not GLOBAL_INTERNAL_MAP:
-        GLOBAL_INTERNAL_MAP = c_bytemap_new(default_capacity, C_ALLOCATOR.allocator)
-    C_INTERNAL_MAP = ByteMap.c_from_header(GLOBAL_INTERNAL_MAP, 0)
-    return C_INTERNAL_MAP
+        GLOBAL_INTERNAL_MAP = new_map
+        return ByteMap.c_from_header(GLOBAL_INTERNAL_MAP, 0)
+
+    cdef MapEntry* entry = GLOBAL_INTERNAL_MAP.first
+    cdef MapEntry* new_entry
+    cdef str literal
+    cdef Topic* topic
+
+    while entry:
+        new_entry = c_bytemap_set(new_map, entry.key, entry.key_length, entry.value)
+        topic = <Topic*> entry.value
+        topic.key = new_entry.key
+        topic.key_len = new_entry.key_length
+        entry = entry.next
+
+    c_bytemap_free(GLOBAL_INTERNAL_MAP, 1)
+    GLOBAL_INTERNAL_MAP = new_map
+    return ByteMap.c_from_header(GLOBAL_INTERNAL_MAP, 0)
 
 
 cpdef void clear_internal_map():
-    global C_INTERNAL_MAP, GLOBAL_INTERNAL_MAP
-    C_INTERNAL_MAP = None
+    global GLOBAL_INTERNAL_MAP
     if GLOBAL_INTERNAL_MAP:
         c_bytemap_free(GLOBAL_INTERNAL_MAP, 1)
         GLOBAL_INTERNAL_MAP = NULL
+
+
+cpdef PyTopic get_internal_topic(str key, bint owner=False):
+    global GLOBAL_INTERNAL_MAP
+    if not GLOBAL_INTERNAL_MAP:
+        raise RuntimeError('Internal map not initialized!')
+
+    cdef Py_ssize_t key_length
+    cdef const char* key_ptr = PyUnicode_AsUTF8AndSize(key, &key_length)
+    cdef Topic* topic = <Topic*> c_bytemap_get(GLOBAL_INTERNAL_MAP, key_ptr, key_length)
+    if topic is NULL:
+        return None
+    return PyTopic.c_from_header(topic, owner)
+
+
+cpdef dict get_internal_map():
+    global GLOBAL_INTERNAL_MAP
+    if not GLOBAL_INTERNAL_MAP:
+        raise RuntimeError('Internal map not initialized!')
+
+    cdef str key
+    cdef Topic* topic
+    cdef MapEntry* entry = GLOBAL_INTERNAL_MAP.first
+    cdef dict out = {}
+    while entry:
+        key = PyUnicode_FromStringAndSize(entry.key, entry.key_length)
+        topic = <Topic*> entry.value
+        out[key] = PyTopic.c_from_header(topic, False)
+        entry = entry.next
+    return out
 
 
 cpdef Allocator init_allocator(size_t init_capacity=DEFAULT_ALLOC_PAGE, bint with_shm=False):

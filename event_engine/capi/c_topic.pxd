@@ -10,7 +10,7 @@ cdef extern from "c_topic.h":
     const char* DEFAULT_RANGE_BRACKETS
     const char DEFAULT_WILDCARD_MARKER
     const char DEFAULT_PATTERN_DELIM
-    const ByteMapHeader* GLOBAL_INTERNAL_MAP
+    ByteMapHeader* GLOBAL_INTERNAL_MAP
 
     ctypedef enum TopicType:
         TOPIC_PART_EXACT = 0
@@ -104,13 +104,15 @@ cdef class PyTopicPartPattern(PyTopicPart):
     pass
 
 
-cdef ByteMap C_INTERNAL_MAP
-
 cdef Allocator C_ALLOCATOR
 
 cpdef ByteMap init_internal_map(size_t default_capacity=*)
 
 cpdef void clear_internal_map()
+
+cpdef PyTopic get_internal_topic(str key, bint owner=*)
+
+cpdef dict get_internal_map()
 
 cpdef Allocator init_allocator(size_t init_capacity=*, bint with_shm=*)
 

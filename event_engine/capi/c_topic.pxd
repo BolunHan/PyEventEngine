@@ -81,6 +81,7 @@ cdef extern from "c_topic.h":
     TopicPartMatchResult* c_topic_match(Topic* topic_a, Topic* topic_b, TopicPartMatchResult* out) except NULL
     TopicPartMatchResult* c_topic_match_new(TopicPartMatchResult* prev, MemoryAllocator* allocator) except NULL
     void c_topic_match_free(TopicPartMatchResult* res) noexcept
+    int c_topic_match_bool(Topic* topic_a, Topic* topic_b)
 
 
 cdef class PyTopicPart:

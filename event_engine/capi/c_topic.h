@@ -217,6 +217,16 @@ static inline TopicPartMatchResult* c_topic_match_new(TopicPartMatchResult* prev
 */
 static inline void c_topic_match_free(TopicPartMatchResult* res);
 
+/*
+* @brief Efficiently match two Topics and return 1 if they match, 0 otherwise.
+* This function does not allocate or fill match result structures.
+*
+* @param topic_a The first Topic to match.
+* @param topic_b The second Topic to match.
+* @return 1 if matched, 0 otherwise.
+*/
+static inline int c_topic_match_bool(Topic* topic_a, Topic* topic_b);
+
 // --- Implementations ---
 
 static inline ByteMapHeader* c_get_global_internal_map(MemoryAllocator* allocator) {
@@ -995,6 +1005,87 @@ static inline void c_topic_match_free(TopicPartMatchResult* res) {
 
         curr = next;
     }
+}
+
+static inline int c_topic_match_bool(Topic* topic_a, Topic* topic_b) {
+    if (!topic_a || !topic_b) {
+        return 0;
+    }
+    // Short-circuit: Same topic address or same topic literal
+    if (topic_a == topic_b || (topic_a->key && topic_b->key && topic_a->key_len && topic_a->key_len == topic_b->key_len && !strcmp(topic_a->key, topic_b->key))) {
+        return 1;
+    }
+    TopicPart* part_a = topic_a->parts;
+    TopicPart* part_b = topic_b->parts;
+    TopicPart* part_exact;
+    TopicPart* part_other;
+    while (part_a && part_b) {
+        // Determine which part is exact
+        if (part_a->header.ttype == TOPIC_PART_EXACT) {
+            part_exact = part_a;
+            part_other = part_b;
+        }
+        else if (part_b->header.ttype == TOPIC_PART_EXACT) {
+            part_exact = part_b;
+            part_other = part_a;
+        }
+        else {
+            // If neither is exact, match fails
+            return 0;
+        }
+        // Match exact part against other part
+        switch (part_other->header.ttype) {
+            case TOPIC_PART_EXACT:
+                if (part_exact->exact.part_len == part_other->exact.part_len &&
+                    memcmp(part_exact->exact.part, part_other->exact.part, part_exact->exact.part_len) == 0) {
+                    // matched
+                }
+                else {
+                    return 0;
+                }
+                break;
+            case TOPIC_PART_ANY:
+                // always matches
+                break;
+            case TOPIC_PART_RANGE:
+            {
+                int found = 0;
+                for (size_t i = 0; i < part_other->range.num_options; i++) {
+                    if (part_other->range.option_length[i] == part_exact->exact.part_len && memcmp(part_other->range.options[i], part_exact->exact.part, part_exact->exact.part_len) == 0) {
+                        found = 1;
+                        break;
+                    }
+                }
+                if (!found) {
+                    return 0;
+                }
+                break;
+            }
+            case TOPIC_PART_PATTERN:
+            {
+                regex_t regex;
+                int compile_ret = regcomp(&regex, part_other->pattern.pattern, REG_EXTENDED);
+                if (compile_ret) {
+                    return 0;
+                }
+                int regex_ret = regexec(&regex, part_exact->exact.part, 0, NULL, 0);
+                regfree(&regex);
+                if (regex_ret) {
+                    return 0;
+                }
+                break;
+            }
+            default:
+                return 0;
+        }
+        part_a = part_a->header.next;
+        part_b = part_b->header.next;
+    }
+    // Any residual part is a mismatch
+    if (part_a || part_b) {
+        return 0;
+    }
+    return 1;
 }
 
 #endif // C_TOPIC_H

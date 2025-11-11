@@ -280,7 +280,7 @@ cdef class EventHook:
         node = <EventHandler*> calloc(1, sizeof(EventHandler))
         if not node:
             raise MemoryError('Failed to allocate EventHandler')
-        Py_INCREF(<object> handler)           # hold a reference from the list
+        Py_INCREF(<object> handler)  # hold a reference from the list
         node.handler = handler
         node.next = NULL
 
@@ -307,7 +307,7 @@ cdef class EventHook:
                     self.handlers_no_topic = node.next
 
                 if node.handler:
-                    Py_XDECREF(node.handler) # drop the list's reference
+                    Py_XDECREF(node.handler)  # drop the list's reference
                     node.handler = NULL
                 # free(node)
                 return node
@@ -492,7 +492,7 @@ cdef class EventHookEx(EventHook):
         cdef HandlerStats* handler_stats
         while node:
             if node.handler == <PyObject*> py_callable:
-                stats = c_bytemap_get(self.stats_mapping, <char*>node, sizeof(EventHandler))
+                stats = c_bytemap_get(self.stats_mapping, <char*> node, sizeof(EventHandler))
                 if stats == C_BYTEMAP_NOT_FOUND or not stats:
                     return None
                 handler_stats = <HandlerStats*> stats
@@ -522,9 +522,9 @@ cdef class EventHookEx(EventHook):
         node = self.handlers_no_topic
         while node:
             if node.handler:
-                stats = c_bytemap_get(self.stats_mapping, <char*>node, sizeof(EventHandler))
+                stats = c_bytemap_get(self.stats_mapping, <char*> node, sizeof(EventHandler))
                 if stats != C_BYTEMAP_NOT_FOUND and stats:
-                    handler_stats = <HandlerStats*>stats
+                    handler_stats = <HandlerStats*> stats
                     yield <object> node.handler, {'calls': handler_stats.calls, 'total_time': handler_stats.total_time}
             node = node.next
 
@@ -532,8 +532,8 @@ cdef class EventHookEx(EventHook):
         node = self.handlers_with_topic
         while node:
             if node.handler:
-                stats = c_bytemap_get(self.stats_mapping, <char*>node, sizeof(EventHandler))
+                stats = c_bytemap_get(self.stats_mapping, <char*> node, sizeof(EventHandler))
                 if stats != C_BYTEMAP_NOT_FOUND and stats:
-                    handler_stats = <HandlerStats*>stats
+                    handler_stats = <HandlerStats*> stats
                     yield <object> node.handler, {'calls': handler_stats.calls, 'total_time': handler_stats.total_time}
             node = node.next

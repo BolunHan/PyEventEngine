@@ -2,7 +2,7 @@ import inspect
 import traceback
 
 from cpython.datetime cimport datetime, timedelta
-from cpython.exc cimport PyErr_Clear, PyErr_Fetch, PyErr_ExceptionMatches
+from cpython.exc cimport PyErr_Clear, PyErr_Fetch, PyErr_ExceptionMatches, PyErr_GivenExceptionMatches
 from cpython.object cimport PyCallable_Check
 from cpython.ref cimport Py_INCREF, Py_XDECREF
 from cpython.time cimport perf_counter
@@ -47,8 +47,12 @@ cdef class PyMessagePayload:
             self.header.kwargs = NULL
             Py_XDECREF(kwargs)
 
+        cdef MemoryAllocator* allocator = self.allocator
         if self.owner and self.header:
-            free(self.header)
+            if allocator and allocator.active:
+                c_heap_recycle(allocator, self.header)
+            else:
+                free(self.header)
             self.header = NULL
 
     def __repr__(self):
@@ -131,9 +135,10 @@ cdef str TOPIC_UNEXPECTED_ERROR = f"an unexpected keyword argument '{TOPIC_FIELD
 
 
 cdef class EventHook:
-    def __cinit__(self, PyTopic topic, object logger=None):
+    def __cinit__(self, PyTopic topic, object logger=None, bint retry_on_unexpected_topic=False):
         self.topic = topic
         self.logger = LOGGER.getChild(f'EventHook.{topic}') if logger is None else logger
+        self.retry_on_unexpected_topic = retry_on_unexpected_topic
         self.handlers_no_topic = NULL
         self.handlers_with_topic = NULL
 
@@ -190,10 +195,14 @@ cdef class EventHook:
         cdef object formatted
 
         PyErr_Fetch(&etype, &evalue, &etrace)
-        if (PyErr_ExceptionMatches(TypeError)
-                and isinstance(<object> evalue, str)
-                and (<str> evalue).endswith(TOPIC_UNEXPECTED_ERROR)
+        formatted = traceback.format_exception(<object> etype, (<object> evalue) if evalue else None, (<object> etrace) if etrace else None)
+        if (self.retry_on_unexpected_topic
+                and evalue is not NULL
+                and PyErr_GivenExceptionMatches(<object> evalue, TypeError)
+                and str(<object> evalue).endswith(TOPIC_UNEXPECTED_ERROR)
                 and kwargs and TOPIC_FIELD_NAME in kwargs):
+            LOGGER.warning("".join(formatted))
+            LOGGER.warning(f'Retrying without {TOPIC_FIELD_NAME} kwargs...')
             # Retry without the topic kwarg
             Py_XDECREF(etype)
             Py_XDECREF(evalue)
@@ -203,7 +212,6 @@ cdef class EventHook:
             EventHook.c_safe_call_no_topic(self, handler, args, kwargs)
             return
 
-        formatted = traceback.format_exception(<object> etype, (<object> evalue) if evalue else None, (<object> etrace) if etrace else None)
         self.logger.error("".join(formatted))
         Py_XDECREF(etype)
         Py_XDECREF(evalue)
@@ -432,7 +440,7 @@ cdef class EventHook:
 
 
 cdef class EventHookEx(EventHook):
-    def __cinit__(self, PyTopic topic, object logger=None):
+    def __cinit__(self, PyTopic topic, object logger=None, bint retry_on_unexpected_topic=False):
         self.stats_mapping = c_bytemap_new(DEFAULT_BYTEMAP_CAPACITY, NULL)
         if not self.stats_mapping:
             raise MemoryError(f'Failed to allocate ByteMap for {self.__class__.__name__} stats mapping.')
@@ -541,6 +549,14 @@ cdef class EventHookEx(EventHook):
             node = node.next
 
 
+class Full(Exception):
+    pass
+
+
+class Empty(Exception):
+    pass
+
+
 cdef class EventEngine:
     def __cinit__(self, size_t capacity=DEFAULT_MQ_CAPACITY, object logger=None):
         self.logger = LOGGER.getChild(f'EventEngine') if logger is None else logger
@@ -574,7 +590,6 @@ cdef class EventEngine:
             raise MemoryError(f'Failed to allocate MemoryAllocator for {self.__class__.__name__}.')
 
         self.seq_id = 0
-        self.timer = {}
 
     def __dealloc__(self):
         if self.mq:
@@ -608,29 +623,22 @@ cdef class EventEngine:
             self.c_trigger(msg)
             c_heap_recycle(self.payload_allocator, <void*> msg)
 
-    cdef inline void c_timer(self, double interval, PyTopic topic, datetime activate_time):
-        from time import sleep
-        cdef datetime scheduled_time
-
-        if activate_time is None:
-            scheduled_time = datetime.now()
+    cdef inline MessagePayload* c_get(self, bint block, size_t max_spin, double timeout):
+        cdef MessagePayload* msg = NULL
+        cdef int ret_code
+        if block:
+            ret_code = c_mq_get_hybrid(self.mq, &msg, max_spin, timeout)
         else:
-            scheduled_time = activate_time
+            ret_code = c_mq_get(self.mq, &msg)
 
-        cdef dict kwargs = {'interval': interval, 'trigger_time': scheduled_time}
+        if ret_code != 0:
+            return NULL
+        return msg
 
-        while self.active:
-            sleep_time = (scheduled_time - datetime.now()).total_seconds()
+    cdef inline int c_publish(self, PyTopic topic, tuple args, dict kwargs, bint block, size_t max_spin, double timeout):
+        if not topic.header.is_exact:
+            raise ValueError('Topic must be all of exact parts')
 
-            if sleep_time > 0:
-                sleep(sleep_time)
-            self.c_publish(topic, C_INTERNAL_EMPTY_ARGS, kwargs, True, 0.0)
-
-            while scheduled_time < datetime.now():
-                scheduled_time += timedelta(seconds=interval)
-            kwargs['trigger_time'] = scheduled_time
-
-    cdef inline void c_publish(self, PyTopic topic, tuple args, dict kwargs, bint block, double timeout):
         # Step 0: Request payload buffer
         cdef MessagePayload* payload = <MessagePayload*> c_heap_request(self.payload_allocator, sizeof(MessagePayload))
 
@@ -641,15 +649,18 @@ cdef class EventEngine:
         payload.seq_id = self.seq_id
 
         # Step 2: Send the payload
+        cdef int ret_code
         if block:
-            c_mq_put_hybrid(self.mq, payload, DEFAULT_MQ_SPIN_LIMIT, timeout)
+            ret_code = c_mq_put_hybrid(self.mq, payload, max_spin, timeout)
         else:
-            c_mq_put(self.mq, payload)
+            ret_code = c_mq_put(self.mq, payload)
 
         # Step 3: Update reference count
-        self.seq_id += 1
-        Py_INCREF(args)
-        Py_INCREF(kwargs)
+        if not ret_code:
+            self.seq_id += 1
+            Py_INCREF(args)
+            Py_INCREF(kwargs)
+        return ret_code
 
     cdef inline void c_trigger(self, MessagePayload* msg):
         cdef Topic* msg_topic = msg.topic
@@ -787,39 +798,25 @@ cdef class EventEngine:
 
     # --- Python Interfaces---
 
+    def __len__(self):
+        count = 0
+        entry = self.exact_topic_hooks.first
+        while entry:
+            if entry.value:
+                count += 1
+            entry = entry.next
+        entry = self.generic_topic_hooks.first
+        while entry:
+            if entry.value:
+                count += 1
+            entry = entry.next
+        return count
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__} {"active" if self.active else "idle"}>(capacity={self.capacity})'
+
     def run(self):
         self.c_loop()
-
-    def run_timer(self, double interval, PyTopic topic, datetime activate_time=None):
-        self.c_timer(interval, topic, activate_time)
-
-    def minute_timer(self, PyTopic topic):
-        from time import time, sleep
-        cdef double t, scheduled_time, next_time, sleep_time
-        cdef dict kwargs = {'interval': 60}
-
-        while self.active:
-            t = time()
-            scheduled_time = t // 60 * 60
-            next_time = scheduled_time + 60
-            sleep_time = next_time - t
-            sleep(sleep_time)
-            kwargs['timestamp'] = scheduled_time
-            self.c_publish(topic, C_INTERNAL_EMPTY_ARGS, kwargs, True, 0.0)
-
-    def second_timer(self, PyTopic topic):
-        from time import time, sleep
-        cdef double t, scheduled_time, next_time, sleep_time
-        cdef dict kwargs = {'interval': 60}
-
-        while self.active:
-            t = time()
-            scheduled_time = t // 1
-            next_time = scheduled_time + 1
-            sleep_time = next_time - t
-            sleep(sleep_time)
-            kwargs['timestamp'] = scheduled_time
-            self.c_publish(topic, C_INTERNAL_EMPTY_ARGS, kwargs, True, 0.0)
 
     def start(self):
         from threading import Thread
@@ -831,6 +828,162 @@ cdef class EventEngine:
         self.active = True
         self.engine = Thread(target=self.run, name='EventEngine')
         self.engine.start()
+
+    def stop(self) -> None:
+        if not self.active:
+            self.logger.warning('EventEngine already stopped!')
+            return
+
+        self.active = False
+        self.engine.join()
+
+    def clear(self) -> None:
+        if self.active:
+            self.logger.error('EventEngine must be stopped before cleared!')
+            return
+
+        self.c_clear()
+
+    def get(self, bint block=True, size_t max_spin=DEFAULT_MQ_SPIN_LIMIT, double timeout=0.0) -> PyMessagePayload:
+        cdef MessagePayload* msg = self.c_get(block, max_spin, timeout)
+        if not msg:
+            raise Empty()
+        cdef PyMessagePayload payload = PyMessagePayload.c_from_header(msg, owner=True, args_owner=True, kwargs_owner=True)
+        payload.allocator = self.payload_allocator
+        return payload
+
+    def put(self, PyTopic topic, *args, bint block=True, size_t max_spin=DEFAULT_MQ_SPIN_LIMIT, double timeout=0.0, **kwargs):
+        cdef int ret_code = self.publish(topic, args, kwargs, block, max_spin, timeout)
+        if ret_code:
+            raise Full()
+
+    def publish(self, PyTopic topic, tuple args, dict kwargs, bint block=True, size_t max_spin=DEFAULT_MQ_SPIN_LIMIT, double timeout=0.0):
+        cdef int ret_code = self.c_publish(topic, args, kwargs, block, max_spin, timeout)
+        if ret_code:
+            raise Full()
+
+    def register_hook(self, EventHook hook):
+        self.c_register_hook(hook)
+
+    def unregister_hook(self, PyTopic topic) -> EventHook:
+        return self.c_unregister_hook(topic)
+
+    def register_handler(self, PyTopic topic, object py_callable, bint deduplicate=False):
+        self.c_register_handler(topic, py_callable, deduplicate)
+
+    def unregister_handler(self, PyTopic topic, object py_callable):
+        self.c_unregister_handler(topic, py_callable)
+
+    def event_hooks(self):
+        entry = self.exact_topic_hooks.first
+        while entry:
+            if entry.value:
+                yield <EventHook> <PyObject*> entry.value
+            entry = entry.next
+        entry = self.generic_topic_hooks.first
+        while entry:
+            if entry.value:
+                yield <EventHook> <PyObject*> entry.value
+            entry = entry.next
+
+    def topics(self):
+        entry = self.exact_topic_hooks.first
+        while entry:
+            if entry.value:
+                yield (<EventHook> <PyObject*> entry.value).topic
+            entry = entry.next
+        entry = self.generic_topic_hooks.first
+        while entry:
+            if entry.value:
+                yield (<EventHook> <PyObject*> entry.value).topic
+            entry = entry.next
+
+    def items(self):
+        entry = self.exact_topic_hooks.first
+        while entry:
+            if entry.value:
+                hook = <EventHook> <PyObject*> entry.value
+                yield (hook.topic, hook)
+            entry = entry.next
+        entry = self.generic_topic_hooks.first
+        while entry:
+            if entry.value:
+                hook = <EventHook> <PyObject*> entry.value
+                yield (hook.topic, hook)
+            entry = entry.next
+
+    property capacity:
+        def __get__(self):
+            return self.mq.capacity
+
+
+cdef class EventEngineEx(EventEngine):
+    def __cinit__(self, size_t capacity=DEFAULT_MQ_CAPACITY, object logger=None):
+        self.timer = {}
+
+    cdef inline void c_timer_loop(self, double interval, PyTopic topic, datetime activate_time):
+        from time import sleep
+        cdef datetime scheduled_time
+
+        if activate_time is None:
+            scheduled_time = datetime.now()
+        else:
+            scheduled_time = activate_time
+
+        cdef dict kwargs = {'interval': interval, 'trigger_time': scheduled_time}
+
+        while self.active:
+            sleep_time = (scheduled_time - datetime.now()).total_seconds()
+
+            if sleep_time > 0:
+                sleep(sleep_time)
+            self.c_publish(topic, C_INTERNAL_EMPTY_ARGS, kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
+
+            while scheduled_time < datetime.now():
+                scheduled_time += timedelta(seconds=interval)
+            kwargs['trigger_time'] = scheduled_time
+
+    cdef inline void c_minute_timer_loop(self, PyTopic topic):
+        from time import time, sleep
+        cdef double t, scheduled_time, next_time, sleep_time
+        cdef dict kwargs = {'interval': 60}
+
+        while self.active:
+            t = time()
+            scheduled_time = t // 60 * 60
+            next_time = scheduled_time + 60
+            sleep_time = next_time - t
+            sleep(sleep_time)
+            kwargs['timestamp'] = scheduled_time
+            self.c_publish(topic, C_INTERNAL_EMPTY_ARGS, kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
+
+    cdef inline void c_second_timer_loop(self, PyTopic topic):
+        from time import time, sleep
+        cdef double t, scheduled_time, next_time, sleep_time
+        cdef dict kwargs = {'interval': 60}
+
+        while self.active:
+            t = time()
+            scheduled_time = t // 1
+            next_time = scheduled_time + 1
+            sleep_time = next_time - t
+            sleep(sleep_time)
+            kwargs['timestamp'] = scheduled_time
+            self.c_publish(topic, C_INTERNAL_EMPTY_ARGS, kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
+
+    # --- Python Interfaces ---
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__} {"active" if self.active else "idle"}>(capacity={self.capacity}, timers={list(self.timer.keys())})'
+
+    def run_timer(self, double interval, PyTopic topic, datetime activate_time=None):
+        self.c_timer_loop(interval, topic, activate_time)
+
+    def minute_timer(self, PyTopic topic):
+        self.c_minute_timer_loop(topic)
+
+    def second_timer(self, PyTopic topic):
+        self.c_second_timer_loop(topic)
 
     def get_timer(self, double interval, datetime activate_time=None) -> PyTopic:
         from threading import Thread
@@ -855,45 +1008,14 @@ cdef class EventEngine:
         return topic
 
     def stop(self) -> None:
-        if not self.active:
-            self.logger.warning('EventEngine already stopped!')
-            return
-
-        self.active = False
-        self.engine.join()
+        super().stop()
 
         for timer in self.timer.values():
             timer.join()
 
     def clear(self) -> None:
-        if self.active:
-            self.logger.error('EventEngine must be stopped before cleared!')
-            return
-
-        self.c_clear()
+        super().clear()
 
         for t in self.timer.values():
             t.join(timeout=0)
         self.timer.clear()
-
-    def put(self, PyTopic topic, *args, bint block=True, double timeout=0.0, **kwargs):
-        self.publish(topic, args, kwargs, block, timeout)
-
-    def publish(self, PyTopic topic, tuple args, dict kwargs, bint block=True, double timeout=0.0):
-        self.c_publish(topic, args, kwargs, block, timeout)
-
-    def register_hook(self, EventHook hook):
-        self.c_register_hook(hook)
-
-    def unregister_hook(self, PyTopic topic) -> EventHook:
-        return self.c_unregister_hook(topic)
-
-    def register_handler(self, PyTopic topic, object py_callable, bint deduplicate=False):
-        self.c_register_handler(topic, py_callable, deduplicate)
-
-    def unregister_handler(self, PyTopic topic, object py_callable):
-        self.c_unregister_handler(topic, py_callable)
-
-    property capacity:
-        def __get__(self):
-            return self.mq.capacity

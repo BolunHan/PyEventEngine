@@ -55,6 +55,8 @@ cdef extern from "c_event.h":
 
 cdef class PyMessagePayload:
     cdef MessagePayload* header
+    cdef MemoryAllocator* allocator
+
     cdef readonly bint owner
     cdef readonly bint args_owner
     cdef readonly bint kwargs_owner
@@ -71,6 +73,7 @@ cdef struct EventHandler:
 cdef class EventHook:
     cdef readonly PyTopic topic
     cdef readonly object logger
+    cdef public bint retry_on_unexpected_topic
     cdef EventHandler* handlers_no_topic
     cdef EventHandler* handlers_with_topic
 
@@ -107,14 +110,13 @@ cdef class EventEngine:
 
     cdef readonly bint active
     cdef readonly object engine
-    cdef readonly dict timer
     cdef readonly uint64_t seq_id
 
     cdef inline void c_loop(self)
 
-    cdef inline void c_timer(self, double interval, PyTopic topic, datetime activate_time)
+    cdef inline MessagePayload* c_get(self, bint block, size_t max_spin, double timeout)
 
-    cdef inline void c_publish(self, PyTopic topic, tuple args, dict kwargs, bint block, double timeout)
+    cdef inline int c_publish(self, PyTopic topic, tuple args, dict kwargs, bint block, size_t max_spin, double timeout)
 
     cdef inline void c_trigger(self, MessagePayload* msg)
 
@@ -127,3 +129,13 @@ cdef class EventEngine:
     cdef inline void c_unregister_handler(self, PyTopic topic, object py_callable)
 
     cdef inline void c_clear(self)
+
+
+cdef class EventEngineEx(EventEngine):
+    cdef readonly dict timer
+
+    cdef inline void c_timer_loop(self, double interval, PyTopic topic, datetime activate_time)
+
+    cdef inline void c_minute_timer_loop(self, PyTopic topic)
+
+    cdef inline void c_second_timer_loop(self, PyTopic topic)

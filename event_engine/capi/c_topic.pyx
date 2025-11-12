@@ -516,15 +516,33 @@ cdef class PyTopic:
     # --- Python Interface ---
 
     def __len__(self):
+        if not self.header:
+            raise RuntimeError('Not initialized!')
         return self.header.n
 
+    def __bool__(self):
+        if not self.header:
+            return False
+        return self.header.n > 0
+
+    def __hash__(self):
+        if not self.header:
+            raise RuntimeError('Not initialized!')
+        return self.header.hash
+
     def __iter__(self):
+        if not self.header:
+            raise RuntimeError('Not initialized!')
+
         cdef TopicPart* part = self.header.parts
         while part:
             yield PyTopicPart.c_from_header(part, False).c_cast()
             part = part.header.next
 
     def __getitem__(self, ssize_t idx):
+        if not self.header:
+            raise RuntimeError('Not initialized!')
+
         cdef ssize_t n_parts = self.header.n
         if idx < -n_parts:
             raise IndexError(f'Index {idx} out of range!')
@@ -544,6 +562,9 @@ cdef class PyTopic:
         raise IndexError('i')
 
     def __add__(self, object topic):
+        if not self.header:
+            raise RuntimeError('Not initialized!')
+
         cdef PyTopic aggregated = PyTopic.__new__(PyTopic)
         cdef TopicPart* other_part
         cdef TopicPart* tpart = self.header.parts
@@ -568,6 +589,9 @@ cdef class PyTopic:
         return aggregated
 
     def __iadd__(self, object topic):
+        if not self.header:
+            raise RuntimeError('Not initialized!')
+
         cdef TopicPart* other_part
         cdef size_t i, n
         if isinstance(object, PyTopic):
@@ -609,6 +633,7 @@ cdef class PyTopic:
     cpdef PyTopic append(self, PyTopicPart topic_part):
         if not self.header or not topic_part.header:
             raise RuntimeError('Not initialized!')
+
         cdef TopicPart* part = topic_part.header
         cdef Topic* topic = self.header
         cdef TopicPart* curr = topic.parts
@@ -637,15 +662,24 @@ cdef class PyTopic:
         return self
 
     cpdef PyTopicMatchResult match(self, PyTopic other):
+        if not self.header:
+            raise RuntimeError('Not initialized!')
+
         cdef TopicPartMatchResult* match_res = c_topic_match(self.header, other.header, NULL)
         return PyTopicMatchResult.c_from_header(match_res, True)
 
     property value:
         def __get__(self):
+            if not self.header:
+                raise RuntimeError('Not initialized!')
+
             cdef str literal = PyUnicode_FromStringAndSize(self.header.key, self.header.key_len)
             return literal
 
         def __set__(self, str value):
+            if not self.header:
+                raise RuntimeError('Not initialized!')
+
             cdef Py_ssize_t topic_length
             cdef const char* topic_ptr = PyUnicode_AsUTF8AndSize(value, &topic_length)
             cdef int assign_ret = c_topic_assign(self.header, topic_ptr, topic_length)
@@ -654,4 +688,6 @@ cdef class PyTopic:
 
     property is_exact:
         def __get__(self) -> bint:
+            if not self.header:
+                raise RuntimeError('Not initialized!')
             return self.header.is_exact

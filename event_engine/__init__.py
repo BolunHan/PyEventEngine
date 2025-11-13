@@ -12,6 +12,7 @@ else:
 @functools.cache
 def get_include():
     import os
+    from .base import LOGGER
 
     res_dir = os.path.dirname(__file__)
     LOGGER.info(f'Building with <PyEventEngine> version: "{__version__}", resource directory: "{res_dir}".')

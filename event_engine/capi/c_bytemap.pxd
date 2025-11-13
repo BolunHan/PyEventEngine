@@ -40,7 +40,8 @@ cdef extern from "c_bytemap.h":
     int c_bytemap_contains(ByteMapHeader* map, const char* key, size_t key_len) noexcept nogil
     int c_bytemap_rehash(ByteMapHeader* map, size_t new_capacity) except -1
     MapEntry* c_bytemap_set(ByteMapHeader* map, const char* key, size_t key_len, void* value) except NULL
-    int c_bytemap_pop(ByteMapHeader* map, const char* key, size_t key_len, void** out) except -1
+    int c_bytemap_pop(ByteMapHeader* map, const char* key, size_t key_len, void** out)
+    void* c_bytemap_notfound() noexcept nogil
 
 
 cdef object C_BYTEMAP_NO_DEFAULT

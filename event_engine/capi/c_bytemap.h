@@ -430,4 +430,8 @@ static inline int c_bytemap_pop(ByteMapHeader* map, const char* key, size_t key_
     return -1;
 }
 
+static inline void* c_bytemap_notfound() {
+    return (void*) C_BYTEMAP_NOT_FOUND;
+}
+
 #endif // C_BYTEMAP_H

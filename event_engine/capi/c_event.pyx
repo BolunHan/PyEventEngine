@@ -9,7 +9,7 @@ from libc.stdlib cimport calloc, free
 
 from .c_allocator cimport c_heap_recycle
 from .c_bytemap cimport MapEntry, c_bytemap_new, c_bytemap_free, c_bytemap_set, c_bytemap_get, c_bytemap_pop, DEFAULT_BYTEMAP_CAPACITY, C_BYTEMAP_NOT_FOUND
-from ..native import LOGGER
+from ..base import LOGGER
 
 LOGGER = LOGGER.getChild('Event')
 

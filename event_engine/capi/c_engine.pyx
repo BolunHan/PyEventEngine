@@ -9,7 +9,7 @@ from .c_allocator cimport c_heap_new, c_heap_free, c_heap_request, c_heap_recycl
 from .c_bytemap cimport MapEntry, ByteMap, c_bytemap_new, c_bytemap_free, c_bytemap_set, c_bytemap_get, c_bytemap_pop, c_bytemap_clear, DEFAULT_BYTEMAP_CAPACITY, C_BYTEMAP_NOT_FOUND
 from .c_event cimport PyMessagePayload, C_INTERNAL_EMPTY_ARGS
 from .c_topic cimport c_topic_match_bool, C_ALLOCATOR
-from ..native import LOGGER
+from ..base import LOGGER
 
 LOGGER = LOGGER.getChild('Event')
 

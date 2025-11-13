@@ -434,6 +434,7 @@ cdef class PyTopicMatchResult:
         while node:
             literal = PyUnicode_FromStringAndSize(node.literal, node.literal_len)
             out[literal] = PyTopicPart.c_from_header(node.part_b, False).c_cast()
+            node = node.next
         return out
 
     property length:

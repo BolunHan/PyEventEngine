@@ -199,23 +199,23 @@ class EventEngine:
             KeyError: If no hook is registered for the given topic.
         """
 
-    def register_handler(self, topic: PyTopic, py_callable: Callable[..., Any], deduplicate: bool = False) -> None:
+    def register_handler(self, topic: PyTopic, handler: Callable[..., Any], deduplicate: bool = False) -> None:
         """
         Register a Python callable as a handler for a topic.
 
         Args:
             topic: The topic to register the handler for (can be exact or generic).
-            py_callable: The callable to register.
+            handler: The callable to register.
             deduplicate: If ``True``, skip registration if the handler is already present in the target ``EventHook``.
         """
 
-    def unregister_handler(self, topic: PyTopic, py_callable: Callable[..., Any]) -> None:
+    def unregister_handler(self, topic: PyTopic, handler: Callable[..., Any]) -> None:
         """
         Unregister a handler for a topic.
 
         Args:
             topic: The topic (exact or generic) to unregister the handler from.
-            py_callable: The callable to remove.
+            handler: The callable to remove.
 
         Raises:
             KeyError: If no ``EventHook`` is registered for the given topic.

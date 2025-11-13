@@ -53,7 +53,7 @@ cdef class EventEngine:
 
     cdef readonly bint active
     cdef readonly object engine
-    cdef readonly object logger
+    cdef public object logger
     cdef readonly uint64_t seq_id
 
     cdef inline void c_loop(self)

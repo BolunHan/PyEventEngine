@@ -353,11 +353,11 @@ cdef class EventEngine:
     def unregister_hook(self, PyTopic topic) -> EventHook:
         return self.c_unregister_hook(topic)
 
-    def register_handler(self, PyTopic topic, object py_callable, bint deduplicate=False):
-        self.c_register_handler(topic, py_callable, deduplicate)
+    def register_handler(self, PyTopic topic, object handler, bint deduplicate=False):
+        self.c_register_handler(topic, handler, deduplicate)
 
-    def unregister_handler(self, PyTopic topic, object py_callable):
-        self.c_unregister_handler(topic, py_callable)
+    def unregister_handler(self, PyTopic topic, object handler):
+        self.c_unregister_handler(topic, handler)
 
     def event_hooks(self):
         entry = self.exact_topic_hooks.first

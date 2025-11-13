@@ -4,8 +4,8 @@ import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 
-from event_engine.capi.c_event import PyMessagePayload, EventHook, EventHookEx
-from event_engine.capi.c_topic import PyTopic
+from event_engine.capi import PyMessagePayload, EventHook, EventHookEx
+from event_engine.capi import PyTopic
 
 
 class OutputCapture:

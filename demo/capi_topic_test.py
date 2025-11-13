@@ -1,5 +1,5 @@
 import unittest
-from event_engine.capi.c_topic import (
+from event_engine.capi import (
     PyTopicPartExact,
     PyTopicPartAny,
     PyTopicPartRange,

@@ -11,10 +11,10 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from event_engine.capi.c_event import (
+from event_engine.capi import (
     PyMessagePayload, EventHook, EventEngine, EventEngineEx, Full, Empty
 )
-from event_engine.capi.c_topic import PyTopic
+from event_engine.capi import PyTopic
 
 
 class OutputCapture:
@@ -510,6 +510,7 @@ class TestEventEngineEx(unittest.TestCase):
 
     def test_stop_waits_for_timer_threads(self):
         engine = EventEngineEx(capacity=10)
+        engine.start()
         timer_topic = engine.get_timer(interval=0.1)
 
         def timer_handler(**kw):
@@ -517,7 +518,6 @@ class TestEventEngineEx(unittest.TestCase):
 
         engine.register_handler(timer_topic, timer_handler)
 
-        engine.start()
         time.sleep(0.2)
 
         # Stop should wait for timer threads to finish
@@ -526,6 +526,8 @@ class TestEventEngineEx(unittest.TestCase):
 
     def test_clear_stops_timers(self):
         engine = EventEngineEx(capacity=10)
+        engine.start()
+
         timer_topic = engine.get_timer(interval=0.1)
 
         def timer_handler(**kw):
@@ -533,7 +535,6 @@ class TestEventEngineEx(unittest.TestCase):
 
         engine.register_handler(timer_topic, timer_handler)
 
-        engine.start()
         time.sleep(0.2)
         engine.stop()
 

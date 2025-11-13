@@ -130,16 +130,23 @@ cdef class EventEngine:
 
         # Step 2: Send the payload
         cdef int ret_code
-        if block:
-            ret_code = c_mq_put_hybrid(self.mq, payload, max_spin, timeout)
-        else:
-            ret_code = c_mq_put(self.mq, payload)
+        with nogil:
+            if block:
+                ret_code = c_mq_put_hybrid(self.mq, payload, max_spin, timeout)
+            else:
+                ret_code = c_mq_put(self.mq, payload)
 
         # Step 3: Update reference count
         if not ret_code:
             self.seq_id += 1
             Py_INCREF(args)
             Py_INCREF(kwargs)
+        else:
+            # Clean up the message payload
+            if payload.allocator and payload.allocator.active:
+                c_heap_recycle(payload.allocator, <void*> payload)
+            else:
+                free(payload)
         return ret_code
 
     cdef inline void c_trigger(self, MessagePayload* msg):

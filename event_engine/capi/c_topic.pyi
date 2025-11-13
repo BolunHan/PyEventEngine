@@ -326,6 +326,12 @@ class PyTopic:
         <TopicPartPattern>(regex="^[0-9]{6}\.(SZ|SH)$")
         <TopicPartAny>(name="suffix")
 
+        >>> t = PyTopic('Realtime.TickData.{ticker}')
+        ... for tp in t:
+        ...     print(tp)
+        <TopicPartExact>(topic="Realtime")
+        <TopicPartExact>(topic="TickData")
+        <TopicPartAny>(name="ticker")
         Malformed or ill-formatted literal strings may raise MemoryError during parsing.
 
     Owning a topic (lazy init)
@@ -459,6 +465,9 @@ class PyTopic:
             True if both topics have the same literal value.
         """
 
+    def __call__(self, **kwargs) -> PyTopic:
+        """ Alias of ``format`` method to format the topic by replacing named wildcards with provided values."""
+
     @classmethod
     def from_parts(cls, topic_parts: Iterable[PyTopicPart]) -> PyTopic:
         """Build a PyTopic from an iterable of PyTopicPart instances."""
@@ -495,6 +504,64 @@ class PyTopic:
 
         Returns:
             A PyTopicMatchResult describing per-part matches.
+        """
+
+    def update_literal(self) -> PyTopic:
+        """Update the internal literal buffer to reflect the current parts.
+
+        This is useful after in-place modifications of the subordinate TopicParts.
+        To avoid inconsistencies, call this method to regenerate the internal literal.
+
+        Notes:
+            For TopicPartRange, the reconstructed literal may not be the same as the original.
+            e.g.
+
+            >>> t = PyTopic(r'Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.+suffix')
+            ... print(t)
+            Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.+suffix
+            >>> t.update_literal()
+            <PyTopic Generic>(value="Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.{suffix}", n_parts=4)
+            >>> print(t)
+            Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.{suffix}
+
+            As show above, there are 2 ways to represent a range part: a ``+suffix`` or ``{suffix}``.
+            Recommend using the breakets format, so that the .format is done Intuitively.
+
+        Returns:
+            Self for chaining.
+
+        Raises:
+            RuntimeError: If the topic is uninitialized.
+        """
+
+    def format(self, **kwargs) -> PyTopic:
+        """Format the topic by replacing named wildcards with provided values.
+
+        Args:
+            **kwargs: Mapping from wildcard names to replacement strings.
+
+        Returns:
+            A new Exact PyTopic with wildcards replaced by the provided values.
+
+        Raises:
+            KeyError: If a required wildcard name is missing in kwargs.
+            ValueError: If having subordinate parts that are not exact or wildcards.
+        """
+
+    def format_map(self, mapping: dict[str, str], internalized: bool = True) -> PyTopic:
+        """Format the topic by replacing named wildcards with provided values from a mapping.
+
+        Args:
+            mapping: Dictionary mapping wildcard names to replacement strings.
+            internalized: If True, the returned topic is internalized into the global ByteMap and not owning its underlying buffer.
+                          If False, the returned topic owns its internal buffer.
+
+        Returns:
+            A new Exact PyTopic with wildcards replaced by the provided values.
+
+        Raises:
+            KeyError: If a required wildcard name is missing in mapping.
+            ValueError: If having subordinate parts that are not exact or wildcards.
         """
 
     @property

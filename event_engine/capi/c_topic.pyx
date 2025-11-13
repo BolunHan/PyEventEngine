@@ -622,6 +622,9 @@ cdef class PyTopic:
         self.c_update_literal()
         return self
 
+    def __call__(self, **kwargs):
+        return self.format_map(kwargs, internalized=True)
+
     @classmethod
     def from_parts(cls, topic_parts: Iterable[PyTopicPart]) -> PyTopic:
         cdef PyTopic aggregated = PyTopic.__new__(PyTopic)
@@ -682,6 +685,46 @@ cdef class PyTopic:
 
         cdef TopicPartMatchResult* match_res = c_topic_match(self.header, other.header, NULL)
         return PyTopicMatchResult.c_from_header(match_res, True)
+
+    def update_literal(self) -> PyTopic:
+        self.c_update_literal()
+        return self
+
+    cpdef PyTopic format_map(self, dict mapping, bint internalized=True):
+        cdef TopicPart* tpart = self.header.parts
+        cdef TopicType ttype
+        cdef Topic* formatted = c_topic_new(NULL, 0, self.header.allocator)
+        cdef str key
+        cdef const char* literal
+        cdef Py_ssize_t literal_len
+
+        while tpart:
+            ttype = tpart.header.ttype
+            # Case 1: For an exact part, simply append it.
+            if ttype == TopicType.TOPIC_PART_EXACT:
+                c_topic_append(formatted, tpart.exact.part, tpart.exact.part_len, ttype)
+            # Case 2: For a named any part, check from the mapping dict.
+            elif ttype == TopicType.TOPIC_PART_ANY:
+                key = PyUnicode_FromStringAndSize(tpart.any.name, tpart.any.name_len)
+                # Raise KeyError if not found.
+                if key not in mapping:
+                    c_topic_free(formatted, 1)
+                    raise KeyError(key)
+                # Append the mapped value as an exact part.
+                literal = PyUnicode_AsUTF8AndSize(mapping[key], &literal_len)
+                c_topic_append(formatted, literal, literal_len, TopicType.TOPIC_PART_EXACT)
+            else:
+                c_topic_free(formatted, 1)
+                raise ValueError(f'Not supported topic type {PyTopicType(ttype)}')
+            tpart = tpart.header.next
+
+        c_topic_update_literal(formatted)
+        # If internalized, the TopicPart will not own the literal buffers.
+        # Requested or not, in any way, the topic literal must be added to the internal map.
+        return PyTopic.c_from_header(formatted, not internalized)
+
+    def format(self, **kwargs) -> PyTopic:
+        return self.format_map(kwargs, internalized=True)
 
     property value:
         def __get__(self):

@@ -144,3 +144,5 @@ cdef class PyTopic:
     cpdef PyTopic append(self, PyTopicPart topic_part)
 
     cpdef PyTopicMatchResult match(self, PyTopic other)
+
+    cpdef PyTopic format_map(self, dict mapping, bint internalized=*)

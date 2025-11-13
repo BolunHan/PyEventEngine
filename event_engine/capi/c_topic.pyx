@@ -530,6 +530,21 @@ cdef class PyTopic:
             raise RuntimeError('Not initialized!')
         return self.header.hash
 
+    def __eq__(self, PyTopic other):
+        if not self.header or not other.header:
+            raise RuntimeError('Not initialized!')
+        return self.value == other.value
+
+    def __repr__(self):
+        if not self.header:
+            return f'<{self.__class__.__name__} uninitialized>'
+        return f'<{self.__class__.__name__} {"Exact" if self.header.is_exact else "Generic"}>(value="{self.value}", n_parts={self.header.n})'
+
+    def __str__(self):
+        if not self.header:
+            raise RuntimeError('Not initialized!')
+        return self.value
+
     def __iter__(self):
         if not self.header:
             raise RuntimeError('Not initialized!')
@@ -691,3 +706,9 @@ cdef class PyTopic:
             if not self.header:
                 raise RuntimeError('Not initialized!')
             return self.header.is_exact
+
+    property addr:
+        def __get__(self) -> uintptr_t:
+            if self.header:
+                return <uintptr_t> self.header
+            return 0

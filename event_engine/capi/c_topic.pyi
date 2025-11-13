@@ -449,6 +449,16 @@ class PyTopic:
             - This is equivalent to `self.append(...)` and returns `self`.
         """
 
+    def __eq__(self, other: PyTopic) -> bool:
+        """Check equality between this topic and another topic.
+
+        Args:
+            other: The other PyTopic to compare against.
+
+        Returns:
+            True if both topics have the same literal value.
+        """
+
     @classmethod
     def from_parts(cls, topic_parts: Iterable[PyTopicPart]) -> PyTopic:
         """Build a PyTopic from an iterable of PyTopicPart instances."""

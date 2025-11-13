@@ -3,6 +3,7 @@ from datetime import datetime
 from logging import Logger
 from typing import TypedDict, Any
 
+from .c_bytemap import ByteMap
 from .c_topic import PyTopic
 
 
@@ -38,7 +39,7 @@ class PyMessagePayload:
         """
 
     @property
-    def topic(self) -> object:
+    def topic(self) -> PyTopic:
         """
         The topic associated with this payload.
         """
@@ -330,6 +331,22 @@ class EventEngine:
         Return the total number of registered topics (both exact and generic).
         """
 
+    def activate(self):
+        """
+        Activate the event engine.
+
+        This method is called automatically when ``start`` is invoked.
+        It can also be called manually to prepare the engine for operation.
+        """
+
+    def deactivate(self) -> None:
+        """
+        Deactivate the event engine.
+
+        This method is called automatically when ``stop`` is invoked.
+        It can also be called manually to halt the engine's operation.
+        """
+
     def run(self) -> None:
         """
         Run the event loop in the current thread (blocking).
@@ -458,12 +475,6 @@ class EventEngine:
             - If the handler removal leaves the ``EventHook`` empty, the hook itself is automatically unregistered.
         """
 
-    @property
-    def capacity(self) -> int:
-        """
-        Capacity (maximum number of ``PyMessagePayload`` instances) of the internal message queue.
-        """
-
     def event_hooks(self) -> Iterator[EventHook]:
         """
         Iterate over all registered ``EventHook`` instances.
@@ -486,6 +497,30 @@ class EventEngine:
 
         Returns:
             An iterator of ``(PyTopic, EventHook)`` tuples.
+        """
+
+    @property
+    def capacity(self) -> int:
+        """
+        Capacity (maximum number of ``PyMessagePayload`` instances) of the internal message queue.
+        """
+
+    @property
+    def occupied(self) -> int:
+        """
+        Current number of pending messages in the internal queue.
+        """
+
+    @property
+    def exact_topic_hook_map(self) -> ByteMap:
+        """
+        ByteMap of exact topic to ``EventHook`` mappings.
+        """
+
+    @property
+    def generic_topic_hook_map(self) -> ByteMap:
+        """
+        ByteMap of generic topic to ``EventHook`` mappings.
         """
 
 
@@ -521,6 +556,9 @@ class EventEngineEx(EventEngine):
             interval: Publication interval in seconds.
             topic: The topic to publish timer events to.
             activate_time: Time at which the timer should start. If ``None``, starts immediately.
+
+        Raises:
+            RuntimeError: If engine is not activated.
         """
 
     def minute_timer(self, topic: PyTopic) -> None:
@@ -529,6 +567,9 @@ class EventEngineEx(EventEngine):
 
         Args:
             topic: The topic to publish timer events to.
+
+        Raises:
+            RuntimeError: If engine is not activated.
         """
 
     def second_timer(self, topic: PyTopic) -> None:
@@ -537,6 +578,9 @@ class EventEngineEx(EventEngine):
 
         Args:
             topic: The topic to publish timer events to.
+
+        Raises:
+            RuntimeError: If engine is not activated.
         """
 
     def get_timer(self, interval: float, activate_time: datetime | None = None) -> PyTopic:
@@ -544,6 +588,7 @@ class EventEngineEx(EventEngine):
         Start a background timer thread and return its associated topic.
 
         The engine automatically publishes a message to this topic at each interval.
+        Will not start multiple timers with the same interval.
 
         Args:
             interval: Timer interval in seconds.
@@ -551,6 +596,9 @@ class EventEngineEx(EventEngine):
 
         Returns:
             A unique ``PyTopic`` representing the timer stream.
+
+        Raises:
+            RuntimeError: If engine is not activated.
         """
 
     def stop(self) -> None:

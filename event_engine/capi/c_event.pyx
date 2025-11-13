@@ -1,19 +1,27 @@
 import inspect
+from threading import Thread
 import traceback
 
 from cpython.datetime cimport datetime, timedelta
-from cpython.exc cimport PyErr_Clear, PyErr_Fetch, PyErr_ExceptionMatches, PyErr_GivenExceptionMatches
+from cpython.exc cimport PyErr_Clear, PyErr_Fetch, PyErr_GivenExceptionMatches
 from cpython.object cimport PyCallable_Check
 from cpython.ref cimport Py_INCREF, Py_XDECREF
 from cpython.time cimport perf_counter
+from libc.stdio cimport fprintf, fflush, stderr
 from libc.stdlib cimport calloc, free
 
 from .c_allocator cimport c_heap_new, c_heap_free, c_heap_request, c_heap_recycle, DEFAULT_ALLOC_PAGE
-from .c_bytemap cimport MapEntry, c_bytemap_new, c_bytemap_free, c_bytemap_set, c_bytemap_get, c_bytemap_pop, c_bytemap_clear, DEFAULT_BYTEMAP_CAPACITY, C_BYTEMAP_NOT_FOUND
+from .c_bytemap cimport MapEntry, ByteMap, c_bytemap_new, c_bytemap_free, c_bytemap_set, c_bytemap_get, c_bytemap_pop, c_bytemap_clear, DEFAULT_BYTEMAP_CAPACITY, C_BYTEMAP_NOT_FOUND
 from .c_topic cimport c_topic_match_bool, C_ALLOCATOR
 from ..native import LOGGER
 
 LOGGER = LOGGER.getChild('Event')
+
+
+cdef inline void c_print_err(const char* msg) noexcept nogil:
+    if msg != NULL:
+        fprintf(stderr, "%s\n", msg)
+        fflush(stderr)
 
 
 cdef class PyMessagePayload:
@@ -28,6 +36,7 @@ cdef class PyMessagePayload:
         self.header.args = NULL
         self.header.kwargs = NULL
         self.header.seq_id = 0
+        self.header.allocator = NULL
 
         self.owner = True
         self.args_owner = False
@@ -47,7 +56,7 @@ cdef class PyMessagePayload:
             self.header.kwargs = NULL
             Py_XDECREF(kwargs)
 
-        cdef MemoryAllocator* allocator = self.allocator
+        cdef MemoryAllocator* allocator = self.header.allocator
         if self.owner and self.header:
             if allocator and allocator.active:
                 c_heap_recycle(allocator, self.header)
@@ -255,7 +264,7 @@ cdef class EventHook:
         if not kwargs_ptr:
             kwargs = {TOPIC_FIELD_NAME: PyTopic.c_from_header(topic, False)}
         else:
-            kwargs = <dict> kwargs_ptr
+            kwargs = (<dict> kwargs_ptr).copy()
             if TOPIC_FIELD_NAME not in kwargs:
                 kwargs[TOPIC_FIELD_NAME] = PyTopic.c_from_header(topic, False)
 
@@ -617,11 +626,25 @@ cdef class EventEngine:
         cdef int ret_code
 
         while self.active:
-            ret_code = c_mq_get_hybrid(mq, &msg, DEFAULT_MQ_SPIN_LIMIT, DEFAULT_MQ_TIMEOUT_SECONDS)
-            if ret_code != 0:
-                continue
+            # Step 1: Await message
+            with nogil:
+                ret_code = c_mq_get_hybrid(mq, &msg, DEFAULT_MQ_SPIN_LIMIT, DEFAULT_MQ_TIMEOUT_SECONDS)
+                # ret_code = c_mq_get_await(mq, &msg, DEFAULT_MQ_TIMEOUT_SECONDS)
+                if ret_code != 0:
+                    continue
+
+            # Trigger message callbacks
             self.c_trigger(msg)
-            c_heap_recycle(self.payload_allocator, <void*> msg)
+
+            # Clean up the message payload
+            if msg.args:
+                Py_XDECREF(<PyObject*> msg.args)
+            if msg.kwargs:
+                Py_XDECREF(<PyObject*> msg.kwargs)
+            if msg.allocator and msg.allocator.active:
+                c_heap_recycle(msg.allocator, <void*> msg)
+            else:
+                free(msg)
 
     cdef inline MessagePayload* c_get(self, bint block, size_t max_spin, double timeout):
         cdef MessagePayload* msg = NULL
@@ -647,6 +670,7 @@ cdef class EventEngine:
         payload.args = <PyObject*> args
         payload.kwargs = <PyObject*> kwargs
         payload.seq_id = self.seq_id
+        payload.allocator = self.payload_allocator
 
         # Step 2: Send the payload
         cdef int ret_code
@@ -688,14 +712,6 @@ cdef class EventEngine:
                 event_hook.c_trigger_with_topic(msg)
             entry = entry.next
 
-        # Step 3: Decrease ref counts of args and kwargs
-        if msg.args:
-            Py_XDECREF(<PyObject*> msg.args)
-            msg.args = NULL
-        if msg.kwargs:
-            Py_XDECREF(<PyObject*> msg.kwargs)
-            msg.kwargs = NULL
-
     cdef inline void c_register_hook(self, EventHook hook):
         cdef Topic* topic_ptr = hook.topic.header
         cdef void* existing_hook_ptr
@@ -721,8 +737,7 @@ cdef class EventEngine:
             hook_map = self.exact_topic_hooks
         else:
             hook_map = self.generic_topic_hooks
-
-        c_bytemap_pop(hook_map, <char*> topic_ptr.key, topic_ptr.key_len, &existing_hook_ptr)
+        cdef int ret_code = c_bytemap_pop(hook_map, <char*> topic_ptr.key, topic_ptr.key_len, &existing_hook_ptr)
         if existing_hook_ptr == C_BYTEMAP_NOT_FOUND:
             raise KeyError(f'No EventHook registered for {topic.value}')
         cdef EventHook hook = <EventHook> <PyObject*> existing_hook_ptr
@@ -815,19 +830,23 @@ cdef class EventEngine:
     def __repr__(self):
         return f'<{self.__class__.__name__} {"active" if self.active else "idle"}>(capacity={self.capacity})'
 
+    def activate(self):
+        self.active = True
+
+    def deactivate(self):
+        self.active = False
+
     def run(self):
         self.c_loop()
 
     def start(self):
-        from threading import Thread
-
         if self.active:
             self.logger.warning(f'{self} already started!')
             return
-
         self.active = True
         self.engine = Thread(target=self.run, name='EventEngine')
         self.engine.start()
+        self.logger.info(f'{self} started.')
 
     def stop(self) -> None:
         if not self.active:
@@ -849,11 +868,10 @@ cdef class EventEngine:
         if not msg:
             raise Empty()
         cdef PyMessagePayload payload = PyMessagePayload.c_from_header(msg, owner=True, args_owner=True, kwargs_owner=True)
-        payload.allocator = self.payload_allocator
         return payload
 
     def put(self, PyTopic topic, *args, bint block=True, size_t max_spin=DEFAULT_MQ_SPIN_LIMIT, double timeout=0.0, **kwargs):
-        cdef int ret_code = self.publish(topic, args, kwargs, block, max_spin, timeout)
+        cdef int ret_code = self.c_publish(topic, args, kwargs, block, max_spin, timeout)
         if ret_code:
             raise Full()
 
@@ -916,6 +934,18 @@ cdef class EventEngine:
         def __get__(self):
             return self.mq.capacity
 
+    property occupied:
+        def __get__(self):
+            return c_mq_occupied(self.mq)
+
+    property exact_topic_hook_map:
+        def __get__(self):
+            return ByteMap.c_from_header(self.exact_topic_hooks, 0)
+
+    property generic_topic_hook_map:
+        def __get__(self):
+            return ByteMap.c_from_header(self.generic_topic_hooks, 0)
+
 
 cdef class EventEngineEx(EventEngine):
     def __cinit__(self, size_t capacity=DEFAULT_MQ_CAPACITY, object logger=None):
@@ -977,16 +1007,23 @@ cdef class EventEngineEx(EventEngine):
         return f'<{self.__class__.__name__} {"active" if self.active else "idle"}>(capacity={self.capacity}, timers={list(self.timer.keys())})'
 
     def run_timer(self, double interval, PyTopic topic, datetime activate_time=None):
+        if not self.active:
+            raise RuntimeError('EventEngine must be started before getting timer!')
         self.c_timer_loop(interval, topic, activate_time)
 
     def minute_timer(self, PyTopic topic):
+        if not self.active:
+            raise RuntimeError('EventEngine must be started before getting timer!')
         self.c_minute_timer_loop(topic)
 
     def second_timer(self, PyTopic topic):
+        if not self.active:
+            raise RuntimeError('EventEngine must be started before getting timer!')
         self.c_second_timer_loop(topic)
 
     def get_timer(self, double interval, datetime activate_time=None) -> PyTopic:
-        from threading import Thread
+        if not self.active:
+            raise RuntimeError('EventEngine must be started before getting timer!')
 
         if interval == 1:
             topic = PyTopic('EventEngine.Internal.Timer.Second')

@@ -40,6 +40,7 @@ typedef struct MessagePayload {
     void* args;                 // pointer compatible with Python "args"
     void* kwargs;               // pointer compatible with Python "kwargs"
     uint64_t seq_id;            // optional sequence id (0 if unused)
+    MemoryAllocator* allocator; // allocator for payload data (may be NULL)
 } MessagePayload;
 
 /* @brief In-memory ring-buffer message queue
@@ -156,6 +157,13 @@ static inline int c_mq_put_hybrid(MessageQueue* mq, MessagePayload* msg, size_t 
  */
 static inline int c_mq_get_hybrid(MessageQueue* mq, MessagePayload** out_msg, size_t max_spin, double timeout_seconds);
 
+/**
+ * @brief Get current occupied count of the queue.
+ * @param mq queue pointer
+ * @return number of occupied entries, or 0 on invalid arg
+ */
+static inline size_t c_mq_occupied(MessageQueue* mq);
+
 /* ----------------------------------------------------------------------
  * Implementations
  * --------------------------------------------------------------------*/
@@ -269,7 +277,6 @@ static inline int c_mq_get(MessageQueue* mq, MessagePayload** out_msg) {
 /* Blocking put. Waits until space is available. Returns 0 on success, -1 on error. */
 static inline int c_mq_put_await(MessageQueue* mq, MessagePayload* msg, double timeout_seconds) {
     if (!mq || !msg) return -1;
-    int ret = -1;
     pthread_mutex_lock(&mq->mutex);
     struct timespec ts;
     if (timeout_seconds > 0) {
@@ -296,15 +303,13 @@ static inline int c_mq_put_await(MessageQueue* mq, MessagePayload* msg, double t
     mq->tail = (mq->tail + 1) % mq->capacity;
     mq->count++;
     pthread_cond_signal(&mq->not_empty);
-    ret = 0;
     pthread_mutex_unlock(&mq->mutex);
-    return ret;
+    return 0;
 }
 
 /* Blocking get. Waits until an item is available. Returns 0 on success, -1 on error. */
 static inline int c_mq_get_await(MessageQueue* mq, MessagePayload** out_msg, double timeout_seconds) {
     if (!mq || !out_msg) return -1;
-    int ret = -1;
     pthread_mutex_lock(&mq->mutex);
     struct timespec ts;
     if (timeout_seconds > 0) {
@@ -332,9 +337,8 @@ static inline int c_mq_get_await(MessageQueue* mq, MessagePayload** out_msg, dou
     mq->head = (mq->head + 1) % mq->capacity;
     mq->count--;
     pthread_cond_signal(&mq->not_full);
-    ret = 0;
     pthread_mutex_unlock(&mq->mutex);
-    return ret;
+    return 0;
 }
 
 /* Busy-looping put (spin up to max_spin times until space). */
@@ -394,6 +398,15 @@ static inline int c_mq_get_hybrid(MessageQueue* mq, MessagePayload** out_msg, si
     }
     // After spinning, fallback to blocking with timeout (timeout does not include spin time)
     return c_mq_get_await(mq, out_msg, timeout_seconds);
+}
+
+/* Get current occupied count */
+static inline size_t c_mq_occupied(MessageQueue* mq) {
+    if (!mq) return 0;
+    pthread_mutex_lock(&mq->mutex);
+    size_t n = mq->count;
+    pthread_mutex_unlock(&mq->mutex);
+    return n;
 }
 
 #endif /* C_EVENT_H */

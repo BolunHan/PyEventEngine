@@ -28,6 +28,7 @@ cdef extern from "c_event.h":
         void* args
         void* kwargs
         uint64_t seq_id
+        MemoryAllocator* allocator
 
     ctypedef struct MessageQueue:
         MemoryAllocator* allocator
@@ -43,19 +44,19 @@ cdef extern from "c_event.h":
 
     MessageQueue* c_mq_new(size_t capacity, Topic* topic, MemoryAllocator* allocator) except NULL
     int c_mq_free(MessageQueue* mq, int free_self) except -1
-    int c_mq_put(MessageQueue* mq, MessagePayload* msg) noexcept
-    int c_mq_get(MessageQueue* mq, MessagePayload** out_msg) noexcept
-    int c_mq_put_await(MessageQueue* mq, MessagePayload* msg, double timeout_seconds) noexcept
-    int c_mq_get_await(MessageQueue* mq, MessagePayload** out_msg, double timeout_seconds) noexcept
-    int c_mq_put_busy(MessageQueue* mq, MessagePayload* msg, size_t max_spin) noexcept
-    int c_mq_get_busy(MessageQueue* mq, MessagePayload** out_msg, size_t max_spin) noexcept
-    int c_mq_put_hybrid(MessageQueue* mq, MessagePayload* msg, size_t max_spin, double timeout_seconds) noexcept
-    int c_mq_get_hybrid(MessageQueue* mq, MessagePayload** out_msg, size_t max_spin, double timeout_seconds) noexcept
+    int c_mq_put(MessageQueue* mq, MessagePayload* msg) noexcept nogil
+    int c_mq_get(MessageQueue* mq, MessagePayload** out_msg) noexcept nogil
+    int c_mq_put_await(MessageQueue* mq, MessagePayload* msg, double timeout_seconds) noexcept nogil
+    int c_mq_get_await(MessageQueue* mq, MessagePayload** out_msg, double timeout_seconds) noexcept nogil
+    int c_mq_put_busy(MessageQueue* mq, MessagePayload* msg, size_t max_spin) noexcept nogil
+    int c_mq_get_busy(MessageQueue* mq, MessagePayload** out_msg, size_t max_spin) noexcept nogil
+    int c_mq_put_hybrid(MessageQueue* mq, MessagePayload* msg, size_t max_spin, double timeout_seconds) noexcept nogil
+    int c_mq_get_hybrid(MessageQueue* mq, MessagePayload** out_msg, size_t max_spin, double timeout_seconds) noexcept nogil
+    size_t c_mq_occupied(MessageQueue* mq) noexcept nogil
 
 
 cdef class PyMessagePayload:
     cdef MessagePayload* header
-    cdef MemoryAllocator* allocator
 
     cdef readonly bint owner
     cdef readonly bint args_owner
@@ -110,6 +111,7 @@ cdef class EventEngine:
 
     cdef readonly bint active
     cdef readonly object engine
+    cdef readonly object logger
     cdef readonly uint64_t seq_id
 
     cdef inline void c_loop(self)

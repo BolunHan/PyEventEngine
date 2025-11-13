@@ -59,8 +59,22 @@ cython_extension.extend(
             sources=["event_engine/capi/c_topic.pyx"],
             extra_compile_args=opt_flags,
         ),
+        Extension(
+            name="event_engine.capi.c_event",
+            sources=["event_engine/capi/c_event.pyx"],
+            extra_compile_args=opt_flags,
+        )
     ]
 )
+
+if os.name == 'posix':
+    cython_extension.extend([
+        Extension(
+            name="event_engine.capi.c_engine",
+            sources=["event_engine/capi/c_engine.pyx"],
+            extra_compile_args=opt_flags,
+        ),
+    ])
 
 
 class BuildExtWithConfig(build_ext):

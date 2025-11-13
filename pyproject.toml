@@ -26,9 +26,11 @@ Repository = "https://github.com/BolunHan/PyEventEngine"
 Issues = "https://github.com/BolunHan/PyEventEngine/issues"
 
 [tool.setuptools.packages.find]
+exclude = ["demo*"]
+include = ["event_engine*"]
 
 [tool.setuptools.package-data]
-"event_engine.capi" = ["*.pyi", "*.pyx", "*.pxd", "*.h"]
+"event_engine.capi" = ["*.pyi", "*.pyx", "*.pxd", "*.h", "*.c"]
 
 [tool.setuptools.dynamic]
 version = { attr = "event_engine.__version__" }

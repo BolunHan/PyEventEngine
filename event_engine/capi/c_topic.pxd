@@ -8,6 +8,7 @@ cdef extern from "c_topic.h":
     const char DEFAULT_TOPIC_SEP
     const char DEFAULT_OPTION_SEP
     const char* DEFAULT_RANGE_BRACKETS
+    const char* DEFAULT_WILDCARD_BRACKETS
     const char DEFAULT_WILDCARD_MARKER
     const char DEFAULT_PATTERN_DELIM
     ByteMapHeader* GLOBAL_INTERNAL_MAP
@@ -95,6 +96,10 @@ cdef class PyTopicPart:
 
 
 cdef class PyTopicPartExact(PyTopicPart):
+    pass
+
+
+cdef class PyTopicPartAny(PyTopicPart):
     pass
 
 

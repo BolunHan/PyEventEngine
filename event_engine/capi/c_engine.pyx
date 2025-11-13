@@ -118,17 +118,22 @@ cdef class EventEngine:
         if not topic.header.is_exact:
             raise ValueError('Topic must be all of exact parts')
 
-        # Step 0: Request payload buffer
+        # Step 0: Request payload buffer (MUST be done with GIL held - allocator is NOT thread-safe)
         cdef MessagePayload* payload = <MessagePayload*> c_heap_request(self.payload_allocator, sizeof(MessagePayload))
 
-        # Step 1: Assembling payload
+        # Step 1: Assembling payload (MUST be done with GIL held - touching Python objects)
         payload.topic = topic.header
         payload.args = <PyObject*> args
         payload.kwargs = <PyObject*> kwargs
         payload.seq_id = self.seq_id
         payload.allocator = self.payload_allocator
 
-        # Step 2: Send the payload
+        # Step 2: Update reference count BEFORE sending (ensure objects stay alive)
+        Py_INCREF(args)
+        Py_INCREF(kwargs)
+        self.seq_id += 1
+
+        # Step 3: Send the payload (can be done without GIL - queue is thread-safe)
         cdef int ret_code
         with nogil:
             if block:
@@ -136,17 +141,16 @@ cdef class EventEngine:
             else:
                 ret_code = c_mq_put(self.mq, payload)
 
-        # Step 3: Update reference count
-        if not ret_code:
-            self.seq_id += 1
-            Py_INCREF(args)
-            Py_INCREF(kwargs)
-        else:
-            # Clean up the message payload
+        # Step 4: Handle failure case (undo increfs and free payload)
+        if ret_code:
+            self.seq_id -= 1
+            Py_XDECREF(<PyObject*> args)
+            Py_XDECREF(<PyObject*> kwargs)
             if payload.allocator and payload.allocator.active:
                 c_heap_recycle(payload.allocator, <void*> payload)
             else:
                 free(payload)
+
         return ret_code
 
     cdef inline void c_trigger(self, MessagePayload* msg):

@@ -23,6 +23,10 @@
 #define DEFAULT_RANGE_BRACKETS "()"
 #endif
 
+#ifndef DEFAULT_WILDCARD_BRACKETS
+#define DEFAULT_WILDCARD_BRACKETS "{}"
+#endif
+
 #ifndef DEFAULT_WILDCARD_MARKER
 #define DEFAULT_WILDCARD_MARKER '+'
 #endif
@@ -399,7 +403,19 @@ static inline int c_topic_internalize(Topic* topic, const char* key, size_t key_
         }
     }
 
-    // Step 2: Register topic
+    // Step 2: Deregister previous key if any
+    if (topic->key) {
+        Topic* existing = (Topic*) c_bytemap_get(GLOBAL_INTERNAL_MAP, topic->key, topic->key_len);
+        if (existing == topic) {
+            c_bytemap_pop(GLOBAL_INTERNAL_MAP, topic->key, topic->key_len, NULL);
+        }
+        // To avoid dangling pointers on c_bytemap_set failed, clear previous key info.
+        topic->key = NULL;
+        topic->key_len = 0;
+        topic->hash = 0;
+    }
+
+    // Step 3: Register topic
     MapEntry* entry = c_bytemap_set(GLOBAL_INTERNAL_MAP, key, key_len, (void*) topic);
     if (!entry) return -1;
 
@@ -645,6 +661,13 @@ static inline int c_topic_parse(Topic* topic, const char* key, size_t key_len) {
                 }
             }
             else if (token_len >= 3 &&
+                tok[0] == DEFAULT_WILDCARD_BRACKETS[0] &&
+                tok[token_len - 1] == DEFAULT_WILDCARD_BRACKETS[1]) {
+                if (c_topic_append(topic, tok + 1, token_len - 2, TOPIC_PART_ANY) != 0) {
+                    return -1;
+                }
+            }
+            else if (token_len >= 3 &&
                 tok[0] == DEFAULT_RANGE_BRACKETS[0] &&
                 tok[token_len - 1] == DEFAULT_RANGE_BRACKETS[1]) {
                 if (c_topic_append(topic, tok + 1, token_len - 2, TOPIC_PART_RANGE) != 0) {
@@ -706,8 +729,11 @@ static inline int c_topic_update_literal(Topic* topic) {
             case TOPIC_PART_EXACT:
                 total_len += curr->exact.part_len;
                 break;
+                // case TOPIC_PART_ANY:
+                //     total_len += 1 + curr->any.name_len; // + for wildcard marker
+                //     break;
             case TOPIC_PART_ANY:
-                total_len += 1 + curr->any.name_len; // + for wildcard marker
+                total_len += 2 + curr->any.name_len; // + for wildcard marker
                 break;
             case TOPIC_PART_RANGE:
                 total_len += 2 + curr->range.literal_len; // +2 for brackets
@@ -741,14 +767,26 @@ static inline int c_topic_update_literal(Topic* topic) {
                 memcpy(&key_literal[pos], curr->exact.part, curr->exact.part_len);
                 pos += curr->exact.part_len;
                 break;
+                // case TOPIC_PART_ANY:
+                //     key_literal[pos++] = DEFAULT_WILDCARD_MARKER;
+                //     memcpy(&key_literal[pos], curr->any.name, curr->any.name_len);
+                //     pos += curr->any.name_len;
+                //     break;
             case TOPIC_PART_ANY:
-                key_literal[pos++] = DEFAULT_WILDCARD_MARKER;
+                key_literal[pos++] = DEFAULT_WILDCARD_BRACKETS[0];
                 memcpy(&key_literal[pos], curr->any.name, curr->any.name_len);
                 pos += curr->any.name_len;
+                key_literal[pos++] = DEFAULT_WILDCARD_BRACKETS[1];
                 break;
             case TOPIC_PART_RANGE:
                 key_literal[pos++] = DEFAULT_RANGE_BRACKETS[0];
                 memcpy(&key_literal[pos], curr->range.literal, curr->range.literal_len);
+                // literal of the range part has been modified replacing '|' with '\0', so we need to reconstruct it here.
+                for (size_t i = 0; i < curr->range.literal_len; i++) {
+                    if (key_literal[pos + i] == '\0') {
+                        key_literal[pos + i] = DEFAULT_OPTION_SEP;
+                    }
+                }
                 pos += curr->range.literal_len;
                 key_literal[pos++] = DEFAULT_RANGE_BRACKETS[1];
                 break;

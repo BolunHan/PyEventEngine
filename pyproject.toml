@@ -28,7 +28,7 @@ Issues = "https://github.com/BolunHan/PyEventEngine/issues"
 [tool.setuptools.packages.find]
 
 [tool.setuptools.package-data]
-"event_engine.capi" = ["*.pxd", "*.h"]
+"event_engine.capi" = ["*.pyi", "*.pyx", "*.pxd", "*.h"]
 
 [tool.setuptools.dynamic]
 version = { attr = "event_engine.__version__" }

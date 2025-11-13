@@ -877,26 +877,23 @@ static inline TopicPartMatchResult* c_topic_match(Topic* topic_a, Topic* topic_b
     while (part_a && part_b) {
         // Step 0: Prepare out node
         if (!res) {
-            res = c_topic_match_new(tail, allocator);
+            res = c_topic_match_new(NULL, allocator);
             if (!res) {
                 if (tmp_alloc) c_topic_match_free(tmp_alloc);
                 return NULL;
             }
 
+            // Link to tail if exists
+            if (tail) {
+                tail->next = res;
+            }
+
             // Track head and tail and temp allocations
             if (!head) head = res;
-
-            if (!tail) tail = res; // the c_topic_match_free auto link to tail, if there is any.
 
             if (!tmp_alloc) {
                 tmp_alloc = res;
             }
-            else {
-                tmp_alloc->next = res;
-            }
-        }
-        else {
-            tail = res;
         }
         res->part_a = part_a;
         res->part_b = part_b;
@@ -977,29 +974,26 @@ static inline TopicPartMatchResult* c_topic_match(Topic* topic_a, Topic* topic_b
         // Step 3: Onward the loops
         part_a = part_a->header.next;
         part_b = part_b->header.next;
+        tail = res;
         res = res->next;
     }
 
     // Any residual part is consider a mis-match
     if (part_a || part_b) {
         if (!res) {
-            res = c_topic_match_new(tail, allocator);
+            res = c_topic_match_new(NULL, allocator);
             if (!res) {
                 if (tmp_alloc) c_topic_match_free(tmp_alloc);
                 return NULL;
             }
 
+            // Link to tail if exists
+            if (tail) {
+                tail->next = res;
+            }
+
             // Track head and tail and temp allocations
             if (!head) head = res;
-
-            if (!tail) tail = res; // the c_topic_match_free auto link to tail, if there is any.
-
-            if (!tmp_alloc) {
-                tmp_alloc = res;
-            }
-            else {
-                tmp_alloc->next = res;
-            }
         }
 
         res->part_a = part_a;

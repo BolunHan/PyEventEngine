@@ -455,6 +455,15 @@ class PyTopic:
             - This is equivalent to `self.append(...)` and returns `self`.
         """
 
+    def __hash__(self):
+        """Return hash based on the topic's literal value.
+
+        The hash is precomputed during initialization for efficiency.
+
+        Returns:
+            A uint64_t hash integer.
+        """
+
     def __eq__(self, other: PyTopic) -> bool:
         """Check equality between this topic and another topic.
 

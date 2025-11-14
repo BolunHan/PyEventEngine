@@ -82,7 +82,6 @@ cdef class PyMessagePayload:
             return PyTopic.c_from_header(topic)
 
         def __set__(self, PyTopic topic):
-            LOGGER.warning(f'[debug-only] Setting topic {topic}, This WILL causes memory leak!')
             topic.owner = False
             self.header.topic = topic.header
 
@@ -97,7 +96,6 @@ cdef class PyMessagePayload:
             return <object> args
 
         def __set__(self, tuple args):
-            LOGGER.warning(f'[debug-only] Setting args to payload. This WILL causes memory leak!')
             Py_INCREF(args)
             self.header.args = <void*> <PyObject*> args
 
@@ -112,7 +110,6 @@ cdef class PyMessagePayload:
             return <object> kwargs
 
         def __set__(self, dict kwargs):
-            LOGGER.warning(f'[debug-only] Setting kwargs to payload. This WILL causes memory leak!')
             Py_INCREF(kwargs)
             self.header.kwargs = <void*> <PyObject*> kwargs
 
@@ -120,8 +117,12 @@ cdef class PyMessagePayload:
         def __get__(self):
             if not self.header:
                 raise RuntimeError('Not initialized!')
-
             return self.header.seq_id
+
+        def __set__(self, uint64_t seq_id):
+            if not self.header:
+                raise RuntimeError('Not initialized!')
+            self.header.seq_id = seq_id
 
 
 cdef tuple C_INTERNAL_EMPTY_ARGS = ()

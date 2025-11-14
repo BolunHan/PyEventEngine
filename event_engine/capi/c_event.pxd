@@ -23,8 +23,8 @@ cdef class PyMessagePayload:
     cdef MessagePayload* header
 
     cdef readonly bint owner
-    cdef readonly bint args_owner
-    cdef readonly bint kwargs_owner
+    cdef public bint args_owner
+    cdef public bint kwargs_owner
 
     @staticmethod
     cdef PyMessagePayload c_from_header(MessagePayload* header, bint owner=*, bint args_owner=*, bint kwargs_owner=*)

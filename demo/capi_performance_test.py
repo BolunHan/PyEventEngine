@@ -11,6 +11,7 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 from event_engine.capi import EventEngine, PyTopic  # type: ignore
+from event_engine.capi.fallback_engine import EventEngine as FallbackEventEngine  # type: ignore
 
 
 class PerfMetrics:
@@ -136,7 +137,72 @@ class TestEventEnginePerformance(unittest.TestCase):
         # Report metrics for human inspection (does not affect pass/fail)
         lat = metrics.latency_stats_ms()
         print(
-            f"\n[Perf] messages={metrics.count} wall={metrics.wall_time_s():.3f}s "
+            f"\n[Perf-Cython] messages={metrics.count} wall={metrics.wall_time_s():.3f}s "
+            f"throughput={metrics.throughput_mps():.0f} msg/s "
+            f"lat(ms): min={lat['min']:.3f} p50={lat['p50']:.3f} avg={lat['avg']:.3f} p95={lat['p95']:.3f} max={lat['max']:.3f}"
+        )
+
+    def test_fallback_producer_consumer_throughput_and_latency(self):
+        """
+        Performance sanity test for fallback (pure Python) EventEngine:
+        - Launch FallbackEventEngine consumer loop.
+        - Producer thread publishes N messages carrying the send timestamp (ns).
+        - Consumer handler computes per-message latency and records stats.
+        - Assert all produced messages are consumed and report metrics.
+
+        Note: This test uses the pure Python fallback implementation and is expected
+        to be slower than the Cython version, but should still be reasonably performant.
+        """
+        total_messages = int(os.environ.get("PEE_PERF_MSGS", "100_000"))
+        capacity = int(os.environ.get("PEE_PERF_CAP", "8192"))
+
+        engine = FallbackEventEngine(capacity=capacity)
+        topic = PyTopic("perf.fallback.topic")  # type: ignore[arg-type]
+
+        metrics = PerfMetrics()
+        processed_all = threading.Event()
+
+        # Consumer handler executed on engine's internal thread
+        def handler(sent_ts_ns: int):
+            now = time.perf_counter_ns()
+            metrics.record(now - sent_ts_ns)
+            # Fast path check to avoid taking a lock per access other than record()
+            if metrics.count >= total_messages:
+                processed_all.set()
+
+        engine.register_handler(topic, handler)
+
+        # Producer that runs in a separate thread
+        def producer():
+            for _ in range(total_messages):
+                ts = time.perf_counter_ns()
+                # Block on full to ensure every message is enqueued
+                engine.put(topic, ts, block=True)
+
+        t = threading.Thread(target=producer, name="perf-producer-fallback", daemon=True)
+
+        # Start engine and measure wall time around active period
+        engine.start()
+        metrics.start()
+        t.start()
+
+        # Wait for all messages processed or timeout
+        timeout_s = float(os.environ.get("PEE_PERF_TIMEOUT", "20"))
+        finished = processed_all.wait(timeout=timeout_s)
+        metrics.stop()
+
+        # Clean up engine and join producer
+        engine.stop()
+        t.join(timeout=5)
+
+        # Assertions: we must have processed all messages within the timeout
+        self.assertTrue(finished, msg=f"Timeout waiting for {total_messages} messages; processed {metrics.count}")
+        self.assertEqual(metrics.count, total_messages)
+
+        # Report metrics for human inspection (does not affect pass/fail)
+        lat = metrics.latency_stats_ms()
+        print(
+            f"\n[Perf-Fallback] messages={metrics.count} wall={metrics.wall_time_s():.3f}s "
             f"throughput={metrics.throughput_mps():.0f} msg/s "
             f"lat(ms): min={lat['min']:.3f} p50={lat['p50']:.3f} avg={lat['avg']:.3f} p95={lat['p95']:.3f} max={lat['max']:.3f}"
         )
@@ -152,4 +218,3 @@ if __name__ == '__main__':
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite())
     sys.exit(0 if result.wasSuccessful() else 1)
-

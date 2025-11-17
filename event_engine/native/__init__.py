@@ -16,12 +16,25 @@ from .engine import Full, Empty, EventEngine as EventEngineBase, EventEngineEx
 
 
 def set_logger(logger: logging.Logger):
+    """Set the root EventEngine logger and propagate to native submodules."""
     global LOGGER
     from . import topic, event, engine
     topic.LOGGER = logger
     event.LOGGER = logger
     engine.LOGGER = logger
     LOGGER = logger
+
+    # Update native submodules if they expose LOGGER
+    try:
+        from . import event as _event
+        _event.LOGGER = logger.getChild('Event')
+    except Exception:
+        pass
+    try:
+        from . import engine as _engine
+        _engine.LOGGER = logger.getChild('Engine')
+    except Exception:
+        pass
 
 
 # alias for consistency

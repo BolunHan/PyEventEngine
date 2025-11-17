@@ -2,14 +2,14 @@ import logging
 
 LOGGER = None
 
-# Try to import the Cython implementation first, fall back to pure Python if unavailable
-USING_FALLBACK = False
-
 from .c_topic import (PyTopicType, PyTopicPart, PyTopicPartExact, PyTopicPartAny, PyTopicPartRange, PyTopicPartPattern,
                       PyTopicMatchResult, PyTopic,
                       init_internal_map, clear_internal_map, get_internal_topic, get_internal_map, init_allocator)
 
 from .c_event import PyMessagePayload, EventHook as EventHookBase, EventHookEx
+
+# Try to import the Cython implementation first, fall back to pure Python if unavailable
+USING_FALLBACK = False
 
 try:
     assert not USING_FALLBACK
@@ -31,16 +31,6 @@ except (ImportError, AssertionError) as e:
 
     USING_FALLBACK = True
 
-
-def set_logger(logger: logging.Logger):
-    global LOGGER
-    from . import c_topic, c_event, c_engine
-    c_topic.LOGGER = logger
-    c_event.LOGGER = logger
-    c_engine.LOGGER = logger
-    LOGGER = logger
-
-
 # alias for consistency
 TopicType = PyTopicType
 TopicPart = PyTopicPart
@@ -54,10 +44,50 @@ MessagePayload = PyMessagePayload
 EventHook = EventHookEx
 EventEngine = EventEngineEx
 
+
+def set_logger(logger: logging.Logger):
+    global LOGGER
+    from . import c_topic, c_event, c_engine
+    c_topic.LOGGER = logger
+    c_event.LOGGER = logger
+    c_engine.LOGGER = logger
+    LOGGER = logger
+
+    """Set the root EventEngine logger and propagate to submodules.
+
+    This updates event_engine.base.LOGGER and the module-level LOGGER used by
+    c_event/fallback_engine (if available) so subsequent logs use the provided logger.
+    """
+    import importlib
+    base_mod = importlib.import_module('event_engine.base')
+    base_mod.LOGGER = logger
+    # Try to update c_event module logger
+    try:
+        from . import c_event as _c_event
+        _c_event.LOGGER = logger.getChild('Event')
+    except Exception:
+        pass
+
+    # Try to update c_engine module logger
+    try:
+        from . import c_engine as _c_engine
+        _c_engine.LOGGER = logger.getChild('Engine')
+    except Exception:
+        pass
+
+    # If capi is using fallback engine internally, update its module logger as well
+    try:
+        from . import fallback_engine as _c_engine_fallback
+        _c_engine_fallback.LOGGER = logger.getChild('Engine')
+    except Exception:
+        pass
+
+
 __all__ = [
     'TopicType', 'TopicPart', 'TopicPartExact', 'TopicPartAny', 'TopicPartRange', 'TopicPartPattern',
     'TopicMatchResult', 'Topic',
     'init_internal_map', 'clear_internal_map', 'get_internal_topic', 'get_internal_map', 'init_allocator',
     'MessagePayload', 'EventHookBase', 'EventHook',
-    'Full', 'Empty', 'EventEngineBase', 'EventEngine', 'USING_FALLBACK'
+    'Full', 'Empty', 'EventEngineBase', 'EventEngine', 'USING_FALLBACK',
+    'set_logger'
 ]

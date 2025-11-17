@@ -624,7 +624,7 @@ cdef class PyTopic:
         return self
 
     def __call__(self, **kwargs):
-        return self.format_map(kwargs, internalized=True)
+        return self.format_map(kwargs, internalized=True, strict=False)
 
     @classmethod
     def from_parts(cls, topic_parts: Iterable[PyTopicPart]) -> PyTopic:
@@ -691,7 +691,7 @@ cdef class PyTopic:
         self.c_update_literal()
         return self
 
-    cpdef PyTopic format_map(self, dict mapping, bint internalized=True):
+    cpdef PyTopic format_map(self, dict mapping, bint internalized=True, bint strict=False):
         cdef TopicPart* tpart = self.header.parts
         cdef TopicType ttype
         cdef Topic* formatted = c_topic_new(NULL, 0, self.header.allocator)
@@ -709,11 +709,15 @@ cdef class PyTopic:
                 key = PyUnicode_FromStringAndSize(tpart.any.name, tpart.any.name_len)
                 # Raise KeyError if not found.
                 if key not in mapping:
-                    c_topic_free(formatted, 1)
-                    raise KeyError(key)
-                # Append the mapped value as an exact part.
-                literal = PyUnicode_AsUTF8AndSize(mapping[key], &literal_len)
-                c_topic_append(formatted, literal, literal_len, TopicType.TOPIC_PART_EXACT)
+                    if strict:
+                        c_topic_free(formatted, 1)
+                        raise KeyError(key)
+                    else:
+                        c_topic_append(formatted, tpart.any.name, tpart.any.name_len, TopicType.TOPIC_PART_ANY)
+                else:
+                    # Append the mapped value as an exact part.
+                    literal = PyUnicode_AsUTF8AndSize(mapping[key], &literal_len)
+                    c_topic_append(formatted, literal, literal_len, TopicType.TOPIC_PART_EXACT)
             else:
                 c_topic_free(formatted, 1)
                 raise ValueError(f'Not supported topic type {PyTopicType(ttype)}')
@@ -725,7 +729,7 @@ cdef class PyTopic:
         return PyTopic.c_from_header(formatted, not internalized)
 
     def format(self, **kwargs) -> PyTopic:
-        return self.format_map(kwargs, internalized=True)
+        return self.format_map(kwargs, internalized=True, strict=False)
 
     property value:
         def __get__(self):

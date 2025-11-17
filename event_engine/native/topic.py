@@ -672,7 +672,7 @@ class PyTopic:
 
     def __call__(self, **kwargs) -> 'PyTopic':
         """Alias of ``format`` method to format the topic by replacing named wildcards with provided values."""
-        return self.format(**kwargs)
+        return self.format_map(kwargs, internalized=True, strict=False)
 
     @classmethod
     def from_parts(cls, topic_parts: Iterable[PyTopicPart]) -> PyTopic:
@@ -836,18 +836,19 @@ class PyTopic:
             KeyError: If a required wildcard name is missing in kwargs.
             ValueError: If having subordinate parts that are not exact or wildcards.
         """
-        return self.format_map(kwargs, internalized=True)
+        return self.format_map(kwargs, internalized=True, strict=False)
 
-    def format_map(self, mapping: dict[str, str], internalized: bool = True) -> PyTopic:
+    def format_map(self, mapping: dict[str, str], internalized: bool = True, strict: bool = False) -> PyTopic:
         """Format the topic by replacing named wildcards with provided values from a mapping.
 
         Args:
             mapping: Dictionary mapping wildcard names to replacement strings.
             internalized: If True, the returned topic is internalized into the global map and not owning its underlying buffer.
                           If False, the returned topic owns its internal buffer.
+            strict: If True, raises KeyError if a wildcard name is missing in mapping.
 
         Returns:
-            A new Exact PyTopic with wildcards replaced by the provided values.
+            A new PyTopic with wildcards replaced by the provided values. If strict is True, the new PyTopic is guaranteed to be an exact PyTopic.
 
         Raises:
             KeyError: If a required wildcard name is missing in mapping.
@@ -864,8 +865,12 @@ class PyTopic:
                 part_any = part if isinstance(part, PyTopicPartAny) else None
                 if part_any:
                     if part_any.name not in mapping:
-                        raise KeyError(part_any.name)
-                    new_parts.append(PyTopicPartExact(mapping[part_any.name], alloc=True))
+                        if strict:
+                            raise KeyError(part_any.name)
+                        else:
+                            new_parts.append(PyTopicPartAny(part_any.name, alloc=True))
+                    else:
+                        new_parts.append(PyTopicPartExact(mapping[part_any.name], alloc=True))
             else:
                 raise ValueError(f'Not supported topic type {part.ttype}')
 

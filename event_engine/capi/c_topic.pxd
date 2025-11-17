@@ -150,4 +150,4 @@ cdef class PyTopic:
 
     cpdef PyTopicMatchResult match(self, PyTopic other)
 
-    cpdef PyTopic format_map(self, dict mapping, bint internalized=*)
+    cpdef PyTopic format_map(self, dict mapping, bint internalized=*, bint strict=*)

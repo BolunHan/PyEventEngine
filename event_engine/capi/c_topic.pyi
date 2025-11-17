@@ -564,23 +564,24 @@ class PyTopic:
             **kwargs: Mapping from wildcard names to replacement strings.
 
         Returns:
-            A new Exact PyTopic with wildcards replaced by the provided values.
+            A new PyTopic with wildcards replaced by the provided values.
 
         Raises:
             KeyError: If a required wildcard name is missing in kwargs.
             ValueError: If having subordinate parts that are not exact or wildcards.
         """
 
-    def format_map(self, mapping: dict[str, str], internalized: bool = True) -> PyTopic:
+    def format_map(self, mapping: dict[str, str], internalized: bool = True, strict: bool = False) -> PyTopic:
         """Format the topic by replacing named wildcards with provided values from a mapping.
 
         Args:
             mapping: Dictionary mapping wildcard names to replacement strings.
             internalized: If True, the returned topic is internalized into the global ByteMap and not owning its underlying buffer.
                           If False, the returned topic owns its internal buffer.
+            strict: If True, raise KeyError if any wildcard name is missing in mapping. Otherwise, leave unmatched wildcards as-is.
 
         Returns:
-            A new Exact PyTopic with wildcards replaced by the provided values.
+            A new PyTopic with wildcards replaced by the provided values. If strict, the new PyTopic is guaranteed to be an exact PyTopic.
 
         Raises:
             KeyError: If a required wildcard name is missing in mapping.

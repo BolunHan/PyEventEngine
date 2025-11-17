@@ -1,38 +1,44 @@
 name: Publish Python Package to PyPI
 
 on:
-  push:
-    branches:
-      - main  # Trigger workflow on push to main branch
-    tags:
-      - 'v*.*.*'  # Also trigger on version tags
+    push:
+        tags:
+            - 'v*.*.*'
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+    build:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+        steps:
+            -   name: Checkout repository
+                uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+            -   name: Set up Python
+                uses: actions/setup-python@v4
+                with:
+                    python-version: '3.x'
 
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt  # Optional, if you have dependencies
+            -   name: Install cibuildwheel
+                run: python -m pip install --upgrade cibuildwheel
 
-      - name: Build package
-        run: |
-          python setup.py sdist bdist_wheel
+            -   name: Install dependencies
+                env:
+                    GITHUB_ACTIONS: "true"
+                run: |
+                    pip install --upgrade pip setuptools wheel cython
 
-      - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: "__token__"  # Special username for token authentication
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}  # Use the token from GitHub Secrets
-        run: |
-          pip install twine
-          twine upload dist/*
+            -   name: Build wheels
+                run: |
+                    python -m cibuildwheel --output-dir wheelhouse
+                env:
+                    CIBW_SKIP: "pp*"
+                    CIBW_BUILD: "cp3*-manylinux*"
+                    GITHUB_ACTIONS: "true"
+
+            -   name: Publish to PyPI
+                env:
+                    TWINE_USERNAME: "__token__"
+                    TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+                run: |
+                    pip install twine
+                    twine upload wheelhouse/*

@@ -2,7 +2,6 @@
 #define C_ENGINE_H
 
 #include <errno.h>
-#include <linux/time.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdatomic.h>

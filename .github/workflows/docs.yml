@@ -35,7 +35,7 @@ jobs:
             -   name: Build documentation
                 run: |
                     cd docs
-                    make html
+                    sphinx-build -M html . _build
 
             -   name: Deploy to GitHub Pages
                 # Deploy on push to main/master or on version tags

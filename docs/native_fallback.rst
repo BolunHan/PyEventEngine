@@ -11,6 +11,7 @@ Architecture
 ~~~~~~~~~~~~
 
 The native fallback consists of three modules:
+
 - ``event_engine.native.topic`` - Topic parsing and matching (pure Python)
 - ``event_engine.native.event`` - Event hooks and message payloads (pure Python)
 - ``event_engine.native.engine`` - Event engine and queue management (``threading`` + ``deque``)
@@ -29,6 +30,7 @@ Performance
 ~~~~~~~~~~~
 
 Expected performance characteristics:
+
 - **Topic parsing**: ~10-20x slower than Cython
 - **Event dispatch**: ~5-10x slower than Cython
 - **Throughput**: ~50-200k msg/s (vs ~500k-1M+ msg/s for Cython)

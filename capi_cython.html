@@ -263,6 +263,98 @@
 </pre></div>
 </div>
 </section>
+<section id="including-in-your-cython-extension">
+<h2>Including in Your Cython Extension<a class="headerlink" href="#including-in-your-cython-extension" title="Link to this heading">¶</a></h2>
+<p>To use PyEventEngine in your own Cython modules, you need to properly configure your build system to include the necessary header files and declarations.</p>
+<section id="using-get-include-in-setup-py">
+<h3>Using <code class="docutils literal notranslate"><span class="pre">get_include()</span></code> in setup.py<a class="headerlink" href="#using-get-include-in-setup-py" title="Link to this heading">¶</a></h3>
+<p>Similar to NumPy’s <code class="docutils literal notranslate"><span class="pre">get_include()</span></code> function, PyEventEngine provides a <code class="docutils literal notranslate"><span class="pre">get_include()</span></code> function that returns the path to the package’s include directory containing <code class="docutils literal notranslate"><span class="pre">.pxd</span></code> files and C headers.</p>
+<p><strong>Example setup.py:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">setuptools</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup</span><span class="p">,</span> <span class="n">Extension</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">Cython.Build</span><span class="w"> </span><span class="kn">import</span> <span class="n">cythonize</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">event_engine</span>
+
+<span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Extension</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_package.my_module&quot;</span><span class="p">,</span>
+        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_package/my_module.pyx&quot;</span><span class="p">],</span>
+        <span class="n">include_dirs</span><span class="o">=</span><span class="p">[</span><span class="n">event_engine</span><span class="o">.</span><span class="n">get_include</span><span class="p">()],</span>
+        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;-O3&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+<span class="p">]</span>
+
+<span class="n">setup</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_package&quot;</span><span class="p">,</span>
+    <span class="n">ext_modules</span><span class="o">=</span><span class="n">cythonize</span><span class="p">(</span><span class="n">extensions</span><span class="p">,</span> <span class="n">compiler_directives</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;language_level&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">})</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Complete Project Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">setuptools</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup</span><span class="p">,</span> <span class="n">Extension</span><span class="p">,</span> <span class="n">find_packages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">Cython.Build</span><span class="w"> </span><span class="kn">import</span> <span class="n">cythonize</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">event_engine</span>
+
+<span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Extension</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_package.core.event_handler&quot;</span><span class="p">,</span>
+        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_package/core/event_handler.pyx&quot;</span><span class="p">],</span>
+        <span class="n">include_dirs</span><span class="o">=</span><span class="p">[</span><span class="n">event_engine</span><span class="o">.</span><span class="n">get_include</span><span class="p">()],</span>
+        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;-O3&quot;</span><span class="p">]</span>
+    <span class="p">),</span>
+    <span class="n">Extension</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_package.core.message_processor&quot;</span><span class="p">,</span>
+        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_package/core/message_processor.pyx&quot;</span><span class="p">],</span>
+        <span class="n">include_dirs</span><span class="o">=</span><span class="p">[</span><span class="n">event_engine</span><span class="o">.</span><span class="n">get_include</span><span class="p">()],</span>
+        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;-O3&quot;</span><span class="p">]</span>
+    <span class="p">),</span>
+<span class="p">]</span>
+
+<span class="n">setup</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_package&quot;</span><span class="p">,</span>
+    <span class="n">version</span><span class="o">=</span><span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+    <span class="n">packages</span><span class="o">=</span><span class="n">find_packages</span><span class="p">(),</span>
+    <span class="n">ext_modules</span><span class="o">=</span><span class="n">cythonize</span><span class="p">(</span>
+        <span class="n">extensions</span><span class="p">,</span>
+        <span class="n">compiler_directives</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;language_level&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+            <span class="s1">&#39;embedsignature&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">),</span>
+    <span class="n">install_requires</span><span class="o">=</span><span class="p">[</span>
+        <span class="s1">&#39;PyEventEngine&gt;=0.4.4&#39;</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Using in your Cython module:</strong></p>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="c"># my_package/core/event_handler.pyx</span>
+<span class="k">from</span><span class="w"> </span><span class="nn">event_engine.capi.c_engine</span><span class="w"> </span><span class="k">cimport</span> <span class="n">EventEngine</span>
+<span class="k">from</span><span class="w"> </span><span class="nn">event_engine.capi.c_topic</span><span class="w"> </span><span class="k">cimport</span> <span class="n">PyTopic</span>
+<span class="k">from</span><span class="w"> </span><span class="nn">event_engine.capi.c_event</span><span class="w"> </span><span class="k">cimport</span> <span class="n">PyMessagePayload</span>
+
+<span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">MyEventHandler</span><span class="p">:</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">EventEngine</span> <span class="nf">engine</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">int</span> <span class="n">capacity</span><span class="o">=</span><span class="mf">8192</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">EventEngine</span><span class="p">(</span><span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">)</span>
+
+    <span class="k">cpdef</span><span class="w"> </span><span class="kt">void</span> <span class="nf">process_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">str</span> <span class="n">topic_str</span><span class="p">,</span> <span class="nb">object</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nf">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="n">topic_str</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="what-get-include-returns">
+<h3>What <code class="docutils literal notranslate"><span class="pre">get_include()</span></code> Returns<a class="headerlink" href="#what-get-include-returns" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">get_include()</span></code> function returns the absolute path to the <code class="docutils literal notranslate"><span class="pre">event_engine</span></code> package directory, which contains:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">capi/*.pxd</span></code> - Cython declaration files for importing C-level definitions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">capi/*.h</span></code> - C header files for the underlying C API</p></li>
+<li><p>All compiled extension modules (<code class="docutils literal notranslate"><span class="pre">.so</span></code> files on Linux)</p></li>
+</ul>
+<p>This allows the Cython compiler to find and import the necessary type definitions and C declarations when building your extension.</p>
+</section>
+</section>
 <section id="topic-classes-c-topic-pyx">
 <h2>Topic Classes (c_topic.pyx)<a class="headerlink" href="#topic-classes-c-topic-pyx" title="Link to this heading">¶</a></h2>
 <section id="pytopictype">
@@ -544,8 +636,8 @@
 </section>
 <section id="building-cython-extensions">
 <h2>Building Cython Extensions<a class="headerlink" href="#building-cython-extensions" title="Link to this heading">¶</a></h2>
-<p>To build your own Cython extension using PyEventEngine:</p>
-<p><strong>setup.py:</strong></p>
+<p>To build your own Cython extension using PyEventEngine, see the detailed instructions in <a class="reference internal" href="#including-in-your-cython-extension">Including in Your Cython Extension</a> above.</p>
+<p><strong>Quick Example:</strong></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">setuptools</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup</span><span class="p">,</span> <span class="n">Extension</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">Cython.Build</span><span class="w"> </span><span class="kn">import</span> <span class="n">cythonize</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">event_engine</span>
@@ -555,7 +647,7 @@
         <span class="s2">&quot;my_module&quot;</span><span class="p">,</span>
         <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_module.pyx&quot;</span><span class="p">],</span>
         <span class="n">include_dirs</span><span class="o">=</span><span class="p">[</span><span class="n">event_engine</span><span class="o">.</span><span class="n">get_include</span><span class="p">()],</span>
-        <span class="n">language</span><span class="o">=</span><span class="s2">&quot;c++&quot;</span><span class="p">,</span>  <span class="c1"># If using C++ features</span>
+        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;-O3&quot;</span><span class="p">]</span>
     <span class="p">)</span>
 <span class="p">]</span>
 
@@ -648,6 +740,11 @@
 <li><a class="reference internal" href="#">Cython API Reference</a><ul>
 <li><a class="reference internal" href="#overview">Overview</a></li>
 <li><a class="reference internal" href="#importing-cython-definitions">Importing Cython Definitions</a></li>
+<li><a class="reference internal" href="#including-in-your-cython-extension">Including in Your Cython Extension</a><ul>
+<li><a class="reference internal" href="#using-get-include-in-setup-py">Using <code class="docutils literal notranslate"><span class="pre">get_include()</span></code> in setup.py</a></li>
+<li><a class="reference internal" href="#what-get-include-returns">What <code class="docutils literal notranslate"><span class="pre">get_include()</span></code> Returns</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#topic-classes-c-topic-pyx">Topic Classes (c_topic.pyx)</a><ul>
 <li><a class="reference internal" href="#pytopictype">PyTopicType</a></li>
 <li><a class="reference internal" href="#pytopicpart">PyTopicPart</a></li>

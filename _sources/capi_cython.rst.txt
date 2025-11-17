@@ -29,6 +29,107 @@ Or import everything:
 
    from event_engine.capi cimport *
 
+Including in Your Cython Extension
+-----------------------------------
+
+To use PyEventEngine in your own Cython modules, you need to properly configure your build system to include the necessary header files and declarations.
+
+Using ``get_include()`` in setup.py
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Similar to NumPy's ``get_include()`` function, PyEventEngine provides a ``get_include()`` function that returns the path to the package's include directory containing ``.pxd`` files and C headers.
+
+**Example setup.py:**
+
+.. code-block:: python
+
+   from setuptools import setup, Extension
+   from Cython.Build import cythonize
+   import event_engine
+
+   extensions = [
+       Extension(
+           name="my_package.my_module",
+           sources=["my_package/my_module.pyx"],
+           include_dirs=[event_engine.get_include()],
+           extra_compile_args=["-O3"]
+       )
+   ]
+
+   setup(
+       name="my_package",
+       ext_modules=cythonize(extensions, compiler_directives={'language_level': 3})
+   )
+
+**Complete Project Example:**
+
+.. code-block:: python
+
+   from setuptools import setup, Extension, find_packages
+   from Cython.Build import cythonize
+   import event_engine
+
+   extensions = [
+       Extension(
+           name="my_package.core.event_handler",
+           sources=["my_package/core/event_handler.pyx"],
+           include_dirs=[event_engine.get_include()],
+           extra_compile_args=["-O3"]
+       ),
+       Extension(
+           name="my_package.core.message_processor",
+           sources=["my_package/core/message_processor.pyx"],
+           include_dirs=[event_engine.get_include()],
+           extra_compile_args=["-O3"]
+       ),
+   ]
+
+   setup(
+       name="my_package",
+       version="1.0.0",
+       packages=find_packages(),
+       ext_modules=cythonize(
+           extensions,
+           compiler_directives={
+               'language_level': 3,
+               'embedsignature': True,
+           }
+       ),
+       install_requires=[
+           'PyEventEngine>=0.4.4',
+       ],
+   )
+
+**Using in your Cython module:**
+
+.. code-block:: cython
+
+   # my_package/core/event_handler.pyx
+   from event_engine.capi.c_engine cimport EventEngine
+   from event_engine.capi.c_topic cimport PyTopic
+   from event_engine.capi.c_event cimport PyMessagePayload
+
+   cdef class MyEventHandler:
+       cdef EventEngine engine
+
+       def __init__(self, int capacity=8192):
+           self.engine = EventEngine(capacity=capacity)
+
+       cpdef void process_event(self, str topic_str, object data):
+           cdef PyTopic topic = PyTopic(topic_str)
+           self.engine.put(topic, data, block=True)
+
+What ``get_include()`` Returns
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``get_include()`` function returns the absolute path to the ``event_engine`` package directory, which contains:
+
+- ``capi/*.pxd`` - Cython declaration files for importing C-level definitions
+- ``capi/*.h`` - C header files for the underlying C API
+- All compiled extension modules (``.so`` files on Linux)
+
+This allows the Cython compiler to find and import the necessary type definitions and C declarations when building your extension.
+
 Topic Classes (c_topic.pyx)
 ----------------------------
 
@@ -342,9 +443,9 @@ For ``nogil`` functions, exceptions are deferred:
 Building Cython Extensions
 ---------------------------
 
-To build your own Cython extension using PyEventEngine:
+To build your own Cython extension using PyEventEngine, see the detailed instructions in `Including in Your Cython Extension`_ above.
 
-**setup.py:**
+**Quick Example:**
 
 .. code-block:: python
 
@@ -357,7 +458,7 @@ To build your own Cython extension using PyEventEngine:
            "my_module",
            sources=["my_module.pyx"],
            include_dirs=[event_engine.get_include()],
-           language="c++",  # If using C++ features
+           extra_compile_args=["-O3"]
        )
    ]
 

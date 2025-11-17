@@ -1,12 +1,17 @@
 __version__ = '0.4.3'
 
 import functools
-import os
 
-if os.name == 'posix':
-    from .capi import *
-else:
-    from .native import *
+try:
+    from .capi import *  # noqa: F401,F403
+except Exception as e:
+    import warnings
+    warnings.warn(
+        f"Failed to import event_engine.capi ({e!r}); falling back to event_engine.native.",
+        ImportWarning,
+        stacklevel=2,
+    )
+    from .native import *  # noqa: F401,F403
 
 
 @functools.cache

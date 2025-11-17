@@ -1,19 +1,47 @@
 import logging
 
-from ..base import LOGGER
+LOGGER = None
 
-__all__ = ['set_logger', 'LOG_LEVEL_EVENT', 'Topic', 'RegularTopic', 'PatternTopic', 'EventHook', 'EventEngine', 'LOGGER']
-DEBUG = False
-LOG_LEVEL = logging.INFO
-LOG_LEVEL_EVENT = LOG_LEVEL - 5
+# Indicate we are using the native (fallback) implementation
+USING_FALLBACK = True
+
+from .topic import (
+    PyTopicType, PyTopicPart, PyTopicPartExact, PyTopicPartAny, PyTopicPartRange, PyTopicPartPattern,
+    PyTopicMatchResult, PyTopic,
+    init_internal_map, clear_internal_map, get_internal_topic, get_internal_map, init_allocator,
+)
+
+from .event import PyMessagePayload, EventHook as EventHookBase, EventHookEx
+from .engine import Full, Empty, EventEngine as EventEngineBase, EventEngineEx
 
 
 def set_logger(logger: logging.Logger):
     global LOGGER
+    from . import topic, event, engine
+    topic.LOGGER = logger
+    event.LOGGER = logger
+    engine.LOGGER = logger
     LOGGER = logger
 
-    _event.LOGGER = LOGGER.getChild('Event')
 
+# alias for consistency
+TopicType = PyTopicType
+TopicPart = PyTopicPart
+TopicPartExact = PyTopicPartExact
+TopicPartAny = PyTopicPartAny
+TopicPartRange = PyTopicPartRange
+TopicPartPattern = PyTopicPartPattern
+TopicMatchResult = PyTopicMatchResult
+Topic = PyTopic
+MessagePayload = PyMessagePayload
+EventHook = EventHookEx
+EventEngine = EventEngineEx
 
-from ._topic import Topic, RegularTopic, PatternTopic
-from ._event import EventHook, EventEngine
+__all__ = [
+    'TopicType', 'TopicPart', 'TopicPartExact', 'TopicPartAny', 'TopicPartRange', 'TopicPartPattern',
+    'TopicMatchResult', 'Topic',
+    'init_internal_map', 'clear_internal_map', 'get_internal_topic', 'get_internal_map', 'init_allocator',
+    'MessagePayload', 'EventHookBase', 'EventHook',
+    'Full', 'Empty', 'EventEngineBase', 'EventEngine', 'USING_FALLBACK',
+    'set_logger'
+]

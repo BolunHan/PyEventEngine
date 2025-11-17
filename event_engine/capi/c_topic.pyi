@@ -403,6 +403,20 @@ class PyTopic:
 
     owner: int
 
+    def __init__(self, topic: str = None, *args: Any, alloc: bool = True, allocator: Any = None, **kwargs: Any):
+        """Create a PyTopic from a topic string.
+
+        Args:
+            topic: Topic string to parse.
+            alloc: If True, allocate and initialize (default for normal usage).
+            allocator: Optional allocator (ignored in pure Python implementation).
+            args: Reserved for subclassing.
+            kwargs: Reserved for subclassing.
+
+        Raises:
+            MemoryError: If parsing or allocation fails, or actually do run out of memory.
+        """
+
     def __len__(self) -> int:
         """Return the number of parts in the topic."""
 

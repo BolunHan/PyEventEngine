@@ -9,13 +9,23 @@ import sys
 # Add project root to path for autodoc
 sys.path.insert(0, os.path.abspath('..'))
 
+# Import version from package
+try:
+    from event_engine import __version__
+
+    release = 'v{__version__}'
+    version = 'v{__version__}'
+except ImportError:
+    # Fallback if import fails
+    release = 'unknown'
+    version = 'unknown'
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'PyEventEngine'
 copyright = '2025, Bolun Han'
 author = 'Bolun Han'
-release = 'v0.4.3.post1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

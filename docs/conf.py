@@ -13,8 +13,8 @@ sys.path.insert(0, os.path.abspath('..'))
 try:
     from event_engine import __version__
 
-    release = 'v{__version__}'
-    version = 'v{__version__}'
+    release = f'v{__version__}'
+    version = f'v{__version__}'
 except ImportError:
     # Fallback if import fails
     release = 'unknown'

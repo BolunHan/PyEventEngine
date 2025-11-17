@@ -24,6 +24,7 @@ try:
     from ..base import LOGGER
 except ImportError:
     import logging
+
     LOGGER = logging.getLogger(__name__)
 
 LOGGER = LOGGER.getChild('Event')
@@ -39,7 +40,7 @@ class PyMessagePayload:
 
     In native Python, all instances own their underlying data (owner, args_owner, kwargs_owner are always True).
     """
-    
+
     __slots__ = ('_topic', '_args', '_kwargs', '_seq_id')
 
     def __init__(self, alloc: bool = False) -> None:
@@ -141,7 +142,7 @@ class EventHook:
         logger (Logger | None): Optional logger instance.
         retry_on_unexpected_topic (bool): If ``True``, retries with no-topic calling convention if a with-topic handler raises a ``TypeError`` and the error message indicates an unexpected topic argument.
     """
-    
+
     __slots__ = ('topic', 'logger', 'retry_on_unexpected_topic', '_handlers_no_topic', '_handlers_with_topic')
 
     def __init__(self, topic: PyTopic, logger: Logger = None, retry_on_unexpected_topic: bool = False) -> None:
@@ -356,7 +357,7 @@ class EventHookEx(EventHook):
     """
     Extended ``EventHook`` that tracks per-handler execution statistics.
     """
-    
+
     __slots__ = ('_stats',)
 
     def __init__(self, topic: PyTopic, logger: Logger = None, retry_on_unexpected_topic: bool = False) -> None:
@@ -387,7 +388,7 @@ class EventHookEx(EventHook):
             handler_id = id(handler)
             if handler_id not in self._stats:
                 self._stats[handler_id] = {'calls': 0, 'total_time': 0.0}
-            
+
             start_time = time.perf_counter()
             try:
                 handler(*args, **kwargs)
@@ -407,7 +408,7 @@ class EventHookEx(EventHook):
             handler_id = id(handler)
             if handler_id not in self._stats:
                 self._stats[handler_id] = {'calls': 0, 'total_time': 0.0}
-            
+
             start_time = time.perf_counter()
             try:
                 handler(*args, **kwargs_with_topic)
@@ -452,7 +453,7 @@ class EventHookEx(EventHook):
             handler_id = id(handler)
             if handler_id in self._stats:
                 yield handler, self._stats[handler_id]
-        
+
         for handler in self._handlers_with_topic:
             handler_id = id(handler)
             if handler_id in self._stats:
@@ -464,4 +465,3 @@ class EventHookEx(EventHook):
         """
         super().clear()
         self._stats.clear()
-

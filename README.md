@@ -1,91 +1,132 @@
 # PyEventEngine
 
-python native event engine
+High-performance, topic-driven event engine for Python with a Cython-accelerated core and a native Python fallback.
 
-# Install
+- Fast publish/subscribe event routing by topic (exact + generic wildcard/pattern matching)
+- Clean, typed API with drop-in fallback when C extensions are unavailable
+- Built-in timers, handler stats (EventHookEx), and convenient formatting helpers
 
-```shell
-pip install git+https://github.com/BolunHan/PyEventEngine.git
-```
+## Installation
 
-or
-
-```shell
+```bash
 pip install PyEventEngine
 ```
 
-# Use
+Or install from source:
 
-## basic usage
-
-```python
-# init event engine
-import time
-from event_engine import EventEngine, Topic
-
-EVENT_ENGINE = EventEngine()
-EVENT_ENGINE.start()
-
-
-# register handler
-def test_handler(msg, **kwargs):
-    print(msg)
-
-
-EVENT_ENGINE.register_handler(topic=Topic('SimpleTopic'), handler=test_handler)
-
-# publish message
-EVENT_ENGINE.put(topic=Topic('SimpleTopic'), msg='topic called')
-time.sleep(1)
-EVENT_ENGINE.stop()
+```bash
+pip install git+https://github.com/BolunHan/PyEventEngine.git
 ```
 
-## regular topic
+## Quick Start
 
 ```python
-# init event engine
 import time
-from event_engine import EventEngine, Topic, RegularTopic
 
-EVENT_ENGINE = EventEngine()
-EVENT_ENGINE.start()
+from event_engine import EventEngine, Topic, EventHook
 
+# Create and start the engine
+engine = EventEngine(capacity=8192)
+engine.start()
 
-# register handler
-def test_handler(msg, **kwargs):
-    print(msg)
+# Register a handler for an exact topic
+exact = Topic('Demo.Hello')
 
+def hello_handler(name: str, topic=None):
+    print(f"Hello {name} from {topic.value if topic else 'N/A'}")
 
-EVENT_ENGINE.register_handler(topic=RegularTopic('RegularTopic.*'), handler=test_handler)
+engine.register_handler(exact, hello_handler)
 
-# publish message
-EVENT_ENGINE.put(topic=Topic('RegularTopic.ChildTopic0'), msg='topic called')
-time.sleep(1)
-EVENT_ENGINE.stop()
+# Publish a message
+engine.put(exact, 'World')
+
+# Clean up
+time.sleep(0.1)
+engine.stop()
+engine.clear()
 ```
 
-## timer topic
+### Generic topics (wildcards/patterns)
 
 ```python
-# init event engine
 import time
-from event_engine import EventEngine, Topic, RegularTopic
+from event_engine import Topic, EventEngine
 
-EVENT_ENGINE = EventEngine()
-EVENT_ENGINE.start()
+engine = EventEngine()
+pattern = Topic('Demo.{what}')
 
-
-# register handler
-def test_handler(**kwargs):
-    print(kwargs)
+calls = []
 
 
-topic = EVENT_ENGINE.get_timer(interval=1)
-EVENT_ENGINE.register_handler(topic=topic, handler=test_handler)
+def f(what: str, topic=None):
+    calls.append((what, topic.value))
 
-# publish message
-time.sleep(5)
-EVENT_ENGINE.stop()
+
+engine.register_handler(pattern, f)
+
+engine.start()
+engine.put(Topic('Demo.Test'), 'a test sub-topic')
+engine.put(Topic('Demo.Live'), 'a live sub-topic')
+time.sleep(0.1)  # allow some time for processing
+engine.stop()
+
+print(calls)  # [('a test sub-topic', 'Demo.Test'), ('a live sub-topic', 'Demo.Live')]
 ```
 
-See more advanced usage at .Demo
+### Timers (EventEngineEx)
+
+```python
+from event_engine import EventEngine, EventEngineBase, EventEngine as EventEngineEx, Topic
+
+engine = EventEngineEx(capacity=4096)
+engine.start()
+
+# Create a 1-second timer topic and subscribe
+timer_topic = engine.get_timer(1.0)
+engine.register_handler(timer_topic, lambda **kw: print('tick', kw))
+
+# ... run a little while
+import time; time.sleep(3)
+engine.stop(); engine.clear()
+```
+
+### Logging
+
+By default, the package uses a colored logger under `event_engine.base`. To integrate with your
+application's logging, call `set_logger` once after import. It will propagate to submodules.
+
+```python
+import logging
+from event_engine import set_logger
+
+logger = logging.getLogger('MyApp')
+logger.setLevel(logging.INFO)
+set_logger(logger)
+```
+
+### Fallback behavior
+
+On import, the package tries to use the Cython implementation (`event_engine.capi`). If that fails
+(e.g., no compiler available), it automatically falls back to the native Python implementation (`event_engine.native`).
+You can check the active backend via:
+
+```python
+from event_engine import USING_FALLBACK
+print('Using native fallback?' , USING_FALLBACK)
+```
+
+## Development
+
+- Run unit tests and demos under `demo/`
+- Native performance test: `python demo/native_performance_test.py`
+- CAPI performance test (requires compiled extensions): `python demo/capi_performance_test.py`
+
+## Documentation
+
+Full documentation is available at: **https://bolunhan.github.io/PyEventEngine/** *(auto-generated from main branch)*
+
+To build documentation locally, see [`docs/BUILD.md`](docs/BUILD.md).
+
+---
+
+See `demo/` for more examples: matching, timers, performance. Issues and PRs welcome!

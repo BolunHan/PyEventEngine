@@ -1,7 +1,22 @@
+"""
+DEPRECATED: This module is deprecated and will be removed in a future version.
+
+This was an old implementation that doesn't match the Cython API.
+Please use event_engine.native.topic instead, which provides a proper
+Python fallback implementation that mimics the Cython c_topic module.
+"""
+
+import warnings
 import re
 from enum import Enum
 from string import Formatter
 from typing import Self, Type
+
+warnings.warn(
+    "event_engine.native._topic is deprecated. Use event_engine.native.topic instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 
 class Topic(dict):

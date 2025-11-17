@@ -244,14 +244,14 @@ class TestTopicMatching(unittest.TestCase):
         match = t1.match(t2)
         self.assertTrue(match)
         res = list(match)
-        
+
         # Should have 5 match results (one for each part), not just 2
         self.assertEqual(len(res), 5, f"Expected 5 match results, got {len(res)}")
-        
+
         # Verify each part matched
         for i, r in enumerate(res):
             self.assertTrue(r['matched'], f"Part {i} should be matched")
-        
+
         # Verify literals
         self.assertEqual(res[0]['literal'], 'a')
         self.assertEqual(res[1]['literal'], '2')
@@ -266,26 +266,147 @@ class TestTopicMatching(unittest.TestCase):
         match = t1.match(t2)
         # This should not match because t1 has 3 parts but t2 has 4 parts
         self.assertFalse(match)
-        
+
         # Corrected version with proper structure
         t1_corrected = PyTopic('realtime.{ticker}.{dtype}')
         t2_corrected = PyTopic('realtime.600010.TransactionData')
         match = t1_corrected.match(t2_corrected)
         self.assertTrue(match)
         res = list(match)
-        
+
         # Should have 3 match results
         self.assertEqual(len(res), 3, f"Expected 3 match results, got {len(res)}")
-        
+
         # Verify each part matched
         self.assertTrue(res[0]['matched'])
         self.assertTrue(res[1]['matched'])
         self.assertTrue(res[2]['matched'])
-        
+
         # Verify literals
         self.assertEqual(res[0]['literal'], 'realtime')
         self.assertEqual(res[1]['literal'], '600010')
         self.assertEqual(res[2]['literal'], 'TransactionData')
+
+
+class TestTopicFormatMap(unittest.TestCase):
+    """Test format_map with strict parameter."""
+
+    def test_format_map_strict_true_all_keys_present(self):
+        """Test format_map with strict=True when all keys are present."""
+        template = PyTopic('realtime.{ticker}.{dtype}')
+        formatted = template.format_map({'ticker': '600010.SH', 'dtype': 'TickData'}, strict=True)
+
+        self.assertEqual(formatted.value, 'realtime.600010.SH.TickData')
+        self.assertTrue(formatted.is_exact)
+        self.assertEqual(len(formatted), 3)  # realtime, 600010.SH, TickData
+
+    def test_format_map_strict_true_missing_key(self):
+        """Test format_map with strict=True raises KeyError when key is missing."""
+        template = PyTopic('realtime.{ticker}.{dtype}')
+
+        with self.assertRaises(KeyError) as cm:
+            template.format_map({'ticker': '600010.SH'}, strict=True)
+
+        self.assertEqual(str(cm.exception), "'dtype'")
+
+    def test_format_map_strict_false_all_keys_present(self):
+        """Test format_map with strict=False when all keys are present."""
+        template = PyTopic('realtime.{ticker}.{dtype}')
+        formatted = template.format_map({'ticker': '600010.SH', 'dtype': 'TickData'}, strict=False)
+
+        self.assertEqual(formatted.value, 'realtime.600010.SH.TickData')
+        self.assertTrue(formatted.is_exact)
+        self.assertEqual(len(formatted), 3)
+
+    def test_format_map_strict_false_missing_key(self):
+        """Test format_map with strict=False keeps wildcards when key is missing."""
+        template = PyTopic('realtime.{ticker}.{dtype}')
+        formatted = template.format_map({'ticker': '600010.SH'}, strict=False)
+
+        # Should keep the {dtype} wildcard as-is
+        self.assertEqual(formatted.value, 'realtime.600010.SH.{dtype}')
+        self.assertFalse(formatted.is_exact)  # Not exact because it still has a wildcard
+        self.assertEqual(len(formatted), 3)
+
+        # Check parts
+        parts = list(formatted)
+        self.assertIsInstance(parts[0], PyTopicPartExact)
+        self.assertEqual(parts[0].part, 'realtime')
+        self.assertIsInstance(parts[1], PyTopicPartExact)
+        self.assertEqual(parts[1].part, '600010.SH')
+        self.assertIsInstance(parts[2], PyTopicPartAny)
+        self.assertEqual(parts[2].name, 'dtype')
+        self.assertTrue(formatted.match(PyTopic.join(["realtime", "600010.SH", "TickData"])))
+
+    def test_format_map_strict_false_no_keys(self):
+        """Test format_map with strict=False and no keys keeps all wildcards."""
+        template = PyTopic('realtime.{ticker}.{dtype}')
+        formatted = template.format_map({}, strict=False)
+
+        # Should keep both wildcards as-is
+        self.assertEqual(formatted.value, 'realtime.{ticker}.{dtype}')
+        self.assertFalse(formatted.is_exact)
+        self.assertEqual(len(formatted), 3)
+
+        # Check parts
+        parts = list(formatted)
+        self.assertIsInstance(parts[0], PyTopicPartExact)
+        self.assertEqual(parts[0].part, 'realtime')
+        self.assertIsInstance(parts[1], PyTopicPartAny)
+        self.assertEqual(parts[1].name, 'ticker')
+        self.assertIsInstance(parts[2], PyTopicPartAny)
+        self.assertEqual(parts[2].name, 'dtype')
+
+    def test_format_map_strict_false_partial_replacement(self):
+        """Test format_map with strict=False replaces some wildcards and keeps others."""
+        template = PyTopic('{env}.{service}.{region}.{instance}')
+        formatted = template.format_map({'env': 'prod', 'region': 'us-east-1'}, strict=False)
+
+        # Should replace env and region, keep service and instance
+        self.assertEqual(formatted.value, 'prod.{service}.us-east-1.{instance}')
+        self.assertFalse(formatted.is_exact)
+        self.assertEqual(len(formatted), 4)
+
+        # Check parts
+        parts = list(formatted)
+        self.assertIsInstance(parts[0], PyTopicPartExact)
+        self.assertEqual(parts[0].part, 'prod')
+        self.assertIsInstance(parts[1], PyTopicPartAny)
+        self.assertEqual(parts[1].name, 'service')
+        self.assertIsInstance(parts[2], PyTopicPartExact)
+        self.assertEqual(parts[2].part, 'us-east-1')
+        self.assertIsInstance(parts[3], PyTopicPartAny)
+        self.assertEqual(parts[3].name, 'instance')
+
+    def test_format_default_strict_false(self):
+        """Test that format() method defaults to strict=False."""
+        template = PyTopic('realtime.{ticker}.{dtype}')
+        formatted = template.format(ticker='600010.SH')
+
+        # Should keep dtype wildcard
+        self.assertEqual(formatted.value, 'realtime.600010.SH.{dtype}')
+        self.assertFalse(formatted.is_exact)
+
+    def test_call_syntax_strict_false(self):
+        """Test that __call__ syntax defaults to strict=False."""
+        template = PyTopic('realtime.{ticker}.{dtype}')
+        formatted = template(ticker='600010.SH')
+
+        # Should keep dtype wildcard
+        self.assertEqual(formatted.value, 'realtime.600010.SH.{dtype}')
+        self.assertFalse(formatted.is_exact)
+
+    def test_format_map_internalized_parameter(self):
+        """Test that internalized parameter works correctly."""
+        template = PyTopic('realtime.{ticker}')
+
+        # With internalized=True (default)
+        formatted1 = template.format_map({'ticker': '600010.SH'}, internalized=True, strict=False)
+        self.assertFalse(formatted1.owner)
+
+        # With internalized=False
+        formatted2 = template.format_map({'ticker': '600010.SH'}, internalized=False, strict=False)
+        self.assertTrue(formatted2.owner)
 
 
 if __name__ == '__main__':

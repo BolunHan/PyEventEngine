@@ -1,3 +1,12 @@
+"""
+DEPRECATED: This module is deprecated and will be removed in a future version.
+
+This was an old implementation that doesn't match the Cython API.
+Please use event_engine.native.event instead, which provides a proper
+Python fallback implementation that mimics the Cython c_event module.
+"""
+
+import warnings
 import datetime
 import enum
 import inspect
@@ -9,6 +18,12 @@ from threading import Thread, Semaphore
 from typing import Iterable, TypedDict, NotRequired, Callable
 
 from . import LOGGER, LOG_LEVEL_EVENT, Topic, DEBUG
+
+warnings.warn(
+    "event_engine.native._event is deprecated. Use event_engine.native.event instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 LOGGER = LOGGER.getChild('Event')
 

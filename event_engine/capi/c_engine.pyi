@@ -52,10 +52,14 @@ class EventEngine:
     Attributes:
         capacity (int): Maximum number of messages the internal queue can hold.
         logger (Logger): Logger instance used for diagnostics.
+        active (bool): Indicates whether the engine is currently running.
+        seq_id (int): Monotonically increasing sequence ID for published messages.
     """
 
     capacity: int
     logger: Logger
+    active: bool
+    seq_id: int
 
     def __init__(self, capacity: int = ..., logger: Logger = None) -> None:
         """

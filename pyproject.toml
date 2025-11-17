@@ -26,7 +26,7 @@ Repository = "https://github.com/BolunHan/PyEventEngine"
 Issues = "https://github.com/BolunHan/PyEventEngine/issues"
 
 [tool.setuptools.packages.find]
-exclude = ["demo*"]
+exclude = ["demo*", "docs*"]
 include = ["event_engine*"]
 
 [tool.setuptools.package-data]

@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>event_engine.native.topic - PyEventEngine v0.4.4</title>
+        <title>event_engine.native.topic - PyEventEngine v0.4.4.post1</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -160,7 +160,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../../index.html"><div class="brand">PyEventEngine v0.4.4</div></a>
+      <a href="../../../index.html"><div class="brand">PyEventEngine v0.4.4.post1</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -181,7 +181,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
   
-  <span class="sidebar-brand-text">PyEventEngine v0.4.4</span>
+  <span class="sidebar-brand-text">PyEventEngine v0.4.4.post1</span>
   
 </a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -1042,7 +1042,7 @@
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.native.topic.PyTopic.__call__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;PyTopic&#39;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Alias of ``format`` method to format the topic by replacing named wildcards with provided values.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_map</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">internalized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="PyTopic.from_parts">
@@ -1224,21 +1224,22 @@
 <span class="sd">            KeyError: If a required wildcard name is missing in kwargs.</span>
 <span class="sd">            ValueError: If having subordinate parts that are not exact or wildcards.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_map</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">internalized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_map</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">internalized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="PyTopic.format_map">
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.native.topic.PyTopic.format_map">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">format_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">internalized</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PyTopic</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">format_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">internalized</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PyTopic</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Format the topic by replacing named wildcards with provided values from a mapping.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            mapping: Dictionary mapping wildcard names to replacement strings.</span>
 <span class="sd">            internalized: If True, the returned topic is internalized into the global map and not owning its underlying buffer.</span>
 <span class="sd">                          If False, the returned topic owns its internal buffer.</span>
+<span class="sd">            strict: If True, raises KeyError if a wildcard name is missing in mapping.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            A new Exact PyTopic with wildcards replaced by the provided values.</span>
+<span class="sd">            A new PyTopic with wildcards replaced by the provided values. If strict is True, the new PyTopic is guaranteed to be an exact PyTopic.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            KeyError: If a required wildcard name is missing in mapping.</span>
@@ -1255,8 +1256,12 @@
                 <span class="n">part_any</span> <span class="o">=</span> <span class="n">part</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">part</span><span class="p">,</span> <span class="n">PyTopicPartAny</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
                 <span class="k">if</span> <span class="n">part_any</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">part_any</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">:</span>
-                        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">part_any</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-                    <span class="n">new_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PyTopicPartExact</span><span class="p">(</span><span class="n">mapping</span><span class="p">[</span><span class="n">part_any</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">alloc</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+                        <span class="k">if</span> <span class="n">strict</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">part_any</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">new_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PyTopicPartAny</span><span class="p">(</span><span class="n">part_any</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">alloc</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">new_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PyTopicPartExact</span><span class="p">(</span><span class="n">mapping</span><span class="p">[</span><span class="n">part_any</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">alloc</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Not supported topic type </span><span class="si">{</span><span class="n">part</span><span class="o">.</span><span class="n">ttype</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
@@ -1363,7 +1368,7 @@
       
     </aside>
   </div>
-</div><script src="../../../_static/documentation_options.js?v=bc066b69"></script>
+</div><script src="../../../_static/documentation_options.js?v=6c8d5007"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>

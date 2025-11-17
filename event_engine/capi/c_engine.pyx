@@ -11,7 +11,7 @@ from .c_event cimport PyMessagePayload, C_INTERNAL_EMPTY_ARGS
 from .c_topic cimport c_topic_match_bool, C_ALLOCATOR
 from ..base import LOGGER
 
-LOGGER = LOGGER.getChild('Event')
+LOGGER = LOGGER.getChild('Engine')
 
 
 class Full(Exception):
@@ -160,7 +160,7 @@ cdef class EventEngine:
         cdef EventHook event_hook
 
         hook_ptr = c_bytemap_get(self.exact_topic_hooks, msg_topic.key, msg_topic.key_len)
-        if hook_ptr:
+        if hook_ptr and hook_ptr != C_BYTEMAP_NOT_FOUND:
             event_hook = <EventHook> <PyObject*> hook_ptr
             event_hook.c_trigger_no_topic(msg)
             event_hook.c_trigger_with_topic(msg)
@@ -190,7 +190,7 @@ cdef class EventEngine:
             hook_map = self.generic_topic_hooks
 
         existing_hook_ptr = c_bytemap_get(hook_map, topic_ptr.key, topic_ptr.key_len)
-        if existing_hook_ptr != C_BYTEMAP_NOT_FOUND and existing_hook_ptr != <void*> <PyObject*> hook:
+        if existing_hook_ptr and existing_hook_ptr != C_BYTEMAP_NOT_FOUND and existing_hook_ptr != <void*> <PyObject*> hook:
             raise KeyError(f'Another EventHook already registered for {hook.topic.value}')
         c_bytemap_set(hook_map, topic_ptr.key, topic_ptr.key_len, <void*> <PyObject*> hook)
         Py_INCREF(hook)
@@ -223,7 +223,7 @@ cdef class EventEngine:
             hook_map = self.generic_topic_hooks
 
         hook_ptr = c_bytemap_get(hook_map, topic_ptr.key, topic_ptr.key_len)
-        if hook_ptr == C_BYTEMAP_NOT_FOUND:
+        if hook_ptr and hook_ptr == C_BYTEMAP_NOT_FOUND:
             event_hook = EventHook.__new__(EventHook, topic, self.logger)
             hook_ptr = <void*> <PyObject*> event_hook
             c_bytemap_set(hook_map, topic_ptr.key, topic_ptr.key_len, hook_ptr)
@@ -244,7 +244,7 @@ cdef class EventEngine:
             hook_map = self.generic_topic_hooks
 
         hook_ptr = c_bytemap_get(hook_map, topic_ptr.key, topic_ptr.key_len)
-        if hook_ptr == C_BYTEMAP_NOT_FOUND:
+        if hook_ptr and hook_ptr == C_BYTEMAP_NOT_FOUND:
             raise KeyError(f'No EventHook registered for {topic.value}')
         event_hook = <EventHook> <PyObject*> hook_ptr
         event_hook.remove_handler(py_callable)

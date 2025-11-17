@@ -244,14 +244,14 @@ class TestTopicMatching(unittest.TestCase):
         match = t1.match(t2)
         self.assertTrue(match)
         res = list(match)
-
+        
         # Should have 5 match results (one for each part), not just 2
         self.assertEqual(len(res), 5, f"Expected 5 match results, got {len(res)}")
-
+        
         # Verify each part matched
         for i, r in enumerate(res):
             self.assertTrue(r['matched'], f"Part {i} should be matched")
-
+        
         # Verify literals
         self.assertEqual(res[0]['literal'], 'a')
         self.assertEqual(res[1]['literal'], '2')
@@ -266,22 +266,22 @@ class TestTopicMatching(unittest.TestCase):
         match = t1.match(t2)
         # This should not match because t1 has 3 parts but t2 has 4 parts
         self.assertFalse(match)
-
+        
         # Corrected version with proper structure
         t1_corrected = PyTopic('realtime.{ticker}.{dtype}')
         t2_corrected = PyTopic('realtime.600010.TransactionData')
         match = t1_corrected.match(t2_corrected)
         self.assertTrue(match)
         res = list(match)
-
+        
         # Should have 3 match results
         self.assertEqual(len(res), 3, f"Expected 3 match results, got {len(res)}")
-
+        
         # Verify each part matched
         self.assertTrue(res[0]['matched'])
         self.assertTrue(res[1]['matched'])
         self.assertTrue(res[2]['matched'])
-
+        
         # Verify literals
         self.assertEqual(res[0]['literal'], 'realtime')
         self.assertEqual(res[1]['literal'], '600010')

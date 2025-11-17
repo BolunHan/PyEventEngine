@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Native Python Fallback" href="native_fallback.html"><link rel="prev" title="Cython API Reference" href="capi_cython.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>Python API Reference (CAPI) - PyEventEngine v0.4.3.post1</title>
+        <title>Python API Reference (CAPI) - PyEventEngine v{__version__}</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -161,7 +161,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">PyEventEngine v0.4.3.post1</div></a>
+      <a href="index.html"><div class="brand">PyEventEngine v{__version__}</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -182,7 +182,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
-  <span class="sidebar-brand-text">PyEventEngine v0.4.3.post1</span>
+  <span class="sidebar-brand-text">PyEventEngine v{__version__}</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -261,61 +261,61 @@
 <h3>Topic<a class="headerlink" href="#topic" title="Link to this heading">¶</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="event_engine.capi.PyTopic">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.</span></span><span class="sig-name descname"><span class="pre">PyTopic</span></span><a class="reference internal" href="_modules/event_engine/capi/c_topic.html#PyTopic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.PyTopic" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.</span></span><span class="sig-name descname"><span class="pre">PyTopic</span></span><a class="headerlink" href="#event_engine.capi.PyTopic" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="event_engine.capi.PyTopic.owner">
-<span class="sig-name descname"><span class="pre">owner</span></span><a class="headerlink" href="#event_engine.capi.PyTopic.owner" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="event_engine.capi.PyTopic.from_parts">
-<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_parts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic_parts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><span class="pre">PyTopicPart</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="reference internal" href="_modules/event_engine/capi/c_topic.html#PyTopic.from_parts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.PyTopic.from_parts" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="event_engine.capi.PyTopic.join">
-<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">join</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic_parts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="reference internal" href="_modules/event_engine/capi/c_topic.html#PyTopic.join"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.PyTopic.join" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="event_engine.capi.PyTopic.append">
-<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic_part</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/c_topic.html#PyTopic.append"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.PyTopic.append" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="event_engine.capi.PyTopic.match">
-<span class="sig-name descname"><span class="pre">match</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/c_topic.html#PyTopic.match"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.PyTopic.match" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="event_engine.capi.PyTopic.update_literal">
-<span class="sig-name descname"><span class="pre">update_literal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="reference internal" href="_modules/event_engine/capi/c_topic.html#PyTopic.update_literal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.PyTopic.update_literal" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="py attribute">
 <dt class="sig sig-object py" id="event_engine.capi.PyTopic.addr">
 <span class="sig-name descname"><span class="pre">addr</span></span><a class="headerlink" href="#event_engine.capi.PyTopic.addr" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.PyTopic.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic_part</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.PyTopic.append" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="event_engine.capi.PyTopic.format">
-<span class="sig-name descname"><span class="pre">format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="reference internal" href="_modules/event_engine/capi/c_topic.html#PyTopic.format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.PyTopic.format" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="api_reference.html#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="headerlink" href="#event_engine.capi.PyTopic.format" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="event_engine.capi.PyTopic.format_map">
-<span class="sig-name descname"><span class="pre">format_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mapping</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">internalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/c_topic.html#PyTopic.format_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.PyTopic.format_map" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">format_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mapping</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">internalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.PyTopic.format_map" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="py attribute">
-<dt class="sig sig-object py" id="event_engine.capi.PyTopic.value">
-<span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#event_engine.capi.PyTopic.value" title="Link to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.PyTopic.from_parts">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_parts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic_parts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="api_reference.html#event_engine.capi.c_topic.PyTopicPart" title="event_engine.capi.c_topic.PyTopicPart"><span class="pre">PyTopicPart</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="api_reference.html#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="headerlink" href="#event_engine.capi.PyTopic.from_parts" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="event_engine.capi.PyTopic.is_exact">
 <span class="sig-name descname"><span class="pre">is_exact</span></span><a class="headerlink" href="#event_engine.capi.PyTopic.is_exact" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.PyTopic.join">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">join</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic_parts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="api_reference.html#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="headerlink" href="#event_engine.capi.PyTopic.join" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.PyTopic.match">
+<span class="sig-name descname"><span class="pre">match</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.PyTopic.match" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.PyTopic.owner">
+<span class="sig-name descname"><span class="pre">owner</span></span><a class="headerlink" href="#event_engine.capi.PyTopic.owner" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.PyTopic.update_literal">
+<span class="sig-name descname"><span class="pre">update_literal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="api_reference.html#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="headerlink" href="#event_engine.capi.PyTopic.update_literal" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.PyTopic.value">
+<span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#event_engine.capi.PyTopic.value" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -753,17 +753,17 @@
 <li><a class="reference internal" href="#topic-classes">Topic Classes</a><ul>
 <li><a class="reference internal" href="#topic">Topic</a><ul>
 <li><a class="reference internal" href="#event_engine.capi.PyTopic"><code class="docutils literal notranslate"><span class="pre">PyTopic</span></code></a><ul>
-<li><a class="reference internal" href="#event_engine.capi.PyTopic.owner"><code class="docutils literal notranslate"><span class="pre">PyTopic.owner</span></code></a></li>
-<li><a class="reference internal" href="#event_engine.capi.PyTopic.from_parts"><code class="docutils literal notranslate"><span class="pre">PyTopic.from_parts()</span></code></a></li>
-<li><a class="reference internal" href="#event_engine.capi.PyTopic.join"><code class="docutils literal notranslate"><span class="pre">PyTopic.join()</span></code></a></li>
-<li><a class="reference internal" href="#event_engine.capi.PyTopic.append"><code class="docutils literal notranslate"><span class="pre">PyTopic.append()</span></code></a></li>
-<li><a class="reference internal" href="#event_engine.capi.PyTopic.match"><code class="docutils literal notranslate"><span class="pre">PyTopic.match()</span></code></a></li>
-<li><a class="reference internal" href="#event_engine.capi.PyTopic.update_literal"><code class="docutils literal notranslate"><span class="pre">PyTopic.update_literal()</span></code></a></li>
 <li><a class="reference internal" href="#event_engine.capi.PyTopic.addr"><code class="docutils literal notranslate"><span class="pre">PyTopic.addr</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.PyTopic.append"><code class="docutils literal notranslate"><span class="pre">PyTopic.append()</span></code></a></li>
 <li><a class="reference internal" href="#event_engine.capi.PyTopic.format"><code class="docutils literal notranslate"><span class="pre">PyTopic.format()</span></code></a></li>
 <li><a class="reference internal" href="#event_engine.capi.PyTopic.format_map"><code class="docutils literal notranslate"><span class="pre">PyTopic.format_map()</span></code></a></li>
-<li><a class="reference internal" href="#event_engine.capi.PyTopic.value"><code class="docutils literal notranslate"><span class="pre">PyTopic.value</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.PyTopic.from_parts"><code class="docutils literal notranslate"><span class="pre">PyTopic.from_parts()</span></code></a></li>
 <li><a class="reference internal" href="#event_engine.capi.PyTopic.is_exact"><code class="docutils literal notranslate"><span class="pre">PyTopic.is_exact</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.PyTopic.join"><code class="docutils literal notranslate"><span class="pre">PyTopic.join()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.PyTopic.match"><code class="docutils literal notranslate"><span class="pre">PyTopic.match()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.PyTopic.owner"><code class="docutils literal notranslate"><span class="pre">PyTopic.owner</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.PyTopic.update_literal"><code class="docutils literal notranslate"><span class="pre">PyTopic.update_literal()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.PyTopic.value"><code class="docutils literal notranslate"><span class="pre">PyTopic.value</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -799,7 +799,7 @@
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=06a2b343"></script>
+</div><script src="_static/documentation_options.js?v=bc20d456"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="prev" title="Native Python Fallback" href="native_fallback.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>API Reference - PyEventEngine v0.4.3.post1</title>
+        <title>API Reference - PyEventEngine v{__version__}</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -161,7 +161,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">PyEventEngine v0.4.3.post1</div></a>
+      <a href="index.html"><div class="brand">PyEventEngine v{__version__}</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -182,7 +182,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
-  <span class="sidebar-brand-text">PyEventEngine v0.4.3.post1</span>
+  <span class="sidebar-brand-text">PyEventEngine v{__version__}</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -267,26 +267,213 @@
 <h2>Topic Classes<a class="headerlink" href="#topic-classes" title="Link to this heading">¶</a></h2>
 <section id="module-event_engine.capi.c_topic">
 <span id="event-engine-capi-c-topic"></span><h3>event_engine.capi.c_topic<a class="headerlink" href="#module-event_engine.capi.c_topic" title="Link to this heading">¶</a></h3>
-<dl class="py function">
-<dt class="sig sig-object py" id="event_engine.capi.c_topic.init_internal_map">
-<span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">init_internal_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">default_capacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Ellipsis</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ByteMap</span></span></span><a class="reference internal" href="_modules/event_engine/capi/c_topic.html#init_internal_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.c_topic.init_internal_map" title="Link to this definition">¶</a></dt>
-<dd><p>Initialize or return a shared internal byte map.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>default_capacity</strong> – Default capacity (in bytes) used when creating the internal map.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A ByteMap instance wrapping the shared internal bytemap.</p>
-</dd>
-</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">PyTopic</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic.addr">
+<span class="sig-name descname"><span class="pre">addr</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic.addr" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic_part</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic.append" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic.format">
+<span class="sig-name descname"><span class="pre">format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic.format" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic.format_map">
+<span class="sig-name descname"><span class="pre">format_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mapping</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">internalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic.format_map" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic.from_parts">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_parts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic_parts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPart" title="event_engine.capi.c_topic.PyTopicPart"><span class="pre">PyTopicPart</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic.from_parts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic.is_exact">
+<span class="sig-name descname"><span class="pre">is_exact</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic.is_exact" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic.join">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">join</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic_parts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic.join" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic.match">
+<span class="sig-name descname"><span class="pre">match</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic.match" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic.owner">
+<span class="sig-name descname"><span class="pre">owner</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic.owner" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic.update_literal">
+<span class="sig-name descname"><span class="pre">update_literal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic.update_literal" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopic.value">
+<span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopic.value" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicMatchResult">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">PyTopicMatchResult</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicMatchResult" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicMatchResult.length">
+<span class="sig-name descname"><span class="pre">length</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicMatchResult.length" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicMatchResult.matched">
+<span class="sig-name descname"><span class="pre">matched</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicMatchResult.matched" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicMatchResult.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicMatchResult.to_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPart">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">PyTopicPart</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPart" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPart.addr">
+<span class="sig-name descname"><span class="pre">addr</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPart.addr" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPart.next">
+<span class="sig-name descname"><span class="pre">next</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPart.next" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPart.owner">
+<span class="sig-name descname"><span class="pre">owner</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPart.owner" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPart.ttype">
+<span class="sig-name descname"><span class="pre">ttype</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPart.ttype" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPartAny">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">PyTopicPartAny</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPartAny" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPart" title="event_engine.capi.c_topic.PyTopicPart"><code class="xref py py-class docutils literal notranslate"><span class="pre">PyTopicPart</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPartAny.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPartAny.name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPartExact">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">PyTopicPartExact</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPartExact" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPart" title="event_engine.capi.c_topic.PyTopicPart"><code class="xref py py-class docutils literal notranslate"><span class="pre">PyTopicPart</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPartExact.part">
+<span class="sig-name descname"><span class="pre">part</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPartExact.part" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPartPattern">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">PyTopicPartPattern</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPartPattern" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPart" title="event_engine.capi.c_topic.PyTopicPart"><code class="xref py py-class docutils literal notranslate"><span class="pre">PyTopicPart</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPartPattern.pattern">
+<span class="sig-name descname"><span class="pre">pattern</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPartPattern.pattern" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPartPattern.regex">
+<span class="sig-name descname"><span class="pre">regex</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPartPattern.regex" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPartRange">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">PyTopicPartRange</span></span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPartRange" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPart" title="event_engine.capi.c_topic.PyTopicPart"><code class="xref py py-class docutils literal notranslate"><span class="pre">PyTopicPart</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicPartRange.options">
+<span class="sig-name descname"><span class="pre">options</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicPartRange.options" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicType">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">PyTopicType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicType" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.IntEnum" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntEnum</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicType.TOPIC_PART_EXACT">
+<span class="sig-name descname"><span class="pre">TOPIC_PART_EXACT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_EXACT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicType.TOPIC_PART_ANY">
+<span class="sig-name descname"><span class="pre">TOPIC_PART_ANY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_ANY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicType.TOPIC_PART_RANGE">
+<span class="sig-name descname"><span class="pre">TOPIC_PART_RANGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_RANGE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.PyTopicType.TOPIC_PART_PATTERN">
+<span class="sig-name descname"><span class="pre">TOPIC_PART_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_PATTERN" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="event_engine.capi.c_topic.clear_internal_map">
-<span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">clear_internal_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/event_engine/capi/c_topic.html#clear_internal_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.c_topic.clear_internal_map" title="Link to this definition">¶</a></dt>
-<dd><p>Clear and free the shared internal bytemap.</p>
-<p>This releases the internal resources and resets any cached references.</p>
-</dd></dl>
+<span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">clear_internal_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.clear_internal_map" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.get_internal_map">
+<span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">get_internal_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.get_internal_map" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.get_internal_topic">
+<span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">get_internal_topic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.get_internal_topic" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.init_allocator">
+<span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">init_allocator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">init_capacity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4194304</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_shm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.init_allocator" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="event_engine.capi.c_topic.init_internal_map">
+<span class="sig-prename descclassname"><span class="pre">event_engine.capi.c_topic.</span></span><span class="sig-name descname"><span class="pre">init_internal_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">default_capacity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">64</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event_engine.capi.c_topic.init_internal_map" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </section>
 <section id="module-event_engine.native.topic">
@@ -1284,7 +1471,7 @@ cannot be compiled (e.g., due to lack of Cython, GCC, or Clang).</p>
 <dd><p>The topic associated with this hook.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#event_engine.native.topic.PyTopic" title="event_engine.native.topic.PyTopic">PyTopic</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic">PyTopic</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1710,7 +1897,7 @@ or <code class="docutils literal notranslate"><span class="pre">None</span></cod
 
 <dl class="py method">
 <dt class="sig sig-object py" id="event_engine.capi.c_engine.EventEngineEx.get_timer">
-<span class="sig-name descname"><span class="pre">get_timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activate_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.native.topic.PyTopic" title="event_engine.native.topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="headerlink" href="#event_engine.capi.c_engine.EventEngineEx.get_timer" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activate_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="headerlink" href="#event_engine.capi.c_engine.EventEngineEx.get_timer" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -2181,8 +2368,353 @@ for handler statistics.</p>
 </section>
 <section id="fallback-engine">
 <h2>Fallback Engine<a class="headerlink" href="#fallback-engine" title="Link to this heading">¶</a></h2>
-<section id="event-engine-capi-fallback-engine">
-<h3>event_engine.capi.fallback_engine<a class="headerlink" href="#event-engine-capi-fallback-engine" title="Link to this heading">¶</a></h3>
+<section id="module-event_engine.capi.fallback_engine">
+<span id="event-engine-capi-fallback-engine"></span><h3>event_engine.capi.fallback_engine<a class="headerlink" href="#module-event_engine.capi.fallback_engine" title="Link to this heading">¶</a></h3>
+<p>Pure Python fallback implementation of EventEngine for cross-platform compatibility.</p>
+<p>This module provides Python-native implementations of EventEngine and EventEngineEx
+that work on Windows and other platforms without requiring Cython/C extensions.</p>
+<p>Uses:
+- threading.Lock, threading.Condition for synchronization
+- dict for topic-to-hook mappings (instead of ByteMap)
+- PyTopic, PyMessagePayload, EventHook from c_topic and c_event modules</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.Full">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.fallback_engine.</span></span><span class="sig-name descname"><span class="pre">Full</span></span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#Full"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.Full" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+<p>Exception raised when the message queue is full.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.Empty">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.fallback_engine.</span></span><span class="sig-name descname"><span class="pre">Empty</span></span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#Empty"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.Empty" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+<p>Exception raised when the message queue is empty.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.fallback_engine.</span></span><span class="sig-name descname"><span class="pre">EventEngine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4095</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Logger" title="(in Python v3.14)"><span class="pre">Logger</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Pure Python implementation of EventEngine.</p>
+<p>Uses dict-based topic-to-hook mappings and threading primitives for synchronization.
+Compatible with Windows and all platforms supporting the threading module.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4095</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Logger" title="(in Python v3.14)"><span class="pre">Logger</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Initialize EventEngine.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>capacity</strong> – Maximum capacity of the message queue</p></li>
+<li><p><strong>logger</strong> – Optional logger instance</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.__len__">
+<span class="sig-name descname"><span class="pre">__len__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.__len__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.__len__" title="Link to this definition">¶</a></dt>
+<dd><p>Return the total number of registered hooks.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.__repr__">
+<span class="sig-name descname"><span class="pre">__repr__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.__repr__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.__repr__" title="Link to this definition">¶</a></dt>
+<dd><p>String representation of the engine.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.activate">
+<span class="sig-name descname"><span class="pre">activate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.activate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.activate" title="Link to this definition">¶</a></dt>
+<dd><p>Activate the engine (sets active flag to True).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.deactivate">
+<span class="sig-name descname"><span class="pre">deactivate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.deactivate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.deactivate" title="Link to this definition">¶</a></dt>
+<dd><p>Deactivate the engine (sets active flag to False).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.run" title="Link to this definition">¶</a></dt>
+<dd><p>Run the event loop (blocking call).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.start" title="Link to this definition">¶</a></dt>
+<dd><p>Start the engine in a background thread.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.stop" title="Link to this definition">¶</a></dt>
+<dd><p>Stop the engine and wait for the background thread to finish.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.clear">
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.clear" title="Link to this definition">¶</a></dt>
+<dd><p>Clear all hooks and handlers (engine must be stopped first).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_spin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">65535</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.c_event.PyMessagePayload" title="event_engine.capi.c_event.PyMessagePayload"><span class="pre">PyMessagePayload</span></a></span></span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.get" title="Link to this definition">¶</a></dt>
+<dd><p>Get a message from the queue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>block</strong> – Whether to block if queue is empty</p></li>
+<li><p><strong>max_spin</strong> – Spin limit (ignored in pure Python)</p></li>
+<li><p><strong>timeout</strong> – Timeout in seconds</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>PyMessagePayload</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#event_engine.capi.fallback_engine.Empty" title="event_engine.capi.fallback_engine.Empty"><strong>Empty</strong></a> – If no message available</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.put">
+<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_spin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">65535</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.put"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.put" title="Link to this definition">¶</a></dt>
+<dd><p>Put a message into the queue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>topic</strong> – Topic for the message</p></li>
+<li><p><strong>*args</strong> – Positional arguments</p></li>
+<li><p><strong>block</strong> – Whether to block if queue is full</p></li>
+<li><p><strong>max_spin</strong> – Spin limit (ignored)</p></li>
+<li><p><strong>timeout</strong> – Timeout in seconds</p></li>
+<li><p><strong>**kwargs</strong> – Keyword arguments</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#event_engine.capi.fallback_engine.Full" title="event_engine.capi.fallback_engine.Full"><strong>Full</strong></a> – If queue is full</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.publish">
+<span class="sig-name descname"><span class="pre">publish</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">block</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_spin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">65535</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.publish"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.publish" title="Link to this definition">¶</a></dt>
+<dd><p>Publish a message to the queue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>topic</strong> – Topic for the message</p></li>
+<li><p><strong>args</strong> – Positional arguments tuple</p></li>
+<li><p><strong>kwargs</strong> – Keyword arguments dict</p></li>
+<li><p><strong>block</strong> – Whether to block if queue is full</p></li>
+<li><p><strong>max_spin</strong> – Spin limit (ignored)</p></li>
+<li><p><strong>timeout</strong> – Timeout in seconds</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#event_engine.capi.fallback_engine.Full" title="event_engine.capi.fallback_engine.Full"><strong>Full</strong></a> – If queue is full</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.register_hook">
+<span class="sig-name descname"><span class="pre">register_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#event_engine.capi.c_event.EventHook" title="event_engine.capi.c_event.EventHook"><span class="pre">EventHook</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.register_hook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.register_hook" title="Link to this definition">¶</a></dt>
+<dd><p>Register an event hook.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>hook</strong> – EventHook instance to register</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.unregister_hook">
+<span class="sig-name descname"><span class="pre">unregister_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.c_event.EventHook" title="event_engine.capi.c_event.EventHook"><span class="pre">EventHook</span></a></span></span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.unregister_hook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.unregister_hook" title="Link to this definition">¶</a></dt>
+<dd><p>Unregister a hook by topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>topic</strong> – Topic of the hook to unregister</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The unregistered EventHook</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.register_handler">
+<span class="sig-name descname"><span class="pre">register_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">handler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deduplicate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.register_handler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.register_handler" title="Link to this definition">¶</a></dt>
+<dd><p>Register a handler for a topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>topic</strong> – Topic to register handler for</p></li>
+<li><p><strong>handler</strong> – Callable handler</p></li>
+<li><p><strong>deduplicate</strong> – Skip if handler already registered</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.unregister_handler">
+<span class="sig-name descname"><span class="pre">unregister_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">handler</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.unregister_handler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.unregister_handler" title="Link to this definition">¶</a></dt>
+<dd><p>Unregister a handler from a topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>topic</strong> – Topic to unregister handler from</p></li>
+<li><p><strong>handler</strong> – Callable handler to remove</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.event_hooks">
+<span class="sig-name descname"><span class="pre">event_hooks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.event_hooks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.event_hooks" title="Link to this definition">¶</a></dt>
+<dd><p>Iterate over all registered event hooks.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.topics">
+<span class="sig-name descname"><span class="pre">topics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.topics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.topics" title="Link to this definition">¶</a></dt>
+<dd><p>Iterate over all registered topics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.items">
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngine.items"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.items" title="Link to this definition">¶</a></dt>
+<dd><p>Iterate over (topic, hook) pairs.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.capacity">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">capacity</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.capacity" title="Link to this definition">¶</a></dt>
+<dd><p>Get the queue capacity.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.occupied">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">occupied</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.occupied" title="Link to this definition">¶</a></dt>
+<dd><p>Get the current number of messages in the queue.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.exact_topic_hook_map">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">exact_topic_hook_map</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></em><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.exact_topic_hook_map" title="Link to this definition">¶</a></dt>
+<dd><p>Get the exact topic hook mapping.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngine.generic_topic_hook_map">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generic_topic_hook_map</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></em><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngine.generic_topic_hook_map" title="Link to this definition">¶</a></dt>
+<dd><p>Get the generic topic hook mapping.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngineEx">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">event_engine.capi.fallback_engine.</span></span><span class="sig-name descname"><span class="pre">EventEngineEx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4095</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Logger" title="(in Python v3.14)"><span class="pre">Logger</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngineEx"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngineEx" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine" title="event_engine.capi.fallback_engine.EventEngine"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventEngine</span></code></a></p>
+<p>Extended EventEngine with timer support.</p>
+<p>Provides timer functionality for periodic event triggering.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngineEx.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4095</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Logger" title="(in Python v3.14)"><span class="pre">Logger</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngineEx.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngineEx.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Initialize EventEngineEx.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>capacity</strong> – Maximum capacity of the message queue</p></li>
+<li><p><strong>logger</strong> – Optional logger instance</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngineEx.__repr__">
+<span class="sig-name descname"><span class="pre">__repr__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngineEx.__repr__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngineEx.__repr__" title="Link to this definition">¶</a></dt>
+<dd><p>String representation including active timers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngineEx.run_timer">
+<span class="sig-name descname"><span class="pre">run_timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">topic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">activate_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><span class="pre">datetime</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngineEx.run_timer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngineEx.run_timer" title="Link to this definition">¶</a></dt>
+<dd><p>Run a timer with custom interval (blocking call).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>interval</strong> – Interval in seconds</p></li>
+<li><p><strong>topic</strong> – Topic to publish on</p></li>
+<li><p><strong>activate_time</strong> – Optional activation time</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngineEx.minute_timer">
+<span class="sig-name descname"><span class="pre">minute_timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngineEx.minute_timer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngineEx.minute_timer" title="Link to this definition">¶</a></dt>
+<dd><p>Run minute-aligned timer (blocking call).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>topic</strong> – Topic to publish on</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngineEx.second_timer">
+<span class="sig-name descname"><span class="pre">second_timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngineEx.second_timer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngineEx.second_timer" title="Link to this definition">¶</a></dt>
+<dd><p>Run second-aligned timer (blocking call).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>topic</strong> – Topic to publish on</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngineEx.get_timer">
+<span class="sig-name descname"><span class="pre">get_timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">activate_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><span class="pre">datetime</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic" title="event_engine.capi.c_topic.PyTopic"><span class="pre">PyTopic</span></a></span></span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngineEx.get_timer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngineEx.get_timer" title="Link to this definition">¶</a></dt>
+<dd><p>Get or create a timer with the specified interval.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>interval</strong> – Interval in seconds</p></li>
+<li><p><strong>activate_time</strong> – Optional activation time</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>PyTopic for the timer</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngineEx.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngineEx.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngineEx.stop" title="Link to this definition">¶</a></dt>
+<dd><p>Stop the engine and all timers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event_engine.capi.fallback_engine.EventEngineEx.clear">
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_engine/capi/fallback_engine.html#EventEngineEx.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#event_engine.capi.fallback_engine.EventEngineEx.clear" title="Link to this definition">¶</a></dt>
+<dd><p>Clear all hooks and timers.</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 </section>
 <section id="type-stubs">
@@ -2258,8 +2790,62 @@ See Also
 <li><a class="reference internal" href="#event-engine-module">event_engine Module</a></li>
 <li><a class="reference internal" href="#topic-classes">Topic Classes</a><ul>
 <li><a class="reference internal" href="#module-event_engine.capi.c_topic">event_engine.capi.c_topic</a><ul>
-<li><a class="reference internal" href="#event_engine.capi.c_topic.init_internal_map"><code class="docutils literal notranslate"><span class="pre">init_internal_map()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic"><code class="docutils literal notranslate"><span class="pre">PyTopic</span></code></a><ul>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic.addr"><code class="docutils literal notranslate"><span class="pre">PyTopic.addr</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic.append"><code class="docutils literal notranslate"><span class="pre">PyTopic.append()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic.format"><code class="docutils literal notranslate"><span class="pre">PyTopic.format()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic.format_map"><code class="docutils literal notranslate"><span class="pre">PyTopic.format_map()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic.from_parts"><code class="docutils literal notranslate"><span class="pre">PyTopic.from_parts()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic.is_exact"><code class="docutils literal notranslate"><span class="pre">PyTopic.is_exact</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic.join"><code class="docutils literal notranslate"><span class="pre">PyTopic.join()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic.match"><code class="docutils literal notranslate"><span class="pre">PyTopic.match()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic.owner"><code class="docutils literal notranslate"><span class="pre">PyTopic.owner</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic.update_literal"><code class="docutils literal notranslate"><span class="pre">PyTopic.update_literal()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopic.value"><code class="docutils literal notranslate"><span class="pre">PyTopic.value</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicMatchResult"><code class="docutils literal notranslate"><span class="pre">PyTopicMatchResult</span></code></a><ul>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicMatchResult.length"><code class="docutils literal notranslate"><span class="pre">PyTopicMatchResult.length</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicMatchResult.matched"><code class="docutils literal notranslate"><span class="pre">PyTopicMatchResult.matched</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicMatchResult.to_dict"><code class="docutils literal notranslate"><span class="pre">PyTopicMatchResult.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPart"><code class="docutils literal notranslate"><span class="pre">PyTopicPart</span></code></a><ul>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPart.addr"><code class="docutils literal notranslate"><span class="pre">PyTopicPart.addr</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPart.next"><code class="docutils literal notranslate"><span class="pre">PyTopicPart.next()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPart.owner"><code class="docutils literal notranslate"><span class="pre">PyTopicPart.owner</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPart.ttype"><code class="docutils literal notranslate"><span class="pre">PyTopicPart.ttype</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPartAny"><code class="docutils literal notranslate"><span class="pre">PyTopicPartAny</span></code></a><ul>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPartAny.name"><code class="docutils literal notranslate"><span class="pre">PyTopicPartAny.name</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPartExact"><code class="docutils literal notranslate"><span class="pre">PyTopicPartExact</span></code></a><ul>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPartExact.part"><code class="docutils literal notranslate"><span class="pre">PyTopicPartExact.part</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPartPattern"><code class="docutils literal notranslate"><span class="pre">PyTopicPartPattern</span></code></a><ul>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPartPattern.pattern"><code class="docutils literal notranslate"><span class="pre">PyTopicPartPattern.pattern</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPartPattern.regex"><code class="docutils literal notranslate"><span class="pre">PyTopicPartPattern.regex</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPartRange"><code class="docutils literal notranslate"><span class="pre">PyTopicPartRange</span></code></a><ul>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicPartRange.options"><code class="docutils literal notranslate"><span class="pre">PyTopicPartRange.options()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicType"><code class="docutils literal notranslate"><span class="pre">PyTopicType</span></code></a><ul>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_EXACT"><code class="docutils literal notranslate"><span class="pre">PyTopicType.TOPIC_PART_EXACT</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_ANY"><code class="docutils literal notranslate"><span class="pre">PyTopicType.TOPIC_PART_ANY</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_RANGE"><code class="docutils literal notranslate"><span class="pre">PyTopicType.TOPIC_PART_RANGE</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_PATTERN"><code class="docutils literal notranslate"><span class="pre">PyTopicType.TOPIC_PART_PATTERN</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#event_engine.capi.c_topic.clear_internal_map"><code class="docutils literal notranslate"><span class="pre">clear_internal_map()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.get_internal_map"><code class="docutils literal notranslate"><span class="pre">get_internal_map()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.get_internal_topic"><code class="docutils literal notranslate"><span class="pre">get_internal_topic()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.init_allocator"><code class="docutils literal notranslate"><span class="pre">init_allocator()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.c_topic.init_internal_map"><code class="docutils literal notranslate"><span class="pre">init_internal_map()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-event_engine.native.topic">event_engine.native.topic</a><ul>
@@ -2536,7 +3122,48 @@ See Also
 </ul>
 </li>
 <li><a class="reference internal" href="#fallback-engine">Fallback Engine</a><ul>
-<li><a class="reference internal" href="#event-engine-capi-fallback-engine">event_engine.capi.fallback_engine</a></li>
+<li><a class="reference internal" href="#module-event_engine.capi.fallback_engine">event_engine.capi.fallback_engine</a><ul>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.Full"><code class="docutils literal notranslate"><span class="pre">Full</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.Empty"><code class="docutils literal notranslate"><span class="pre">Empty</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine"><code class="docutils literal notranslate"><span class="pre">EventEngine</span></code></a><ul>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.__init__"><code class="docutils literal notranslate"><span class="pre">EventEngine.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.__len__"><code class="docutils literal notranslate"><span class="pre">EventEngine.__len__()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.__repr__"><code class="docutils literal notranslate"><span class="pre">EventEngine.__repr__()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.activate"><code class="docutils literal notranslate"><span class="pre">EventEngine.activate()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.deactivate"><code class="docutils literal notranslate"><span class="pre">EventEngine.deactivate()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.run"><code class="docutils literal notranslate"><span class="pre">EventEngine.run()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.start"><code class="docutils literal notranslate"><span class="pre">EventEngine.start()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.stop"><code class="docutils literal notranslate"><span class="pre">EventEngine.stop()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.clear"><code class="docutils literal notranslate"><span class="pre">EventEngine.clear()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.get"><code class="docutils literal notranslate"><span class="pre">EventEngine.get()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.put"><code class="docutils literal notranslate"><span class="pre">EventEngine.put()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.publish"><code class="docutils literal notranslate"><span class="pre">EventEngine.publish()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.register_hook"><code class="docutils literal notranslate"><span class="pre">EventEngine.register_hook()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.unregister_hook"><code class="docutils literal notranslate"><span class="pre">EventEngine.unregister_hook()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.register_handler"><code class="docutils literal notranslate"><span class="pre">EventEngine.register_handler()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.unregister_handler"><code class="docutils literal notranslate"><span class="pre">EventEngine.unregister_handler()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.event_hooks"><code class="docutils literal notranslate"><span class="pre">EventEngine.event_hooks()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.topics"><code class="docutils literal notranslate"><span class="pre">EventEngine.topics()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.items"><code class="docutils literal notranslate"><span class="pre">EventEngine.items()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.capacity"><code class="docutils literal notranslate"><span class="pre">EventEngine.capacity</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.occupied"><code class="docutils literal notranslate"><span class="pre">EventEngine.occupied</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.exact_topic_hook_map"><code class="docutils literal notranslate"><span class="pre">EventEngine.exact_topic_hook_map</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngine.generic_topic_hook_map"><code class="docutils literal notranslate"><span class="pre">EventEngine.generic_topic_hook_map</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngineEx"><code class="docutils literal notranslate"><span class="pre">EventEngineEx</span></code></a><ul>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngineEx.__init__"><code class="docutils literal notranslate"><span class="pre">EventEngineEx.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngineEx.__repr__"><code class="docutils literal notranslate"><span class="pre">EventEngineEx.__repr__()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngineEx.run_timer"><code class="docutils literal notranslate"><span class="pre">EventEngineEx.run_timer()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngineEx.minute_timer"><code class="docutils literal notranslate"><span class="pre">EventEngineEx.minute_timer()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngineEx.second_timer"><code class="docutils literal notranslate"><span class="pre">EventEngineEx.second_timer()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngineEx.get_timer"><code class="docutils literal notranslate"><span class="pre">EventEngineEx.get_timer()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngineEx.stop"><code class="docutils literal notranslate"><span class="pre">EventEngineEx.stop()</span></code></a></li>
+<li><a class="reference internal" href="#event_engine.capi.fallback_engine.EventEngineEx.clear"><code class="docutils literal notranslate"><span class="pre">EventEngineEx.clear()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#type-stubs">Type Stubs</a></li>
@@ -2551,7 +3178,7 @@ See Also
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=06a2b343"></script>
+</div><script src="_static/documentation_options.js?v=bc20d456"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

@@ -3,62 +3,29 @@ import re
 from collections.abc import Iterator, Iterable
 from typing import Any, TypedDict, overload
 
-from .c_allocator import Allocator
-from .c_bytemap import ByteMap
 
-
-def init_internal_map(default_capacity: int = ...) -> ByteMap:
-    """Initialize or return a shared internal byte map.
-
-    Args:
-        default_capacity: Default capacity (in bytes) used when creating the internal map.
-
-    Returns:
-        A ByteMap instance wrapping the shared internal bytemap.
-    """
-
-
-def clear_internal_map() -> None:
-    """Clear and free the shared internal bytemap.
-
-    This releases the internal resources and resets any cached references.
-    """
-
-
-def get_internal_topic(key: str, owner: bool = False) -> PyTopic | None:
+def get_internal_topic(key: str, owner: bool = False) -> Topic | None:
     """ Get a registered topic from the internal map, if there is any.
 
     Args:
         key: the literal of the topic to look up.
-        owner: whether the returned PyTopic owns the underlying memory. If so, when the PyTopic is deallocated,
-               the underlying memory will be freed and de-registered. If False, the PyTopic is just a wrapper around the internal memory.
+        owner: whether the returned Topic owns the underlying memory. If so, when the Topic is deallocated,
+               the underlying memory will be freed and de-registered. If False, the Topic is just a wrapper around the internal memory.
 
     Returns:
-        PyTopic instance if found or None.
+        Topic instance if found or None.
     """
 
 
-def get_internal_map() -> dict[str, PyTopic]:
+def get_internal_map() -> dict[str, Topic]:
     """Return a dictionary view of the internal topic map.
 
     Returns:
-        A dictionary mapping topic literal strings to PyTopic instances.
+        A dictionary mapping topic literal strings to Topic instances.
     """
 
 
-def init_allocator(init_capacity: int = ..., with_shm: bool = False) -> Allocator:
-    """Initialize or return the global Allocator.
-
-    Args:
-        init_capacity: Initial capacity (in bytes) for the allocator.
-        with_shm: If True, create an allocator backed by shared memory.
-
-    Returns:
-        The global Allocator instance.
-    """
-
-
-class PyTopicType(enum.IntEnum):
+class TopicType(enum.IntEnum):
     """Enumeration of topic part types.
 
     Maps to the underlying C-level TopicType constants.
@@ -69,7 +36,7 @@ class PyTopicType(enum.IntEnum):
     TOPIC_PART_PATTERN: int
 
 
-class PyTopicPart:
+class TopicPart:
     """Base Python wrapper for a single topic part.
 
     Attributes:
@@ -85,26 +52,26 @@ class PyTopicPart:
             alloc: If True, allocate and initialize internal C structures.
         """
 
-    def next(self) -> PyTopicPart:
+    def next(self) -> TopicPart:
         """Return the next topic part.
 
         Returns:
-            The next PyTopicPart instance.
+            The next TopicPart instance.
 
         Raises:
             StopIteration: If this is the last part.
         """
 
     @property
-    def ttype(self) -> PyTopicType:
-        """int: The topic part type as a PyTopicType."""
+    def ttype(self) -> TopicType:
+        """int: The topic part type as a TopicType."""
 
     @property
     def addr(self) -> int:
         """int: Numeric address / id of the underlying C structure."""
 
 
-class PyTopicPartExact(PyTopicPart):
+class TopicPartExact(TopicPart):
     """Topic part representing an exact literal segment."""
 
     def __init__(self, part: str = None, *args: Any, alloc: bool = False, **kwargs: Any) -> None:
@@ -126,7 +93,7 @@ class PyTopicPartExact(PyTopicPart):
         """The literal string value for this part."""
 
 
-class PyTopicPartAny(PyTopicPart):
+class TopicPartAny(TopicPart):
     """Topic part representing a named wildcard."""
 
     def __init__(self, name: str = None, *args: Any, alloc: bool = False, **kwargs: Any) -> None:
@@ -145,7 +112,7 @@ class PyTopicPartAny(PyTopicPart):
         """The wildcard name (identifier)."""
 
 
-class PyTopicPartRange(PyTopicPart):
+class TopicPartRange(TopicPart):
     """Topic part representing a range (choice) among multiple literals."""
 
     def __init__(self, options: list[str] = None, *args: Any, alloc: bool = False, **kwargs: Any) -> None:
@@ -173,7 +140,7 @@ class PyTopicPartRange(PyTopicPart):
         """
 
 
-class PyTopicPartPattern(PyTopicPart):
+class TopicPartPattern(TopicPart):
     """Topic part representing a regex pattern."""
 
     def __init__(self, regex: str = None, *args: Any, alloc: bool = False, **kwargs: Any) -> None:
@@ -197,7 +164,7 @@ class PyTopicPartPattern(PyTopicPart):
 
 
 class TopicMatchNode(TypedDict):
-    """TypedDict describing a single match node returned by PyTopicMatchResult accessors.
+    """TypedDict describing a single match node returned by TopicMatchResult accessors.
 
     Keys:
         matched: Whether this node matched.
@@ -206,12 +173,12 @@ class TopicMatchNode(TypedDict):
         literal: The literal string associated with this node (if any).
     """
     matched: bool
-    part_a: PyTopicPart | None
-    part_b: PyTopicPart | None
+    part_a: TopicPart | None
+    part_b: TopicPart | None
     literal: str | None
 
 
-class PyTopicMatchResult:
+class TopicMatchResult:
     """Container for topic part match results (linked list-like).
 
     Provides iteration and indexing over match nodes and utilities to convert results.
@@ -221,13 +188,12 @@ class PyTopicMatchResult:
 
     owner: bool
 
-    def __init__(self, n_parts: int = 0, alloc: bool = False, allocator: Allocator = None, **kwargs: Any) -> None:
+    def __init__(self, n_parts: int = 0, alloc: bool = False, **kwargs: Any) -> None:
         """Allocate or attach a chain of match result nodes.
 
         Args:
             n_parts: Number of nodes to pre-create.
             alloc: If True, allocate underlying C structures.
-            allocator: Optional Allocator used for internal node allocations.
         """
 
     def __repr__(self) -> str:
@@ -255,11 +221,11 @@ class PyTopicMatchResult:
     def __iter__(self) -> Iterator[TopicMatchNode]:
         """Iterate over node info dicts in sequence."""
 
-    def to_dict(self) -> dict[str, PyTopicPart]:
+    def to_dict(self) -> dict[str, TopicPart]:
         """Convert match results into a dictionary mapping literal -> matched part.
 
         Returns:
-            A mapping from literal string to the matched PyTopicPart.
+            A mapping from literal string to the matched TopicPart.
         """
 
     @property
@@ -271,27 +237,25 @@ class PyTopicMatchResult:
         """bool: True if every node in the chain reports matched == True."""
 
 
-class PyTopic:
+class Topic:
     """High-level Python representation of a parsed topic.
 
-    PyTopic instances internalize their literal content into a shared internal buffer / ByteMap.
-    All topics created via the normal constructor are internalized into the global ByteMap and do not
+    Topic instances internalize their literal content into a shared internal buffer / StrMap.
+    All topics created via the normal constructor are internalized into the global StrMap and do not
     own the underlying character storage (the buffer is bound to the global map).
 
     Examples:
 
-        >>> # This internalizes the literal string "Realtime.TickData.600010.SH" into the global ByteMap
-        ... t1 = PyTopic("Realtime.TickData.600010.SH")
+        >>> # This internalizes the literal string "Realtime.TickData.600010.SH" into the global StrMap
+        ... t1 = Topic("Realtime.TickData.600010.SH")
         >>> assert not t1.owner
 
         >>> # Because t1 does not own its buffer we can create another topic with the same literal string
-        ... t2 = PyTopic.__new__(PyTopic, "Realtime.TickData.600010.SH")
+        ... t2 = Topic.__new__(Topic, "Realtime.TickData.600010.SH")
         >>> # Creation of t2 is faster due to internalization.
         ... assert id(t1) != id(t2)
 
         ``t1`` and ``t2`` are different Python objects but may share the same underlying buffer address.
-        If the allocator is initialized with shared memory, another process can also create topics
-        referencing the same internal ByteMap.
 
     Topic parser
         The separator, option delimiter and wildcard/pattern markers can be customized at build time by
@@ -309,16 +273,16 @@ class PyTopic:
 
         When parsing a topic string:
         - If the pattern delimiter appears in balanced pairs, the enclosed text is parsed as a regex
-          pattern part (``PyTopicPartPattern``).
-        - A part beginning with the wildcard marker is parsed as a wildcard part (``PyTopicPartAny``).
+          pattern part (``TopicPartPattern``).
+        - A part beginning with the wildcard marker is parsed as a wildcard part (``TopicPartAny``).
         - A part enclosed by the range brackets and containing the option separator (or NUL) is parsed
-          as a range part (``PyTopicPartRange``). Options are separated by the option separator or NUL;
+          as a range part (``TopicPartRange``). Options are separated by the option separator or NUL;
           empty options are not allowed.
-        - All other parts are parsed as exact literal parts (``PyTopicPartExact``).
+        - All other parts are parsed as exact literal parts (``TopicPartExact``).
 
     Example:
 
-        >>> t = PyTopic(r'Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.+suffix')
+        >>> t = Topic(r'Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.+suffix')
         ... for tp in t:
         >>>     print(tp)
         <TopicPartExact>(topic="Realtime")
@@ -326,7 +290,7 @@ class PyTopic:
         <TopicPartPattern>(regex="^[0-9]{6}\.(SZ|SH)$")
         <TopicPartAny>(name="suffix")
 
-        >>> t = PyTopic('Realtime.TickData.{ticker}')
+        >>> t = Topic('Realtime.TickData.{ticker}')
         ... for tp in t:
         ...     print(tp)
         <TopicPartExact>(topic="Realtime")
@@ -337,7 +301,7 @@ class PyTopic:
     Owning a topic (lazy init)
         To create a topic that owns its internal buffer (``owner`` is True), use lazy initialization:
 
-        >>> t3 = PyTopic.__new__(PyTopic, alloc=True)  # create an empty topic with allocated buffer
+        >>> t3 = Topic.__new__(Topic, alloc=True)  # create an empty topic with allocated buffer
         >>> assert t3.owner
         >>> t3.value = "Realtime.TickData.600010.SH"    # set the value once
         ... assert t3.value == "Realtime.TickData.600010.SH"
@@ -352,10 +316,10 @@ class PyTopic:
 
         To avoid unwanted splitting, construct the topic from explicit parts:
 
-        >>> t4 = PyTopic.from_parts([
-        ...     PyTopicPartExact("Realtime", alloc=True),
-        ...     PyTopicPartExact("TickData", alloc=True),
-        ...     PyTopicPartExact("600010.SH", alloc=True),
+        >>> t4 = Topic.from_parts([
+        ...     TopicPartExact("Realtime", alloc=True),
+        ...     TopicPartExact("TickData", alloc=True),
+        ...     TopicPartExact("600010.SH", alloc=True),
         ... ])
         >>> assert t4.value == "Realtime.TickData.600010.SH"
         >>> t4[-1]
@@ -363,7 +327,7 @@ class PyTopic:
 
         Or use the convenience join helper:
 
-        >>> t5 = PyTopic.join(["Realtime", "TickData", "600010.SH"])
+        >>> t5 = Topic.join(["Realtime", "TickData", "600010.SH"])
         ... assert t5.value == "Realtime.TickData.600010.SH"
         >>> t5[-1]
         <TopicPartExact>(topic="600010.SH")
@@ -371,7 +335,7 @@ class PyTopic:
     Empty parts and parsing caveats
         The topic string must not contain empty parts. For example, ``"Realtime..TickData"``:
 
-        >>> t6 = PyTopic("Realtime..TickData")
+        >>> t6 = Topic("Realtime..TickData")
         ... for tp in t6:
         >>>     print(tp)
         <TopicPartExact>(topic="Realtime")
@@ -386,9 +350,9 @@ class PyTopic:
         This inconsistency between the literal string and parsed parts can be confusing—use with caution.
 
     Notes on internalization and lifecycle
-        - PyTopic instances internalize their literal content into a shared global ByteMap.
-        - When two PyTopic objects are created from the same literal string key, the underlying buffer
-          for that literal is shared (same numeric address in the ByteMap). Topics remain distinct Python
+        - Topic instances internalize their literal content into a shared global StrMap.
+        - When two Topic objects are created from the same literal string key, the underlying buffer
+          for that literal is shared (same numeric address in the StrMap). Topics remain distinct Python
           objects but can share storage.
         - Because of internalization, avoid frequent create/destroy cycles; prefer reusing instances or a
           global TopicSet-style registry.
@@ -403,13 +367,12 @@ class PyTopic:
 
     owner: int
 
-    def __init__(self, topic: str = None, *args: Any, alloc: bool = True, allocator: Any = None, **kwargs: Any):
-        """Create a PyTopic from a topic string.
+    def __init__(self, topic: str = None, *args: Any, alloc: bool = True, **kwargs: Any):
+        """Create a Topic from a topic string.
 
         Args:
             topic: Topic string to parse.
             alloc: If True, allocate and initialize (default for normal usage).
-            allocator: Optional allocator (ignored in pure Python implementation).
             args: Reserved for subclassing.
             kwargs: Reserved for subclassing.
 
@@ -420,10 +383,10 @@ class PyTopic:
     def __len__(self) -> int:
         """Return the number of parts in the topic."""
 
-    def __iter__(self) -> Iterator[PyTopicPart]:
-        """Iterate over topic parts (yields PyTopicPart subclasses)."""
+    def __iter__(self) -> Iterator[TopicPart]:
+        """Iterate over topic parts (yields TopicPart subclasses)."""
 
-    def __getitem__(self, idx: int) -> PyTopicPart:
+    def __getitem__(self, idx: int) -> TopicPart:
         """Return the topic part at index `idx`.
 
         Supports negative indexing.
@@ -433,36 +396,36 @@ class PyTopic:
         """
 
     @overload
-    def __add__(self, topic: PyTopic) -> PyTopic: ...
+    def __add__(self, topic: Topic) -> Topic: ...
 
     @overload
-    def __add__(self, topic: PyTopicPart) -> PyTopic: ...
+    def __add__(self, topic: TopicPart) -> Topic: ...
 
-    def __add__(self, topic: PyTopic | PyTopicPart) -> PyTopic:
-        """Return a new PyTopic that aggregates this topic with another PyTopic or PyTopicPart.
+    def __add__(self, topic: Topic | TopicPart) -> Topic:
+        """Return a new Topic that aggregates this topic with another Topic or TopicPart.
 
         Behavior:
             - `__add__` creates and returns a copy; both operands remain unchanged.
             - Use `append` or `__iadd__` for in-place modifications.
 
         Args:
-            topic: Either a PyTopic or PyTopicPart.
+            topic: Either a Topic or TopicPart.
 
         Returns:
-            A new aggregated PyTopic.
+            A new aggregated Topic.
 
         Raises:
             TypeError: When the operand type is unsupported.
         """
 
     @overload
-    def __iadd__(self, topic: PyTopic) -> PyTopic: ...
+    def __iadd__(self, topic: Topic) -> Topic: ...
 
     @overload
-    def __iadd__(self, topic: PyTopicPart) -> PyTopic: ...
+    def __iadd__(self, topic: TopicPart) -> Topic: ...
 
-    def __iadd__(self, topic: PyTopic | PyTopicPart) -> PyTopic:
-        """In-place append another PyTopic or PyTopicPart.
+    def __iadd__(self, topic: Topic | TopicPart) -> Topic:
+        """In-place append another Topic or TopicPart.
 
         Behavior:
             - Modifies `self` in place and leaves the other operand unchanged.
@@ -478,26 +441,26 @@ class PyTopic:
             A uint64_t hash integer.
         """
 
-    def __eq__(self, other: PyTopic) -> bool:
+    def __eq__(self, other: Topic) -> bool:
         """Check equality between this topic and another topic.
 
         Args:
-            other: The other PyTopic to compare against.
+            other: The other Topic to compare against.
 
         Returns:
             True if both topics have the same literal value.
         """
 
-    def __call__(self, **kwargs) -> PyTopic:
+    def __call__(self, **kwargs) -> Topic:
         """ Alias of ``format`` method to format the topic by replacing named wildcards with provided values."""
 
     @classmethod
-    def from_parts(cls, topic_parts: Iterable[PyTopicPart]) -> PyTopic:
-        """Build a PyTopic from an iterable of PyTopicPart instances."""
+    def from_parts(cls, topic_parts: Iterable[TopicPart]) -> Topic:
+        """Build a Topic from an iterable of TopicPart instances."""
 
     @classmethod
-    def join(cls, topic_parts: Iterable[str]) -> PyTopic:
-        """Build a PyTopic from an iterable of literal strings.
+    def join(cls, topic_parts: Iterable[str]) -> Topic:
+        """Build a Topic from an iterable of literal strings.
 
         Each string is appended as an exact part.
 
@@ -506,8 +469,8 @@ class PyTopic:
             - For complex parts that need escaping or patterns, use `from_parts`.
         """
 
-    def append(self, topic_part: PyTopicPart) -> PyTopic:
-        """Append a PyTopicPart to this topic (high-level API).
+    def append(self, topic_part: TopicPart) -> Topic:
+        """Append a TopicPart to this topic (high-level API).
 
         Args:
             topic_part: The part to append.
@@ -519,17 +482,17 @@ class PyTopic:
             RuntimeError: If either topic or part is uninitialized.
         """
 
-    def match(self, other: PyTopic) -> PyTopicMatchResult:
+    def match(self, other: Topic) -> TopicMatchResult:
         """Match this topic against another topic.
 
         Args:
             other: The topic to match against.
 
         Returns:
-            A PyTopicMatchResult describing per-part matches.
+            A TopicMatchResult describing per-part matches.
         """
 
-    def update_literal(self) -> PyTopic:
+    def update_literal(self) -> Topic:
         """Update the internal literal buffer to reflect the current parts.
 
         This is useful after in-place modifications of the subordinate TopicParts.
@@ -539,11 +502,11 @@ class PyTopic:
             For TopicPartRange, the reconstructed literal may not be the same as the original.
             e.g.
 
-            >>> t = PyTopic(r'Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.+suffix')
+            >>> t = Topic(r'Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.+suffix')
             ... print(t)
             Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.+suffix
             >>> t.update_literal()
-            <PyTopic Generic>(value="Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.{suffix}", n_parts=4)
+            <Topic Generic>(value="Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.{suffix}", n_parts=4)
             >>> print(t)
             Realtime.(TickData|TradeData)./^[0-9]{6}\.(SZ|SH)$/.{suffix}
 
@@ -557,31 +520,31 @@ class PyTopic:
             RuntimeError: If the topic is uninitialized.
         """
 
-    def format(self, **kwargs) -> PyTopic:
+    def format(self, **kwargs) -> Topic:
         """Format the topic by replacing named wildcards with provided values.
 
         Args:
             **kwargs: Mapping from wildcard names to replacement strings.
 
         Returns:
-            A new PyTopic with wildcards replaced by the provided values.
+            A new Topic with wildcards replaced by the provided values.
 
         Raises:
             KeyError: If a required wildcard name is missing in kwargs.
             ValueError: If having subordinate parts that are not exact or wildcards.
         """
 
-    def format_map(self, mapping: dict[str, str], internalized: bool = True, strict: bool = False) -> PyTopic:
+    def format_map(self, mapping: dict[str, str], internalized: bool = True, strict: bool = False) -> Topic:
         """Format the topic by replacing named wildcards with provided values from a mapping.
 
         Args:
             mapping: Dictionary mapping wildcard names to replacement strings.
-            internalized: If True, the returned topic is internalized into the global ByteMap and not owning its underlying buffer.
+            internalized: If True, the returned topic is internalized into the global StrMap and not owning its underlying buffer.
                           If False, the returned topic owns its internal buffer.
             strict: If True, raise KeyError if any wildcard name is missing in mapping. Otherwise, leave unmatched wildcards as-is.
 
         Returns:
-            A new PyTopic with wildcards replaced by the provided values. If strict, the new PyTopic is guaranteed to be an exact PyTopic.
+            A new Topic with wildcards replaced by the provided values. If strict, the new Topic is guaranteed to be an exact Topic.
 
         Raises:
             KeyError: If a required wildcard name is missing in mapping.

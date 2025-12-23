@@ -15,7 +15,7 @@ class TopicType(enum.IntEnum):
     TOPIC_PART_PATTERN = evt_topic_type.TOPIC_PART_PATTERN
 
 
-cdef class PyTopicPart:
+cdef class TopicPart:
     def __cinit__(self, *arg, bint alloc=False, **kwargs):
         if not alloc:
             return
@@ -31,8 +31,8 @@ cdef class PyTopicPart:
             self.header = NULL
 
     @staticmethod
-    cdef PyTopicPart c_from_header(evt_topic_part_variant* header, bint owner=False):
-        cdef PyTopicPart instance = PyTopicPart.__new__(PyTopicPart, alloc=False)
+    cdef TopicPart c_from_header(evt_topic_part_variant* header, bint owner=False):
+        cdef TopicPart instance = TopicPart.__new__(TopicPart, alloc=False)
         instance.header = header
         instance.owner = owner
         return instance
@@ -41,17 +41,17 @@ cdef class PyTopicPart:
         cdef uint8_t ttype = self.header.header.ttype
         cdef object casted
         if ttype == evt_topic_type.TOPIC_PART_EXACT:
-            casted = PyTopicPartExact.__new__(PyTopicPartExact, alloc=False)
+            casted = TopicPartExact.__new__(TopicPartExact, alloc=False)
         elif ttype == evt_topic_type.TOPIC_PART_ANY:
-            casted = PyTopicPartAny.__new__(PyTopicPartAny, alloc=False)
+            casted = TopicPartAny.__new__(TopicPartAny, alloc=False)
         elif ttype == evt_topic_type.TOPIC_PART_RANGE:
-            casted = PyTopicPartRange.__new__(PyTopicPartRange, alloc=False)
+            casted = TopicPartRange.__new__(TopicPartRange, alloc=False)
         elif ttype == evt_topic_type.TOPIC_PART_PATTERN:
-            casted = PyTopicPartPattern.__new__(PyTopicPartPattern, alloc=False)
+            casted = TopicPartPattern.__new__(TopicPartPattern, alloc=False)
         else:
             raise ValueError(f'Invalid ttype {ttype}')
-        (<PyTopicPart> casted).header = self.header
-        (<PyTopicPart> casted).owner = self.owner
+        (<TopicPart> casted).header = self.header
+        (<TopicPart> casted).owner = self.owner
         self.owner = False
         return casted
 
@@ -59,7 +59,7 @@ cdef class PyTopicPart:
 
     def next(self):
         if self.header.header.next:
-            return PyTopicPart.c_from_header(self.header.header.next, False).c_cast()
+            return TopicPart.c_from_header(self.header.header.next, False).c_cast()
         raise StopIteration
 
     property ttype:
@@ -74,7 +74,7 @@ cdef class PyTopicPart:
                 return <uintptr_t> self.header
 
 
-cdef class PyTopicPartExact(PyTopicPart):
+cdef class TopicPartExact(TopicPart):
     def __cinit__(self, str part=None, *arg, bint alloc=False, **kwargs):
         if not alloc:
             if part:
@@ -115,7 +115,7 @@ cdef class PyTopicPartExact(PyTopicPart):
             return PyUnicode_FromStringAndSize(self.header.exact.part, self.header.exact.part_len)
 
 
-cdef class PyTopicPartAny(PyTopicPart):
+cdef class TopicPartAny(TopicPart):
     def __cinit__(self, str name=None, *arg, bint alloc=False, **kwargs):
         if not alloc:
             if name:
@@ -153,7 +153,7 @@ cdef class PyTopicPartAny(PyTopicPart):
             return PyUnicode_FromStringAndSize(self.header.any.name, self.header.any.name_len)
 
 
-cdef class PyTopicPartRange(PyTopicPart):
+cdef class TopicPartRange(TopicPart):
     def __cinit__(self, list options=None, *arg, bint alloc=False, **kwargs):
         if not alloc:
             if options:
@@ -235,7 +235,7 @@ cdef class PyTopicPartRange(PyTopicPart):
             yield PyUnicode_FromStringAndSize(option_ptr, option_length)
 
 
-cdef class PyTopicPartPattern(PyTopicPart):
+cdef class TopicPartPattern(TopicPart):
     def __cinit__(self, str regex=None, *arg, bint alloc=False, **kwargs):
         if not alloc:
             if regex:
@@ -276,10 +276,12 @@ cdef class PyTopicPartPattern(PyTopicPart):
         def __get__(self):
             return re.compile(self.pattern)
 
+
 cdef heap_allocator* HEAP_ALLOCATOR = c_heap_allocator_new()
 GLOBAL_INTERNAL_MAP = c_strmap_new(0, HEAP_ALLOCATOR, 1)
 
-cpdef PyTopic get_internal_topic(str key, bint owner=False):
+
+cpdef Topic get_internal_topic(str key, bint owner=False):
     global GLOBAL_INTERNAL_MAP
     if not GLOBAL_INTERNAL_MAP:
         raise RuntimeError('Internal map not initialized!')
@@ -290,7 +292,7 @@ cpdef PyTopic get_internal_topic(str key, bint owner=False):
     cdef int ret_code = c_strmap_get(GLOBAL_INTERNAL_MAP, key_ptr, key_length, <void**> &topic)
     if topic is NULL:
         return None
-    return PyTopic.c_from_header(topic, owner)
+    return Topic.c_from_header(topic, owner)
 
 
 cpdef dict get_internal_map():
@@ -305,12 +307,12 @@ cpdef dict get_internal_map():
     while entry:
         key = PyUnicode_FromStringAndSize(entry.key, entry.key_length)
         topic = <evt_topic*> entry.value
-        out[key] = PyTopic.c_from_header(topic, False)
+        out[key] = Topic.c_from_header(topic, False)
         entry = entry.next
     return out
 
 
-cdef class PyTopicMatchResult:
+cdef class TopicMatchResult:
     def __cinit__(self, size_t n_parts=0, bint alloc=False, **kwargs):
         if not alloc:
             if n_parts:
@@ -332,8 +334,8 @@ cdef class PyTopicMatchResult:
             c_topic_match_free(self.header, 1)
 
     @staticmethod
-    cdef PyTopicMatchResult c_from_header(evt_topic_match* node, bint owner=True):
-        cdef PyTopicMatchResult instance = PyTopicMatchResult.__new__(PyTopicMatchResult, alloc=False)
+    cdef TopicMatchResult c_from_header(evt_topic_match* node, bint owner=True):
+        cdef TopicMatchResult instance = TopicMatchResult.__new__(TopicMatchResult, alloc=False)
         instance.header = node
         instance.owner = owner
         return instance
@@ -344,8 +346,8 @@ cdef class PyTopicMatchResult:
             raise RuntimeError('Not initialized!')
         cdef dict info = {
             'matched': node.matched,
-            'part_a': PyTopicPart.c_from_header(node.part_a, False).c_cast() if node.part_a else None,
-            'part_b': PyTopicPart.c_from_header(node.part_b, False).c_cast() if node.part_b else None,
+            'part_a': TopicPart.c_from_header(node.part_a, False).c_cast() if node.part_a else None,
+            'part_b': TopicPart.c_from_header(node.part_b, False).c_cast() if node.part_b else None,
             'literal': PyUnicode_FromStringAndSize(node.literal, node.literal_len) if node.literal else None,
         }
         return info
@@ -374,12 +376,12 @@ cdef class PyTopicMatchResult:
             i += 1
             node = node.next
 
-        return PyTopicMatchResult.c_match_res(node)
+        return TopicMatchResult.c_match_res(node)
 
     def __iter__(self):
         cdef evt_topic_match* node = self.header
         while node:
-            yield PyTopicMatchResult.c_match_res(node)
+            yield TopicMatchResult.c_match_res(node)
             node = node.next
 
     def to_dict(self):
@@ -389,7 +391,7 @@ cdef class PyTopicMatchResult:
 
         while node:
             literal = PyUnicode_FromStringAndSize(node.literal, node.literal_len)
-            out[literal] = PyTopicPart.c_from_header(node.part_b, False).c_cast()
+            out[literal] = TopicPart.c_from_header(node.part_b, False).c_cast()
             node = node.next
         return out
 
@@ -417,7 +419,7 @@ cdef class PyTopicMatchResult:
             return True
 
 
-cdef class PyTopic:
+cdef class Topic:
     def __cinit__(self, str topic=None, *arg, bint alloc=True, **kwargs):
         if not alloc:
             if topic:
@@ -442,8 +444,8 @@ cdef class PyTopic:
             c_topic_free(self.header, 1, 1)
 
     @staticmethod
-    cdef PyTopic c_from_header(evt_topic* header, bint owner=False):
-        cdef PyTopic instance = PyTopic.__new__(PyTopic, alloc=False)
+    cdef Topic c_from_header(evt_topic* header, bint owner=False):
+        cdef Topic instance = Topic.__new__(Topic, alloc=False)
         instance.header = header
         instance.owner = owner
         return instance
@@ -486,7 +488,7 @@ cdef class PyTopic:
             raise RuntimeError('Not initialized!')
         return self.header.hash
 
-    def __eq__(self, PyTopic other):
+    def __eq__(self, Topic other):
         if not self.header or not other.header:
             raise RuntimeError('Not initialized!')
         return self.value == other.value
@@ -507,7 +509,7 @@ cdef class PyTopic:
 
         cdef evt_topic_part_variant* part = self.header.parts
         while part:
-            yield PyTopicPart.c_from_header(part, False).c_cast()
+            yield TopicPart.c_from_header(part, False).c_cast()
             part = part.header.next
 
     def __getitem__(self, ssize_t idx):
@@ -527,7 +529,7 @@ cdef class PyTopic:
 
         while part:
             if i == idx:
-                return PyTopicPart.c_from_header(part, False).c_cast()
+                return TopicPart.c_from_header(part, False).c_cast()
             i += 1
             part = part.header.next
         raise IndexError('i')
@@ -536,26 +538,26 @@ cdef class PyTopic:
         if not self.header:
             raise RuntimeError('Not initialized!')
 
-        cdef PyTopic aggregated = PyTopic.__new__(PyTopic)
+        cdef Topic aggregated = Topic.__new__(Topic)
         cdef evt_topic_part_variant* other_part
         cdef evt_topic_part_variant* tpart = self.header.parts
         cdef size_t i, n
-        if isinstance(object, PyTopic):
-            other_part = (<PyTopic> topic).header.parts
+        if isinstance(object, Topic):
+            other_part = (<Topic> topic).header.parts
             n = self.header.n
             for i in range(n):
                 aggregated.c_append(<evt_topic_part_variant*> tpart + i)
-            n = (<PyTopic> topic).header.n
+            n = (<Topic> topic).header.n
             for i in range(n):
                 aggregated.c_append(<evt_topic_part_variant*> other_part + i)
-        elif isinstance(object, PyTopicPart):
-            other_part = (<PyTopicPart> topic).header
+        elif isinstance(object, TopicPart):
+            other_part = (<TopicPart> topic).header
             n = self.header.n
             for i in range(n):
                 aggregated.c_append(<evt_topic_part_variant*> tpart + i)
             aggregated.c_append(other_part)
         else:
-            raise TypeError(f'Can not add {topic} to {self}, expected ether a {PyTopic} or {PyTopicPart}')
+            raise TypeError(f'Can not add {topic} to {self}, expected ether a {Topic} or {TopicPart}')
         aggregated.c_update_literal()
         return aggregated
 
@@ -565,16 +567,16 @@ cdef class PyTopic:
 
         cdef evt_topic_part_variant* other_part
         cdef size_t i, n
-        if isinstance(object, PyTopic):
-            other_part = (<PyTopic> topic).header.parts
-            n = (<PyTopic> topic).header.n
+        if isinstance(object, Topic):
+            other_part = (<Topic> topic).header.parts
+            n = (<Topic> topic).header.n
             for i in range(n):
                 self.c_append(<evt_topic_part_variant*> other_part + i)
-        elif isinstance(object, PyTopicPart):
-            other_part = (<PyTopicPart> topic).header
+        elif isinstance(object, TopicPart):
+            other_part = (<TopicPart> topic).header
             self.c_append(other_part)
         else:
-            raise TypeError(f'Can not add {topic} to {self}, expected ether a {PyTopic} or {PyTopicPart}')
+            raise TypeError(f'Can not add {topic} to {self}, expected ether a {Topic} or {TopicPart}')
         self.c_update_literal()
         return self
 
@@ -582,17 +584,17 @@ cdef class PyTopic:
         return self.format_map(kwargs, internalized=True, strict=False)
 
     @classmethod
-    def from_parts(cls, topic_parts: Iterable[PyTopicPart]) -> PyTopic:
-        cdef PyTopic aggregated = PyTopic.__new__(PyTopic)
-        cdef PyTopicPart tpart
+    def from_parts(cls, topic_parts: Iterable[TopicPart]) -> Topic:
+        cdef Topic aggregated = Topic.__new__(Topic)
+        cdef TopicPart tpart
         for tpart in topic_parts:
             aggregated.c_append(tpart.header)
         aggregated.c_update_literal()
         return aggregated
 
     @classmethod
-    def join(cls, topic_parts: Iterable[str]) -> PyTopic:
-        cdef PyTopic aggregated = PyTopic.__new__(PyTopic)
+    def join(cls, topic_parts: Iterable[str]) -> Topic:
+        cdef Topic aggregated = Topic.__new__(Topic)
         cdef str part
         cdef Py_ssize_t literal_len
         cdef const char* literal
@@ -604,7 +606,7 @@ cdef class PyTopic:
         c_topic_update_literal(topic, 1)
         return aggregated
 
-    cpdef PyTopic append(self, PyTopicPart topic_part):
+    cpdef Topic append(self, TopicPart topic_part):
         if not self.header or not topic_part.header:
             raise RuntimeError('Not initialized!')
 
@@ -635,18 +637,18 @@ cdef class PyTopic:
         self.c_update_literal()
         return self
 
-    cpdef PyTopicMatchResult match(self, PyTopic other):
+    cpdef TopicMatchResult match(self, Topic other):
         if not self.header:
             raise RuntimeError('Not initialized!')
 
         cdef evt_topic_match* match_res = c_topic_match(self.header, other.header, NULL, 1)
-        return PyTopicMatchResult.c_from_header(match_res, True)
+        return TopicMatchResult.c_from_header(match_res, True)
 
-    def update_literal(self) -> PyTopic:
+    def update_literal(self) -> Topic:
         self.c_update_literal()
         return self
 
-    cpdef PyTopic format_map(self, dict mapping, bint internalized=True, bint strict=False):
+    cpdef Topic format_map(self, dict mapping, bint internalized=True, bint strict=False):
         cdef evt_topic_part_variant* tpart = self.header.parts
         cdef evt_topic_type ttype
         cdef evt_topic* formatted = c_topic_new(NULL, 0, self.header.allocator, 1)
@@ -681,9 +683,9 @@ cdef class PyTopic:
         c_topic_update_literal(formatted, 1)
         # If internalized, the TopicPart will not own the literal buffers.
         # Requested or not, in any way, the topic literal must be added to the internal map.
-        return PyTopic.c_from_header(formatted, not internalized)
+        return Topic.c_from_header(formatted, not internalized)
 
-    def format(self, **kwargs) -> PyTopic:
+    def format(self, **kwargs) -> Topic:
         return self.format_map(kwargs, internalized=True, strict=False)
 
     property value:

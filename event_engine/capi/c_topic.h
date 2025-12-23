@@ -1080,13 +1080,13 @@ static inline evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topi
         res->matched = 0;
     }
 
-unlock_and_null:
-    c_heap_unlock(allocator, with_lock);
-    return NULL;
-
 unlock_and_return:
     c_heap_unlock(allocator, with_lock);
     return head;
+
+unlock_and_null:
+    c_heap_unlock(allocator, with_lock);
+    return NULL;
 }
 
 static inline evt_topic_match* c_topic_match_new(evt_topic_match* prev, heap_allocator* allocator, int with_lock) {

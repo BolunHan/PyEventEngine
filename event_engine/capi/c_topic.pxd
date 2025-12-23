@@ -102,52 +102,52 @@ cdef extern from "c_topic.h":
         evt_topic_match* next
         heap_allocator* allocator
 
-    strmap* c_get_global_internal_map(heap_allocator* allocator, int with_lock) except NULL
-    evt_topic* c_topic_new(const char* key, size_t key_len, heap_allocator* allocator, int with_lock)
-    int c_topic_free(evt_topic* topic, int free_self, int with_lock) except -1
-    int c_topic_internalize(evt_topic* topic, const char* key, size_t key_len, int with_lock) except -1
-    int c_topic_append(evt_topic* topic, const char* s, size_t len, evt_topic_type ttype, int with_lock) except -1
-    int c_topic_parse(evt_topic* topic, const char* key, size_t key_len, int with_lock)
-    int c_topic_assign(evt_topic* topic, const char* key, size_t key_len, int with_lock)
-    int c_topic_update_literal(evt_topic* topic, int with_lock) except -1
-    evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topic_b, evt_topic_match* out, int with_lock) except NULL
-    evt_topic_match* c_topic_match_new(evt_topic_match* prev, heap_allocator* allocator, int with_lock) except NULL
-    void c_topic_match_free(evt_topic_match* res, int with_lock) noexcept
-    int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b)
+    strmap* c_get_global_internal_map(heap_allocator* allocator, int with_lock) noexcept nogil
+    evt_topic* c_topic_new(const char* key, size_t key_len, heap_allocator* allocator, int with_lock) noexcept nogil
+    int c_topic_free(evt_topic* topic, int free_self, int with_lock) noexcept nogil
+    int c_topic_internalize(evt_topic* topic, const char* key, size_t key_len, int with_lock) noexcept nogil
+    int c_topic_append(evt_topic* topic, const char* s, size_t len, evt_topic_type ttype, int with_lock) noexcept nogil
+    int c_topic_parse(evt_topic* topic, const char* key, size_t key_len, int with_lock) noexcept nogil
+    int c_topic_assign(evt_topic* topic, const char* key, size_t key_len, int with_lock) noexcept nogil
+    int c_topic_update_literal(evt_topic* topic, int with_lock) noexcept nogil
+    evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topic_b, evt_topic_match* out, int with_lock) noexcept nogil
+    evt_topic_match* c_topic_match_new(evt_topic_match* prev, heap_allocator* allocator, int with_lock) noexcept nogil
+    void c_topic_match_free(evt_topic_match* res, int with_lock) noexcept nogil
+    int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) noexcept nogil
 
 
-cdef class PyTopicPart:
+cdef class TopicPart:
     cdef evt_topic_part_variant* header
     cdef readonly bint owner
 
     @staticmethod
-    cdef PyTopicPart c_from_header(evt_topic_part_variant* header, bint owner=?)
+    cdef TopicPart c_from_header(evt_topic_part_variant* header, bint owner=?)
 
     cdef object c_cast(self)
 
 
-cdef class PyTopicPartExact(PyTopicPart):
+cdef class TopicPartExact(TopicPart):
     pass
 
 
-cdef class PyTopicPartAny(PyTopicPart):
+cdef class TopicPartAny(TopicPart):
     pass
 
 
-cdef class PyTopicPartRange(PyTopicPart):
+cdef class TopicPartRange(TopicPart):
     pass
 
 
-cdef class PyTopicPartPattern(PyTopicPart):
+cdef class TopicPartPattern(TopicPart):
     pass
 
 
-cpdef PyTopic get_internal_topic(str key, bint owner=*)
+cpdef Topic get_internal_topic(str key, bint owner=*)
 
 cpdef dict get_internal_map()
 
 
-cdef class PyTopicMatchResult:
+cdef class TopicMatchResult:
     cdef evt_topic_match* header
     cdef bint owner
 
@@ -155,22 +155,22 @@ cdef class PyTopicMatchResult:
     cdef dict c_match_res(evt_topic_match* node)
 
     @staticmethod
-    cdef PyTopicMatchResult c_from_header(evt_topic_match* node, bint owner=?)
+    cdef TopicMatchResult c_from_header(evt_topic_match* node, bint owner=?)
 
 
-cdef class PyTopic:
+cdef class Topic:
     cdef evt_topic* header
     cdef readonly bint owner
 
     @staticmethod
-    cdef PyTopic c_from_header(evt_topic* header, bint owner=*)
+    cdef Topic c_from_header(evt_topic* header, bint owner=*)
 
     cdef void c_append(self, evt_topic_part_variant* tpart)
 
     cdef void c_update_literal(self)
 
-    cpdef PyTopic append(self, PyTopicPart topic_part)
+    cpdef Topic append(self, TopicPart topic_part)
 
-    cpdef PyTopicMatchResult match(self, PyTopic other)
+    cpdef TopicMatchResult match(self, Topic other)
 
-    cpdef PyTopic format_map(self, dict mapping, bint internalized=?, bint strict=?)
+    cpdef Topic format_map(self, dict mapping, bint internalized=?, bint strict=?)

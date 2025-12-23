@@ -1,7 +1,38 @@
 from libc.stdint cimport uint64_t
 
-from .c_allocator cimport MemoryAllocator, Allocator
-from .c_bytemap cimport ByteMapHeader, ByteMap
+
+cdef extern from "c_heap_allocator.h":
+    ctypedef struct heap_allocator:
+        pass
+
+    heap_allocator* c_heap_allocator_new()
+
+
+cdef extern from "c_strmap.h":
+    ctypedef struct strmap_entry:
+        const char* key
+        size_t key_length
+        void* value
+        uint64_t hash
+        int occupied
+        int removed
+        strmap_entry* prev
+        strmap_entry* next
+
+    ctypedef struct strmap:
+        heap_allocator* heap_allocator
+        strmap_entry* tabl
+        size_t capacity
+        size_t size
+        size_t occupied
+        strmap_entry* first
+        strmap_entry* last
+        uint64_t salt
+
+    strmap* c_strmap_new(size_t capacity, heap_allocator* heap_allocator, int with_lock) noexcept nogil
+    void c_strmap_free(strmap* map, int free_self, int with_lock) noexcept nogil
+    int c_strmap_get(strmap* map, const char* key, size_t key_len, void** out) noexcept nogil
+    int c_strmap_set(strmap* map, const char* key, size_t key_len, void* value, strmap_entry** out_entry, int with_lock) noexcept nogil
 
 
 cdef extern from "c_topic.h":
@@ -11,86 +42,86 @@ cdef extern from "c_topic.h":
     const char* DEFAULT_WILDCARD_BRACKETS
     const char DEFAULT_WILDCARD_MARKER
     const char DEFAULT_PATTERN_DELIM
-    ByteMapHeader* GLOBAL_INTERNAL_MAP
+    strmap* GLOBAL_INTERNAL_MAP
 
-    ctypedef enum TopicType:
+    ctypedef enum evt_topic_type:
         TOPIC_PART_EXACT = 0
         TOPIC_PART_ANY = 1
         TOPIC_PART_RANGE = 2
         TOPIC_PART_PATTERN = 3
 
-    ctypedef struct TopicPartHeader:
-        TopicType ttype
-        TopicPart* next
+    ctypedef struct evt_topic_part:
+        evt_topic_type ttype
+        evt_topic_part_variant* next
 
-    ctypedef struct TopicPartExact:
-        TopicPartHeader header
+    ctypedef struct evt_topic_exact:
+        evt_topic_part header
         char* part
         size_t part_len
 
-    ctypedef struct TopicPartAny:
-        TopicPartHeader header
+    ctypedef struct evt_topic_any:
+        evt_topic_part header
         char* name
         size_t name_len
 
-    ctypedef struct TopicPartRange:
-        TopicPartHeader header
+    ctypedef struct evt_topic_range:
+        evt_topic_part header
         char** options
         size_t* option_length
         size_t num_options
         char* literal
         size_t literal_len
 
-    ctypedef struct TopicPartPattern:
-        TopicPartHeader header
+    ctypedef struct evt_topic_pattern:
+        evt_topic_part header
         char* pattern
         size_t pattern_len
 
-    ctypedef union TopicPart:
-        TopicPartHeader header
-        TopicPartExact exact
-        TopicPartAny any
-        TopicPartRange range
-        TopicPartPattern pattern
+    ctypedef union evt_topic_part_variant:
+        evt_topic_part header
+        evt_topic_exact exact
+        evt_topic_any any
+        evt_topic_range range
+        evt_topic_pattern pattern
 
-    ctypedef struct Topic:
-        TopicPart* parts
+    ctypedef struct evt_topic:
+        evt_topic_part_variant* parts
         size_t n
         uint64_t hash
         char* key
         size_t key_len
         int is_exact
-        MemoryAllocator* allocator
+        heap_allocator* allocator
 
-    ctypedef struct TopicPartMatchResult:
+    ctypedef struct evt_topic_match:
         int matched
-        TopicPart* part_a
-        TopicPart* part_b
+        evt_topic_part_variant* part_a
+        evt_topic_part_variant* part_b
         char* literal
         size_t literal_len
-        TopicPartMatchResult* next
-        MemoryAllocator* allocator
+        evt_topic_match* next
+        heap_allocator* allocator
 
-    ByteMapHeader* c_get_global_internal_map(MemoryAllocator* allocator) except NULL
-    Topic* c_topic_new(const char* key, size_t key_len, MemoryAllocator* allocator)
-    int c_topic_free(Topic* topic, int free_self) except -1
-    int c_topic_internalize(Topic* topic, const char* key, size_t key_len) except -1
-    int c_topic_append(Topic* topic, const char* s, size_t len, TopicType ttype) except -1
-    int c_topic_parse(Topic* topic, const char* key, size_t key_len)
-    int c_topic_assign(Topic* topic, const char* key, size_t key_len)
-    int c_topic_update_literal(Topic* topic) except -1
-    TopicPartMatchResult* c_topic_match(Topic* topic_a, Topic* topic_b, TopicPartMatchResult* out) except NULL
-    TopicPartMatchResult* c_topic_match_new(TopicPartMatchResult* prev, MemoryAllocator* allocator) except NULL
-    void c_topic_match_free(TopicPartMatchResult* res) noexcept
-    int c_topic_match_bool(Topic* topic_a, Topic* topic_b)
+    strmap* c_get_global_internal_map(heap_allocator* allocator, int with_lock) except NULL
+    evt_topic* c_topic_new(const char* key, size_t key_len, heap_allocator* allocator, int with_lock)
+    int c_topic_free(evt_topic* topic, int free_self, int with_lock) except -1
+    int c_topic_internalize(evt_topic* topic, const char* key, size_t key_len, int with_lock) except -1
+    int c_topic_append(evt_topic* topic, const char* s, size_t len, evt_topic_type ttype, int with_lock) except -1
+    int c_topic_parse(evt_topic* topic, const char* key, size_t key_len, int with_lock)
+    int c_topic_assign(evt_topic* topic, const char* key, size_t key_len, int with_lock)
+    int c_topic_update_literal(evt_topic* topic, int with_lock) except -1
+    evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topic_b, evt_topic_match* out, int with_lock) except NULL
+    evt_topic_match* c_topic_match_new(evt_topic_match* prev, heap_allocator* allocator, int with_lock) except NULL
+    void c_topic_match_free(evt_topic_match* res, int with_lock) noexcept
+    int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b)
 
 
 cdef class PyTopicPart:
-    cdef TopicPart* header
+    cdef evt_topic_part_variant* header
     cdef readonly bint owner
 
     @staticmethod
-    cdef PyTopicPart c_from_header(TopicPart* header, bint owner=*)
+    cdef PyTopicPart c_from_header(evt_topic_part_variant* header, bint owner=?)
 
     cdef object c_cast(self)
 
@@ -111,38 +142,30 @@ cdef class PyTopicPartPattern(PyTopicPart):
     pass
 
 
-cdef Allocator C_ALLOCATOR
-
-cpdef ByteMap init_internal_map(size_t default_capacity=*)
-
-cpdef void clear_internal_map()
-
 cpdef PyTopic get_internal_topic(str key, bint owner=*)
 
 cpdef dict get_internal_map()
 
-cpdef Allocator init_allocator(size_t init_capacity=*, bint with_shm=*)
-
 
 cdef class PyTopicMatchResult:
-    cdef TopicPartMatchResult* header
+    cdef evt_topic_match* header
     cdef bint owner
 
     @staticmethod
-    cdef dict c_match_res(TopicPartMatchResult* node)
+    cdef dict c_match_res(evt_topic_match* node)
 
     @staticmethod
-    cdef PyTopicMatchResult c_from_header(TopicPartMatchResult* node, bint owner=*)
+    cdef PyTopicMatchResult c_from_header(evt_topic_match* node, bint owner=?)
 
 
 cdef class PyTopic:
-    cdef Topic* header
+    cdef evt_topic* header
     cdef readonly bint owner
 
     @staticmethod
-    cdef PyTopic c_from_header(Topic* header, bint owner=*)
+    cdef PyTopic c_from_header(evt_topic* header, bint owner=*)
 
-    cdef void c_append(self, TopicPart* tpart)
+    cdef void c_append(self, evt_topic_part_variant* tpart)
 
     cdef void c_update_literal(self)
 
@@ -150,4 +173,4 @@ cdef class PyTopic:
 
     cpdef PyTopicMatchResult match(self, PyTopic other)
 
-    cpdef PyTopic format_map(self, dict mapping, bint internalized=*, bint strict=*)
+    cpdef PyTopic format_map(self, dict mapping, bint internalized=?, bint strict=?)

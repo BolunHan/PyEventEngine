@@ -91,7 +91,7 @@ static inline strmap* c_strmap_new(size_t capacity, heap_allocator* heap_allocat
  *
  * @param map          Map instance (NULL is a no-op).
  */
-static inline void c_strmap_clear(strmap* map);
+static inline void c_strmap_clear(strmap* map, int with_lock);
 
 /**
  * @brief Free the map's resources.
@@ -159,11 +159,12 @@ static inline int c_strmap_rehash(strmap* map, size_t new_capacity, int with_loc
  * @param key          NUL-terminated key string.
  * @param key_len      Key length; pass 0 to compute with `strlen`.
  * @param value        Value pointer to store (opaque to the map).
+ * @param out_entry   Optional out-parameter to receive the strmap_entry pointer.
  * @param with_lock    Non-zero to use the allocator's mutex for allocations.
  * @return `STRMAP_OK` on success; negative error code on invalid args or OOM;
  *         `STRMAP_ERR_FULL` if no slot found (extremely unlikely with growth).
  */
-static inline int c_strmap_set(strmap* map, const char* key, size_t key_len, void* value, int with_lock);
+static inline int c_strmap_set(strmap* map, const char* key, size_t key_len, void* value, strmap_entry** out_entry, int with_lock);
 
 /**
  * @brief Remove a key, returning its value if present.
@@ -176,10 +177,11 @@ static inline int c_strmap_set(strmap* map, const char* key, size_t key_len, voi
  * @param key_len      Key length; pass 0 to compute with `strlen`.
  * @param out          Out-parameter set to the removed value on success; set to
  *                     NULL on not found (when `out` is non-NULL).
+ * @param with_lock    Non-zero to use the allocator's mutex for allocations.
  * @return `STRMAP_OK` on success; `STRMAP_ERR_NOT_FOUND` if absent; negative
  *         error code on invalid arguments.
  */
-static inline int c_strmap_pop(strmap* map, const char* key, size_t key_len, void** out);
+static inline int c_strmap_pop(strmap* map, const char* key, size_t key_len, void** out, int with_lock);
 
 // ========== Iteration Helpers (Forward Declarations) ==========
 
@@ -225,7 +227,7 @@ static inline uint64_t c_strmap_hash(strmap* map, const char* key, size_t key_le
     return XXH3_64bits(key, key_len);
 }
 
-static inline const char* c_strmap_clone_key(strmap* map, const char* key, size_t key_len) {
+static inline const char* c_strmap_clone_key(strmap* map, const char* key, size_t key_len, int with_lock) {
     if (!map || !key) return NULL;
 
     if (!key_len) {
@@ -237,7 +239,7 @@ static inline const char* c_strmap_clone_key(strmap* map, const char* key, size_
     heap_allocator* allocator = map->heap_allocator;
 
     if (allocator) {
-        buf = (char*) c_heap_request(allocator, key_len + 1, 1, &allocator->lock);
+        buf = (char*) c_heap_request(allocator, key_len + 1, 1, with_lock ? &allocator->lock : NULL);
     }
     else {
         buf = (char*) calloc(key_len + 1, 1);
@@ -247,11 +249,11 @@ static inline const char* c_strmap_clone_key(strmap* map, const char* key, size_
     return buf;
 }
 
-static inline void c_strmap_free_key(strmap* map, const char* key) {
+static inline void c_strmap_free_key(strmap* map, const char* key, int with_lock) {
     if (!key) return;
     heap_allocator* allocator = map->heap_allocator;
     if (allocator) {
-        c_heap_free((void*) key, &allocator->lock);
+        c_heap_free((void*) key, with_lock ? &allocator->lock : NULL);
     }
     else {
         free((void*) key);
@@ -295,15 +297,31 @@ static inline strmap* c_strmap_new(size_t capacity, heap_allocator* heap_allocat
     return map;
 }
 
-static inline void c_strmap_clear(strmap* map) {
+static inline void c_strmap_clear(strmap* map, int with_lock) {
     if (!map || !map->table) return;
+
+    heap_allocator* heap_allocator = map->heap_allocator;
+    pthread_mutex_t* lock = heap_allocator ? &heap_allocator->lock : NULL;
+    int locked = 0;
+
+    if (lock && with_lock) {
+        if (pthread_mutex_lock(lock) == 0) {
+            locked = 1;
+        }
+    }
+
     for (size_t i = 0; i < map->capacity; ++i) {
         strmap_entry* e = &map->table[i];
         if (e->occupied) {
-            c_strmap_free_key(map, e->key);
+            c_strmap_free_key(map, e->key, with_lock);
         }
         memset(e, 0, sizeof(strmap_entry));
     }
+
+    if (locked) {
+        pthread_mutex_unlock(lock);
+    }
+
     map->first = map->last = NULL;
     map->size = 0;
     map->occupied = 0;
@@ -313,7 +331,7 @@ static inline void c_strmap_free(strmap* map, int free_self, int with_lock) {
     if (!map) return;
 
     heap_allocator* heap_allocator = map->heap_allocator;
-    c_strmap_clear(map);
+    c_strmap_clear(map, with_lock);
 
     if (heap_allocator) {
         pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
@@ -392,8 +410,7 @@ static inline int c_strmap_rehash(strmap* map, size_t new_capacity, int with_loc
     strmap_entry* new_table;
 
     if (heap_allocator) {
-        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        new_table = (strmap_entry*) c_heap_request(heap_allocator, new_capacity * sizeof(strmap_entry), 1, lock);
+        new_table = (strmap_entry*) c_heap_request(heap_allocator, new_capacity * sizeof(strmap_entry), 1, with_lock ? &heap_allocator->lock : NULL);
     }
     else {
         new_table = (strmap_entry*) calloc(new_capacity, sizeof(strmap_entry));
@@ -422,8 +439,7 @@ static inline int c_strmap_rehash(strmap* map, size_t new_capacity, int with_loc
     }
 
     if (heap_allocator) {
-        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        c_heap_free((void*) map->table, lock);
+        c_heap_free((void*) map->table, with_lock ? &heap_allocator->lock : NULL);
     }
     else {
         free((void*) map->table);
@@ -437,7 +453,7 @@ static inline int c_strmap_rehash(strmap* map, size_t new_capacity, int with_loc
     return STRMAP_OK;
 }
 
-static inline int c_strmap_set(strmap* map, const char* key, size_t key_len, void* value, int with_lock) {
+static inline int c_strmap_set(strmap* map, const char* key, size_t key_len, void* value, strmap_entry** out_entry, int with_lock) {
     if (!map || !key) return STRMAP_ERR_INVALID_BUF;
     if (key_len == 0) key_len = strlen(key);
     if (key_len == 0) return STRMAP_ERR_INVALID_KEY;
@@ -462,6 +478,7 @@ static inline int c_strmap_set(strmap* map, const char* key, size_t key_len, voi
             entry->key_length == key_len &&
             memcmp(entry->key, key, key_len) == 0) {
             entry->value = value;
+            if (out_entry) *out_entry = entry;
             return STRMAP_OK;
         }
         idx = (idx + 1) % map->capacity;
@@ -475,7 +492,7 @@ static inline int c_strmap_set(strmap* map, const char* key, size_t key_len, voi
     if (!tombstone) map->size++;
     entry = tombstone ? tombstone : entry;
 
-    const char* key_copy = c_strmap_clone_key(map, key, key_len);
+    const char* key_copy = c_strmap_clone_key(map, key, key_len, with_lock);
     if (!key_copy) return STRMAP_ERR_INVALID_BUF;
 
     entry->key = key_copy;
@@ -495,10 +512,11 @@ static inline int c_strmap_set(strmap* map, const char* key, size_t key_len, voi
     }
     map->last = entry;
     map->occupied++;
+    if (out_entry) *out_entry = entry;
     return STRMAP_OK;
 }
 
-static inline int c_strmap_pop(strmap* map, const char* key, size_t key_len, void** out) {
+static inline int c_strmap_pop(strmap* map, const char* key, size_t key_len, void** out, int with_lock) {
     if (!map || !key) return STRMAP_ERR_INVALID_BUF;
     if (key_len == 0) key_len = strlen(key);
     if (key_len == 0) return STRMAP_ERR_INVALID_KEY;
@@ -520,7 +538,7 @@ static inline int c_strmap_pop(strmap* map, const char* key, size_t key_len, voi
             if (entry->next) entry->next->prev = entry->prev;
             else map->last = entry->prev;
 
-            c_strmap_free_key(map, entry->key);
+            c_strmap_free_key(map, entry->key, with_lock);
             memset(entry, 0, sizeof(strmap_entry));
             entry->removed = 1;
             map->occupied--;

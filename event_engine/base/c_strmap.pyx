@@ -81,7 +81,7 @@ cdef class StrMap:
             raise RuntimeError(f'Failed to get from {self.__class__.__name__}, err code: {ret_code}')
 
     cdef inline void c_set(self, const char* key, void* value):
-        cdef int ret_code = c_strmap_set(self.header, key, 0, value, 1)
+        cdef int ret_code = c_strmap_set(self.header, key, 0, value, NULL, 1)
 
         if ret_code == STRMAP_OK:
             return
@@ -97,7 +97,7 @@ cdef class StrMap:
     cdef inline void c_set_bytes(self, bytes key_bytes, void* value):
         cdef size_t length = PyBytes_GET_SIZE(key_bytes)
         cdef const char* key = <const char*> key_bytes
-        cdef int ret_code = c_strmap_set(self.header, key, length, value, 1)
+        cdef int ret_code = c_strmap_set(self.header, key, length, value, NULL, 1)
 
         if ret_code == STRMAP_OK:
             return
@@ -113,7 +113,7 @@ cdef class StrMap:
     cdef inline void c_set_str(self, str key_str, void* value):
         cdef Py_ssize_t length
         cdef const char* key = PyUnicode_AsUTF8AndSize(key_str, &length)
-        cdef int ret_code = c_strmap_set(self.header, key, length, value, 1)
+        cdef int ret_code = c_strmap_set(self.header, key, length, value, NULL, 1)
 
         if ret_code == STRMAP_OK:
             return
@@ -127,7 +127,7 @@ cdef class StrMap:
             raise RuntimeError(f'Failed to set to {self.__class__.__name__}, err code: {ret_code}')
 
     cdef inline void c_pop(self, const char* key, void** out):
-        cdef int ret_code = c_strmap_pop(self.header, key, 0, out)
+        cdef int ret_code = c_strmap_pop(self.header, key, 0, out, 1)
 
         if ret_code == STRMAP_OK:
             return
@@ -143,7 +143,7 @@ cdef class StrMap:
     cdef inline void c_pop_bytes(self, bytes key_bytes, void** out):
         cdef size_t length = PyBytes_GET_SIZE(key_bytes)
         cdef const char* key = <const char*> key_bytes
-        cdef int ret_code = c_strmap_pop(self.header, key, length, out)
+        cdef int ret_code = c_strmap_pop(self.header, key, length, out, 1)
 
         if ret_code == STRMAP_OK:
             return
@@ -159,7 +159,7 @@ cdef class StrMap:
     cdef inline void c_pop_str(self, str key_str, void** out):
         cdef Py_ssize_t length
         cdef const char* key = PyUnicode_AsUTF8AndSize(key_str, &length)
-        cdef int ret_code = c_strmap_pop(self.header, key, length, out)
+        cdef int ret_code = c_strmap_pop(self.header, key, length, out, 1)
 
         if ret_code == STRMAP_OK:
             return
@@ -213,7 +213,7 @@ cdef class StrMap:
             raise RuntimeError(f'Failed to check {self.__class__.__name__} contain, err code: {ret_code}')
 
     cdef inline void c_clear(self):
-        c_strmap_clear(self.header)
+        c_strmap_clear(self.header, 1)
 
     # --- python interface ---
 
@@ -278,7 +278,7 @@ cdef class StrMap:
         else:
             raise TypeError('Key must be str or bytes')
 
-        cdef int ret_code = c_strmap_set(self.header, key_ptr, length, <void*> <PyObject*> value, 1)
+        cdef int ret_code = c_strmap_set(self.header, key_ptr, length, <void*> <PyObject*> value, NULL, 1)
 
         if ret_code == STRMAP_OK:
             return
@@ -355,7 +355,7 @@ cdef class StrMap:
         else:
             raise TypeError('Key must be str or bytes')
 
-        cdef int ret_code = c_strmap_set(self.header, key_ptr, length, <void*> <PyObject*> value, 1)
+        cdef int ret_code = c_strmap_set(self.header, key_ptr, length, <void*> <PyObject*> value, NULL, 1)
 
         if ret_code == STRMAP_OK:
             return
@@ -379,7 +379,7 @@ cdef class StrMap:
         else:
             raise TypeError('Key must be str or bytes')
 
-        cdef int ret_code = c_strmap_set(self.header, key_ptr, length, <void*> value, 1)
+        cdef int ret_code = c_strmap_set(self.header, key_ptr, length, <void*> value, NULL, 1)
 
         if ret_code == STRMAP_OK:
             return
@@ -404,7 +404,7 @@ cdef class StrMap:
             raise TypeError('Key must be str or bytes')
 
         cdef void* out
-        cdef int ret_code = c_strmap_pop(self.header, key_ptr, length, &out)
+        cdef int ret_code = c_strmap_pop(self.header, key_ptr, length, &out, 1)
 
         if ret_code == STRMAP_OK:
             return
@@ -443,7 +443,7 @@ cdef class StrMap:
             raise RuntimeError(f'Failed to check {self.__class__.__name__} contain, err code: {ret_code}')
 
     def clear(self):
-        c_strmap_clear(self.header)
+        c_strmap_clear(self.header, 1)
 
     def bytes_keys(self):
         cdef strmap_entry* entry = self.header.first

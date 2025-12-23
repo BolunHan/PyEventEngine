@@ -5,6 +5,7 @@ cdef extern from "c_heap_allocator.h":
     ctypedef struct heap_allocator:
         pass
 
+
 cdef extern from "c_strmap.h":
     const size_t MIN_STRMAP_CAPACITY
     const size_t DEFAULT_STRMAP_CAPACITY
@@ -38,13 +39,13 @@ cdef extern from "c_strmap.h":
         uint64_t salt
 
     strmap* c_strmap_new(size_t capacity, heap_allocator* heap_allocator, int with_lock) noexcept nogil
-    void c_strmap_clear(strmap* map) noexcept nogil
+    void c_strmap_clear(strmap* map, int with_lock) noexcept nogil
     void c_strmap_free(strmap* map, int free_self, int with_lock) noexcept nogil
     int c_strmap_get(strmap* map, const char* key, size_t key_len, void** out) noexcept nogil
     int c_strmap_contains(strmap* map, const char* key, size_t key_len) noexcept nogil
     int c_strmap_rehash(strmap* map, size_t new_capacity, int with_lock) noexcept nogil
-    int c_strmap_set(strmap* map, const char* key, size_t key_len, void* value, int with_lock) noexcept nogil
-    int c_strmap_pop(strmap* map, const char* key, size_t key_len, void** out) noexcept nogil
+    int c_strmap_set(strmap* map, const char* key, size_t key_len, void* value, strmap_entry** out_entry, int with_lock) noexcept nogil
+    int c_strmap_pop(strmap* map, const char* key, size_t key_len, void** out, int with_lock) noexcept nogil
 
 
 cdef class StrMap:

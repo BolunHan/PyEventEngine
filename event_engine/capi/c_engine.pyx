@@ -5,11 +5,10 @@ from cpython.object cimport PyObject
 from cpython.ref cimport Py_INCREF, Py_XDECREF
 from libc.stdlib cimport free
 
-from .c_allocator cimport c_heap_new, c_heap_free, c_heap_request, c_heap_recycle, DEFAULT_ALLOC_PAGE
-from .c_bytemap cimport MapEntry, ByteMap, c_bytemap_new, c_bytemap_free, c_bytemap_set, c_bytemap_get, c_bytemap_pop, c_bytemap_clear, DEFAULT_BYTEMAP_CAPACITY, C_BYTEMAP_NOT_FOUND
-from .c_event cimport PyMessagePayload, C_INTERNAL_EMPTY_ARGS
-from .c_topic cimport c_topic_match_bool, C_ALLOCATOR
+from .c_event cimport MessagePayload, C_INTERNAL_EMPTY_ARGS
+from .c_topic cimport c_topic_match_bool, HEAP_ALLOCATOR
 from ..base import LOGGER
+from ..base.c_strmap cimport StrMap
 
 LOGGER = LOGGER.getChild('Engine')
 
@@ -25,30 +24,30 @@ class Empty(Exception):
 cdef class EventEngine:
     def __cinit__(self, size_t capacity=DEFAULT_MQ_CAPACITY, object logger=None):
         self.logger = LOGGER.getChild(f'EventEngine') if logger is None else logger
-        cdef MemoryAllocator* allocator = NULL if C_ALLOCATOR is None else C_ALLOCATOR.allocator
+        cdef heap_allocator* allocator = HEAP_ALLOCATOR
 
         self.mq = c_mq_new(capacity, NULL, allocator)
         if not self.mq:
             raise MemoryError(f'Failed to allocate MessageQueue for {self.__class__.__name__}.')
 
-        self.exact_topic_hooks = c_bytemap_new(DEFAULT_BYTEMAP_CAPACITY, NULL)
+        self.exact_topic_hooks = c_strmap_new(0, NULL, 0)
         if not self.exact_topic_hooks:
             c_mq_free(self.mq, 1)
             self.mq = NULL
             raise MemoryError(f'Failed to allocate MessageQueue for {self.__class__.__name__}.')
 
-        self.generic_topic_hooks = c_bytemap_new(DEFAULT_BYTEMAP_CAPACITY, NULL)
+        self.generic_topic_hooks = c_strmap_new(0, NULL, 0)
         if not self.generic_topic_hooks:
             c_mq_free(self.mq, 1)
-            c_bytemap_free(self.exact_topic_hooks, 1)
+            c_strmap_free(self.exact_topic_hooks, 1, 1)
             self.mq = NULL
             raise MemoryError(f'Failed to allocate MessageQueue for {self.__class__.__name__}.')
 
-        self.payload_allocator = c_heap_new(DEFAULT_ALLOC_PAGE)
+        self.payload_allocator = c_heap_allocator_new()
         if not self.payload_allocator:
             c_mq_free(self.mq, 1)
-            c_bytemap_free(self.exact_topic_hooks, 1)
-            c_bytemap_free(self.generic_topic_hooks, 1)
+            c_strmap_free(self.exact_topic_hooks, 1, 1)
+            c_strmap_free(self.generic_topic_hooks, 1, 1)
             self.mq = NULL
             self.exact_topic_hooks = NULL
             self.generic_topic_hooks = NULL
@@ -62,23 +61,23 @@ cdef class EventEngine:
             self.mq = NULL
 
         if self.exact_topic_hooks:
-            c_bytemap_free(self.exact_topic_hooks, 1)
+            c_strmap_free(self.exact_topic_hooks, 1, 1)
             self.exact_topic_hooks = NULL
 
         if self.generic_topic_hooks:
-            c_bytemap_free(self.generic_topic_hooks, 1)
+            c_strmap_free(self.generic_topic_hooks, 1, 1)
             self.generic_topic_hooks = NULL
 
         if self.payload_allocator:
-            c_heap_free(self.payload_allocator)
+            c_heap_allocator_free(self.payload_allocator)
             self.payload_allocator = NULL
 
     cdef inline void c_loop(self):
         if not self.mq:
             raise RuntimeError('Not initialized!')
 
-        cdef MessagePayload* msg = NULL
-        cdef MessageQueue* mq = self.mq
+        cdef evt_message_payload* msg = NULL
+        cdef message_queue* mq = self.mq
         cdef int ret_code
 
         while self.active:
@@ -97,13 +96,13 @@ cdef class EventEngine:
                 Py_XDECREF(<PyObject*> msg.args)
             if msg.kwargs:
                 Py_XDECREF(<PyObject*> msg.kwargs)
-            if msg.allocator and msg.allocator.active:
-                c_heap_recycle(msg.allocator, <void*> msg)
+            if msg.allocator:
+                c_heap_free(<void*> msg, NULL)
             else:
                 free(msg)
 
-    cdef inline MessagePayload* c_get(self, bint block, size_t max_spin, double timeout):
-        cdef MessagePayload* msg = NULL
+    cdef inline evt_message_payload* c_get(self, bint block, size_t max_spin, double timeout):
+        cdef evt_message_payload* msg = NULL
         cdef int ret_code
         if block:
             ret_code = c_mq_get_hybrid(self.mq, &msg, max_spin, timeout)
@@ -114,12 +113,12 @@ cdef class EventEngine:
             return NULL
         return msg
 
-    cdef inline int c_publish(self, PyTopic topic, tuple args, dict kwargs, bint block, size_t max_spin, double timeout):
+    cdef inline int c_publish(self, Topic topic, tuple args, dict kwargs, bint block, size_t max_spin, double timeout):
         if not topic.header.is_exact:
             raise ValueError('Topic must be all of exact parts')
 
         # Step 0: Request payload buffer (MUST be done with GIL held - allocator is NOT thread-safe)
-        cdef MessagePayload* payload = <MessagePayload*> c_heap_request(self.payload_allocator, sizeof(MessagePayload))
+        cdef evt_message_payload* payload = <evt_message_payload*> c_heap_request(self.payload_allocator, sizeof(evt_message_payload), False, NULL)
 
         # Step 1: Assembling payload (MUST be done with GIL held - touching Python objects)
         payload.topic = topic.header
@@ -146,30 +145,30 @@ cdef class EventEngine:
             self.seq_id -= 1
             Py_XDECREF(<PyObject*> args)
             Py_XDECREF(<PyObject*> kwargs)
-            if payload.allocator and payload.allocator.active:
-                c_heap_recycle(payload.allocator, <void*> payload)
+            if payload.allocator:
+                c_heap_free(<void*> payload, NULL)
             else:
                 free(payload)
 
         return ret_code
 
-    cdef inline void c_trigger(self, MessagePayload* msg):
-        cdef Topic* msg_topic = msg.topic
+    cdef inline void c_trigger(self, evt_message_payload* msg):
+        cdef evt_topic* msg_topic = msg.topic
         # Step 1: Match exact_topic_hooks
-        cdef void* hook_ptr
+        cdef PyObject* hook_ptr = NULL
         cdef EventHook event_hook
 
-        hook_ptr = c_bytemap_get(self.exact_topic_hooks, msg_topic.key, msg_topic.key_len)
-        if hook_ptr and hook_ptr != C_BYTEMAP_NOT_FOUND:
-            event_hook = <EventHook> <PyObject*> hook_ptr
+        cdef int ret_code = c_strmap_get(self.exact_topic_hooks, msg_topic.key, msg_topic.key_len, <void**> &hook_ptr)
+        if hook_ptr:
+            event_hook = <EventHook> hook_ptr
             event_hook.c_trigger_no_topic(msg)
             event_hook.c_trigger_with_topic(msg)
 
         # Step 2: Match generic_topic_hooks
-        cdef MapEntry* entry = self.generic_topic_hooks.first
+        cdef strmap_entry* entry = self.generic_topic_hooks.first
         cdef int is_matched
         while entry:
-            hook_ptr = entry.value
+            hook_ptr = <PyObject*> entry.value
             if not hook_ptr:
                 continue
             event_hook = <EventHook> <PyObject*> hook_ptr
@@ -180,80 +179,81 @@ cdef class EventEngine:
             entry = entry.next
 
     cdef inline void c_register_hook(self, EventHook hook):
-        cdef Topic* topic_ptr = hook.topic.header
-        cdef void* existing_hook_ptr
-        cdef ByteMapHeader* hook_map
+        cdef evt_topic* topic_ptr = hook.topic.header
+        cdef PyObject* existing_hook_ptr = NULL
+        cdef strmap* hook_map
 
         if topic_ptr.is_exact:
             hook_map = self.exact_topic_hooks
         else:
             hook_map = self.generic_topic_hooks
 
-        existing_hook_ptr = c_bytemap_get(hook_map, topic_ptr.key, topic_ptr.key_len)
-        if existing_hook_ptr and existing_hook_ptr != C_BYTEMAP_NOT_FOUND and existing_hook_ptr != <void*> <PyObject*> hook:
+        cdef int ret_code = c_strmap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &existing_hook_ptr)
+        if existing_hook_ptr and existing_hook_ptr != <PyObject*> hook:
             raise KeyError(f'Another EventHook already registered for {hook.topic.value}')
-        c_bytemap_set(hook_map, topic_ptr.key, topic_ptr.key_len, <void*> <PyObject*> hook)
+        ret_code = c_strmap_set(hook_map, topic_ptr.key, topic_ptr.key_len, <void*> <PyObject*> hook, NULL, 0)
         Py_INCREF(hook)
 
-    cdef inline EventHook c_unregister_hook(self, PyTopic topic):
-        cdef Topic* topic_ptr = topic.header
-        cdef void* existing_hook_ptr = <void*> C_BYTEMAP_NOT_FOUND
-        cdef ByteMapHeader* hook_map
+    cdef inline EventHook c_unregister_hook(self, Topic topic):
+        cdef evt_topic* topic_ptr = topic.header
+        cdef PyObject* existing_hook_ptr = NULL
+        cdef strmap* hook_map
 
         if topic_ptr.is_exact:
             hook_map = self.exact_topic_hooks
         else:
             hook_map = self.generic_topic_hooks
-        cdef int ret_code = c_bytemap_pop(hook_map, <char*> topic_ptr.key, topic_ptr.key_len, &existing_hook_ptr)
-        if existing_hook_ptr == C_BYTEMAP_NOT_FOUND:
+        cdef int ret_code = c_strmap_pop(hook_map, <char*> topic_ptr.key, topic_ptr.key_len, <void**> &existing_hook_ptr, 0)
+        if not existing_hook_ptr:
             raise KeyError(f'No EventHook registered for {topic.value}')
-        cdef EventHook hook = <EventHook> <PyObject*> existing_hook_ptr
+        cdef EventHook hook = <EventHook> existing_hook_ptr
         Py_XDECREF(<PyObject*> hook)
         return hook
 
-    cdef inline void c_register_handler(self, PyTopic topic, object py_callable, bint deduplicate):
-        cdef Topic* topic_ptr = topic.header
-        cdef void* hook_ptr
+    cdef inline void c_register_handler(self, Topic topic, object py_callable, bint deduplicate):
+        cdef evt_topic* topic_ptr = topic.header
+        cdef PyObject* hook_ptr = NULL
         cdef EventHook event_hook
-        cdef ByteMapHeader* hook_map
+        cdef strmap* hook_map
 
         if topic_ptr.is_exact:
             hook_map = self.exact_topic_hooks
         else:
             hook_map = self.generic_topic_hooks
 
-        hook_ptr = c_bytemap_get(hook_map, topic_ptr.key, topic_ptr.key_len)
-        if hook_ptr and hook_ptr == C_BYTEMAP_NOT_FOUND:
+        cdef int ret_code = c_strmap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
+        if ret_code == STRMAP_ERR_NOT_FOUND:
             event_hook = EventHook.__new__(EventHook, topic, self.logger)
-            hook_ptr = <void*> <PyObject*> event_hook
-            c_bytemap_set(hook_map, topic_ptr.key, topic_ptr.key_len, hook_ptr)
+            c_strmap_set(hook_map, topic_ptr.key, topic_ptr.key_len, <void*> <PyObject*> event_hook, NULL, 0)
             Py_INCREF(event_hook)
+        elif not hook_ptr:
+            raise BufferError(f'Corrected buffer, invalid registered event hook.')
         else:
-            event_hook = <EventHook> <PyObject*> hook_ptr
+            event_hook = <EventHook> hook_ptr
         event_hook.add_handler(py_callable, deduplicate)
 
-    cdef inline void c_unregister_handler(self, PyTopic topic, object py_callable):
-        cdef Topic* topic_ptr = topic.header
-        cdef void* hook_ptr
+    cdef inline void c_unregister_handler(self, Topic topic, object py_callable):
+        cdef evt_topic* topic_ptr = topic.header
+        cdef PyObject* hook_ptr = NULL
         cdef EventHook event_hook
-        cdef ByteMapHeader* hook_map
+        cdef strmap* hook_map
 
         if topic_ptr.is_exact:
             hook_map = self.exact_topic_hooks
         else:
             hook_map = self.generic_topic_hooks
 
-        hook_ptr = c_bytemap_get(hook_map, topic_ptr.key, topic_ptr.key_len)
-        if hook_ptr and hook_ptr == C_BYTEMAP_NOT_FOUND:
+        cdef int ret_code = c_strmap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
+        if ret_code == STRMAP_ERR_NOT_FOUND:
             raise KeyError(f'No EventHook registered for {topic.value}')
-        event_hook = <EventHook> <PyObject*> hook_ptr
+        event_hook = <EventHook> hook_ptr
         event_hook.remove_handler(py_callable)
         if len(event_hook) == 0:
-            c_bytemap_pop(hook_map, topic_ptr.key, topic_ptr.key_len, NULL)
+            c_strmap_pop(hook_map, topic_ptr.key, topic_ptr.key_len, NULL, 0)
             Py_XDECREF(<PyObject*> event_hook)
 
     cdef inline void c_clear(self):
-        cdef MapEntry* entry
+        cdef strmap_entry* entry
         cdef EventHook event_hook
 
         # Clear exact_topic_hooks
@@ -265,7 +265,7 @@ cdef class EventEngine:
                 entry.value = NULL
                 Py_XDECREF(<PyObject*> event_hook)
             entry = entry.next
-        c_bytemap_clear(self.exact_topic_hooks)
+        c_strmap_clear(self.exact_topic_hooks, 0)
 
         # Clear generic_topic_hooks
         entry = self.generic_topic_hooks.first
@@ -276,7 +276,7 @@ cdef class EventEngine:
                 entry.value = NULL
                 Py_XDECREF(<PyObject*> event_hook)
             entry = entry.next
-        c_bytemap_clear(self.generic_topic_hooks)
+        c_strmap_clear(self.generic_topic_hooks, 0)
 
     # --- Python Interfaces---
 
@@ -330,19 +330,19 @@ cdef class EventEngine:
 
         self.c_clear()
 
-    def get(self, bint block=True, size_t max_spin=DEFAULT_MQ_SPIN_LIMIT, double timeout=0.0) -> PyMessagePayload:
-        cdef MessagePayload* msg = self.c_get(block, max_spin, timeout)
+    def get(self, bint block=True, size_t max_spin=DEFAULT_MQ_SPIN_LIMIT, double timeout=0.0) -> MessagePayload:
+        cdef evt_message_payload* msg = self.c_get(block, max_spin, timeout)
         if not msg:
             raise Empty()
-        cdef PyMessagePayload payload = PyMessagePayload.c_from_header(msg, owner=True, args_owner=True, kwargs_owner=True)
+        cdef MessagePayload payload = MessagePayload.c_from_header(msg, owner=True, args_owner=True, kwargs_owner=True)
         return payload
 
-    def put(self, PyTopic topic, *args, bint block=True, size_t max_spin=DEFAULT_MQ_SPIN_LIMIT, double timeout=0.0, **kwargs):
+    def put(self, Topic topic, *args, bint block=True, size_t max_spin=DEFAULT_MQ_SPIN_LIMIT, double timeout=0.0, **kwargs):
         cdef int ret_code = self.c_publish(topic, args, kwargs, block, max_spin, timeout)
         if ret_code:
             raise Full()
 
-    def publish(self, PyTopic topic, tuple args, dict kwargs, bint block=True, size_t max_spin=DEFAULT_MQ_SPIN_LIMIT, double timeout=0.0):
+    def publish(self, Topic topic, tuple args, dict kwargs, bint block=True, size_t max_spin=DEFAULT_MQ_SPIN_LIMIT, double timeout=0.0):
         cdef int ret_code = self.c_publish(topic, args, kwargs, block, max_spin, timeout)
         if ret_code:
             raise Full()
@@ -350,13 +350,13 @@ cdef class EventEngine:
     def register_hook(self, EventHook hook):
         self.c_register_hook(hook)
 
-    def unregister_hook(self, PyTopic topic) -> EventHook:
+    def unregister_hook(self, Topic topic) -> EventHook:
         return self.c_unregister_hook(topic)
 
-    def register_handler(self, PyTopic topic, object handler, bint deduplicate=False):
+    def register_handler(self, Topic topic, object handler, bint deduplicate=False):
         self.c_register_handler(topic, handler, deduplicate)
 
-    def unregister_handler(self, PyTopic topic, object handler):
+    def unregister_handler(self, Topic topic, object handler):
         self.c_unregister_handler(topic, handler)
 
     def event_hooks(self):
@@ -407,18 +407,18 @@ cdef class EventEngine:
 
     property exact_topic_hook_map:
         def __get__(self):
-            return ByteMap.c_from_header(self.exact_topic_hooks, 0)
+            return StrMap.c_from_header(self.exact_topic_hooks, 0)
 
     property generic_topic_hook_map:
         def __get__(self):
-            return ByteMap.c_from_header(self.generic_topic_hooks, 0)
+            return StrMap.c_from_header(self.generic_topic_hooks, 0)
 
 
 cdef class EventEngineEx(EventEngine):
     def __cinit__(self, size_t capacity=DEFAULT_MQ_CAPACITY, object logger=None):
         self.timer = {}
 
-    cdef inline void c_timer_loop(self, double interval, PyTopic topic, datetime activate_time):
+    cdef inline void c_timer_loop(self, double interval, Topic topic, datetime activate_time):
         from time import sleep
         cdef datetime scheduled_time
 
@@ -440,7 +440,7 @@ cdef class EventEngineEx(EventEngine):
                 scheduled_time += timedelta(seconds=interval)
             kwargs['trigger_time'] = scheduled_time
 
-    cdef inline void c_minute_timer_loop(self, PyTopic topic):
+    cdef inline void c_minute_timer_loop(self, Topic topic):
         from time import time, sleep
         cdef double t, scheduled_time, next_time, sleep_time
         cdef dict kwargs = {'interval': 60}
@@ -454,7 +454,7 @@ cdef class EventEngineEx(EventEngine):
             kwargs['timestamp'] = scheduled_time
             self.c_publish(topic, C_INTERNAL_EMPTY_ARGS, kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
 
-    cdef inline void c_second_timer_loop(self, PyTopic topic):
+    cdef inline void c_second_timer_loop(self, Topic topic):
         from time import time, sleep
         cdef double t, scheduled_time, next_time, sleep_time
         cdef dict kwargs = {'interval': 60}
@@ -473,33 +473,33 @@ cdef class EventEngineEx(EventEngine):
     def __repr__(self):
         return f'<{self.__class__.__name__} {"active" if self.active else "idle"}>(capacity={self.capacity}, timers={list(self.timer.keys())})'
 
-    def run_timer(self, double interval, PyTopic topic, datetime activate_time=None):
+    def run_timer(self, double interval, Topic topic, datetime activate_time=None):
         if not self.active:
             raise RuntimeError('EventEngine must be started before getting timer!')
         self.c_timer_loop(interval, topic, activate_time)
 
-    def minute_timer(self, PyTopic topic):
+    def minute_timer(self, Topic topic):
         if not self.active:
             raise RuntimeError('EventEngine must be started before getting timer!')
         self.c_minute_timer_loop(topic)
 
-    def second_timer(self, PyTopic topic):
+    def second_timer(self, Topic topic):
         if not self.active:
             raise RuntimeError('EventEngine must be started before getting timer!')
         self.c_second_timer_loop(topic)
 
-    def get_timer(self, double interval, datetime activate_time=None) -> PyTopic:
+    def get_timer(self, double interval, datetime activate_time=None) -> Topic:
         if not self.active:
             raise RuntimeError('EventEngine must be started before getting timer!')
 
         if interval == 1:
-            topic = PyTopic('EventEngine.Internal.Timer.Second')
+            topic = Topic('EventEngine.Internal.Timer.Second')
             timer = Thread(target=self.second_timer, kwargs={'topic': topic})
         elif interval == 60:
-            topic = PyTopic('EventEngine.Internal.Timer.Minute')
+            topic = Topic('EventEngine.Internal.Timer.Minute')
             timer = Thread(target=self.minute_timer, kwargs={'topic': topic})
         else:
-            topic = PyTopic.join(['EventEngine', 'Internal', 'Timer', str(interval)])
+            topic = Topic.join(['EventEngine', 'Internal', 'Timer', str(interval)])
             timer = Thread(target=self.run_timer, kwargs={'interval': interval, 'topic': topic, 'activate_time': activate_time})
 
         if interval not in self.timer:

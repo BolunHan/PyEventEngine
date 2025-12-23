@@ -4,8 +4,8 @@ from logging import Logger
 from typing import Any
 
 from .c_bytemap import ByteMap
-from .c_event import PyMessagePayload, EventHook
-from .c_topic import PyTopic
+from .c_event import MessagePayload, EventHook
+from .c_topic import Topic
 
 
 class Full(Exception):
@@ -26,7 +26,7 @@ class EventEngine:
       - A custom payload allocator to avoid frequent ``malloc``/``free`` in performance-critical paths.
       - Two ``ByteMap`` instances:
           * One for **exact** topic matches (literal key equality).
-          * One for **generic** topic matches (pattern-based, handled by ``PyTopic``).
+          * One for **generic** topic matches (pattern-based, handled by ``Topic``).
 
     These C structures are allocated during initialization and are managed automatically.
 
@@ -35,13 +35,13 @@ class EventEngine:
     Generic matches are evaluated by testing whether the published topic matches a registered pattern.
 
     Notes:
-        Two ``PyTopic`` instances may have identical string representations but different internal structures
+        Two ``Topic`` instances may have identical string representations but different internal structures
         (e.g., different numbers of parts). In such cases, they are considered distinct exact topics.
 
         Example:
 
-        >>> t1 = PyTopic.join(['Realtime', 'TickData', '600010.SH'])
-        >>> t2 = PyTopic.join(['Realtime', 'TickData', '600010', 'SH'])
+        >>> t1 = Topic.join(['Realtime', 'TickData', '600010.SH'])
+        >>> t2 = Topic.join(['Realtime', 'TickData', '600010', 'SH'])
 
         Although ``str(t1) == str(t2)``, they have different part counts and thus different literal keys.
         If both were somehow registered (which the Python API prevents), only one hook would be triggered,
@@ -129,7 +129,7 @@ class EventEngine:
             an error is logged and no action is taken.
         """
 
-    def get(self, block: bool = True, max_spin: int = ..., timeout: float = 0.0) -> PyMessagePayload:
+    def get(self, block: bool = True, max_spin: int = ..., timeout: float = 0.0) -> MessagePayload:
         """
         Retrieve an event from the internal queue.
 
@@ -139,18 +139,18 @@ class EventEngine:
             timeout: Maximum wait time in seconds when blocking (``0.0`` means indefinite wait).
 
         Returns:
-            A ``PyMessagePayload`` instance that owns its internal buffer, ``args``, and ``kwargs`` to prevent memory leaks.
+            A ``MessagePayload`` instance that owns its internal buffer, ``args``, and ``kwargs`` to prevent memory leaks.
 
         Raises:
             Empty: If ``block=False`` and the queue is empty.
         """
 
-    def put(self, topic: PyTopic, *args, block: bool = True, max_spin: int = ..., timeout: float = 0.0, **kwargs) -> None:
+    def put(self, topic: Topic, *args, block: bool = True, max_spin: int = ..., timeout: float = 0.0, **kwargs) -> None:
         """
         Publish an event to the queue (convenience alias for ``publish``).
 
         Args:
-            topic: Must be an **exact** ``PyTopic`` (i.e., ``topic.is_exact`` must be ``True``).
+            topic: Must be an **exact** ``Topic`` (i.e., ``topic.is_exact`` must be ``True``).
             *args: Positional arguments for the event.
             block: If ``True``, wait if the queue is full.
             max_spin: Spin count before blocking (hybrid strategy).
@@ -162,12 +162,12 @@ class EventEngine:
             ValueError: If ``topic`` is not an exact topic.
         """
 
-    def publish(self, topic: PyTopic, args: tuple, kwargs: dict, block: bool = True, timeout: float = 0.0) -> None:
+    def publish(self, topic: Topic, args: tuple, kwargs: dict, block: bool = True, timeout: float = 0.0) -> None:
         """
         Publish an event to the queue.
 
         Args:
-            topic: Must be an **exact** ``PyTopic`` (i.e., ``topic.is_exact`` must be ``True``).
+            topic: Must be an **exact** ``Topic`` (i.e., ``topic.is_exact`` must be ``True``).
             args: Positional arguments for the event.
             kwargs: Keyword arguments for the event.
             block: If ``True``, wait if the queue is full.
@@ -189,7 +189,7 @@ class EventEngine:
             KeyError: If a hook is already registered for the same topic (exact or generic).
         """
 
-    def unregister_hook(self, topic: PyTopic) -> EventHook:
+    def unregister_hook(self, topic: Topic) -> EventHook:
         """
         Unregister and return the ``EventHook`` associated with a topic.
 
@@ -203,7 +203,7 @@ class EventEngine:
             KeyError: If no hook is registered for the given topic.
         """
 
-    def register_handler(self, topic: PyTopic, handler: Callable[..., Any], deduplicate: bool = False) -> None:
+    def register_handler(self, topic: Topic, handler: Callable[..., Any], deduplicate: bool = False) -> None:
         """
         Register a Python callable as a handler for a topic.
 
@@ -213,7 +213,7 @@ class EventEngine:
             deduplicate: If ``True``, skip registration if the handler is already present in the target ``EventHook``.
         """
 
-    def unregister_handler(self, topic: PyTopic, handler: Callable[..., Any]) -> None:
+    def unregister_handler(self, topic: Topic, handler: Callable[..., Any]) -> None:
         """
         Unregister a handler for a topic.
 
@@ -237,26 +237,26 @@ class EventEngine:
             An iterator of ``EventHook`` objects.
         """
 
-    def topics(self) -> Iterator[PyTopic]:
+    def topics(self) -> Iterator[Topic]:
         """
         Iterate over all registered topics (both exact and generic).
 
         Returns:
-            An iterator of ``PyTopic`` instances.
+            An iterator of ``Topic`` instances.
         """
 
-    def items(self) -> Iterator[tuple[PyTopic, EventHook]]:
+    def items(self) -> Iterator[tuple[Topic, EventHook]]:
         """
         Iterate over all registered (topic, hook) pairs.
 
         Returns:
-            An iterator of ``(PyTopic, EventHook)`` tuples.
+            An iterator of ``(Topic, EventHook)`` tuples.
         """
 
     @property
     def capacity(self) -> int:
         """
-        Capacity (maximum number of ``PyMessagePayload`` instances) of the internal message queue.
+        Capacity (maximum number of ``MessagePayload`` instances) of the internal message queue.
         """
 
     @property
@@ -302,7 +302,7 @@ class EventEngineEx(EventEngine):
             MemoryError: If internal C structures fail to allocate.
         """
 
-    def run_timer(self, interval: float, topic: PyTopic, activate_time: datetime | None = None) -> None:
+    def run_timer(self, interval: float, topic: Topic, activate_time: datetime | None = None) -> None:
         """
         Run a blocking timer loop that periodically publishes to a topic.
 
@@ -315,7 +315,7 @@ class EventEngineEx(EventEngine):
             RuntimeError: If engine is not activated.
         """
 
-    def minute_timer(self, topic: PyTopic) -> None:
+    def minute_timer(self, topic: Topic) -> None:
         """
         Run a blocking timer that publishes to a topic once per minute (on the minute).
 
@@ -326,7 +326,7 @@ class EventEngineEx(EventEngine):
             RuntimeError: If engine is not activated.
         """
 
-    def second_timer(self, topic: PyTopic) -> None:
+    def second_timer(self, topic: Topic) -> None:
         """
         Run a blocking timer that publishes to a topic once per second.
 
@@ -337,7 +337,7 @@ class EventEngineEx(EventEngine):
             RuntimeError: If engine is not activated.
         """
 
-    def get_timer(self, interval: float, activate_time: datetime | None = None) -> PyTopic:
+    def get_timer(self, interval: float, activate_time: datetime | None = None) -> Topic:
         """
         Start a background timer thread and return its associated topic.
 
@@ -349,7 +349,7 @@ class EventEngineEx(EventEngine):
             activate_time: Time to start the timer. If ``None``, starts immediately.
 
         Returns:
-            A unique ``PyTopic`` representing the timer stream.
+            A unique ``Topic`` representing the timer stream.
 
         Raises:
             RuntimeError: If engine is not activated.

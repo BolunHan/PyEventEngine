@@ -10,7 +10,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "c_allocator.h"
+#include "c_heap_allocator.h"
 #include "c_event.h"
 #include "c_topic.h"
 
@@ -34,20 +34,20 @@
  * The buffer is a flexible array member placed last so the whole queue + buffer
  * can be allocated in one block for better locality and simpler allocation.
  */
-typedef struct MessageQueue {
-    MemoryAllocator* allocator; // allocator for internal allocations
+typedef struct message_queue {
+    heap_allocator* allocator; // allocator for internal allocations
     size_t capacity;            // max number of entries
     size_t head;                // index to pop
     size_t tail;                // index to push
     size_t count;               // current count
-    Topic* topic;               // topic this queue is bound to (may be NULL)
+    evt_topic* topic;           // topic this queue is bound to (may be NULL)
 
     pthread_mutex_t mutex;
     pthread_cond_t not_empty;
     pthread_cond_t not_full;
 
-    MessagePayload* buf[];      // flexible array member: pointers to MessagePayload
-} MessageQueue;
+    evt_message_payload* buf[]; // flexible array member: pointers to evt_message_payload
+} message_queue;
 
 /* ----------------------------------------------------------------------
  * Signatures and Documentation
@@ -57,98 +57,98 @@ typedef struct MessageQueue {
  * @brief Create a new message queue.
  * @param capacity maximum number of entries (must be > 0)
  * @param topic optional Topic to bind the queue to (may be NULL)
- * @param allocator optional MemoryAllocator for internal allocations (may be NULL)
- * @return pointer to newly allocated MessageQueue or NULL on allocation failure
+ * @param allocator optional heap_allocator for internal allocations (may be NULL)
+ * @return pointer to newly allocated message_queue or NULL on allocation failure
  */
-static inline MessageQueue* c_mq_new(size_t capacity, Topic* topic, MemoryAllocator* allocator);
+static inline message_queue* c_mq_new(size_t capacity, evt_topic* topic, heap_allocator* allocator);
 
 /**
  * @brief Destroy a message queue.
- * @param mq pointer to MessageQueue to destroy
+ * @param mq pointer to message_queue to destroy
  * @param free_self if non-zero free the queue allocation as well (true)
  * @return 0 on success, -1 on invalid argument
  *
- * Note: does not free MessagePayload pointers still present in the buffer;
+ * Note: does not free evt_message_payload pointers still present in the buffer;
  * caller is responsible for draining/freeing them before calling with free_self=1.
  */
-static inline int c_mq_free(MessageQueue* mq, int free_self);
+static inline int c_mq_free(message_queue* mq, int free_self);
 
 /**
  * @brief Non-blocking put into the queue.
  * @param mq queue pointer
- * @param msg pointer to MessagePayload (caller-owned)
+ * @param msg pointer to evt_message_payload (caller-owned)
  * @return 0 on success, -1 on full/invalid args
  */
-static inline int c_mq_put(MessageQueue* mq, MessagePayload* msg);
+static inline int c_mq_put(message_queue* mq, evt_message_payload* msg);
 
 /**
  * @brief Non-blocking get from the queue.
  * @param mq queue pointer
- * @param out_msg out parameter to receive MessagePayload*
+ * @param out_msg out parameter to receive evt_message_payload*
  * @return 0 on success, -1 on empty/invalid args
  */
-static inline int c_mq_get(MessageQueue* mq, MessagePayload** out_msg);
+static inline int c_mq_get(message_queue* mq, evt_message_payload** out_msg);
 
 /**
  * @brief Blocking put; waits until space available or timeout.
  * @param mq queue pointer
- * @param msg pointer to MessagePayload
+ * @param msg pointer to evt_message_payload
  * @param timeout_seconds maximum seconds to wait (<=0 means wait forever)
  * @return 0 on success, -1 on timeout/invalid args or error
  */
-static inline int c_mq_put_await(MessageQueue* mq, MessagePayload* msg, double timeout_seconds);
+static inline int c_mq_put_await(message_queue* mq, evt_message_payload* msg, double timeout_seconds);
 
 /**
  * @brief Blocking get; waits until an item is available or timeout.
  * @param mq queue pointer
- * @param out_msg out parameter to receive MessagePayload*
+ * @param out_msg out parameter to receive evt_message_payload*
  * @param timeout_seconds maximum seconds to wait (<=0 means wait forever)
  * @return 0 on success, -1 on timeout/invalid args or error
  */
-static inline int c_mq_get_await(MessageQueue* mq, MessagePayload** out_msg, double timeout_seconds);
+static inline int c_mq_get_await(message_queue* mq, evt_message_payload** out_msg, double timeout_seconds);
 
 /**
  * @brief Busy-looping put (spin up to max_spin times until space).
  * @param mq queue pointer
- * @param msg pointer to MessagePayload
+ * @param msg pointer to evt_message_payload
  * @param max_spin maximum spin attempts before giving up
  * @return 0 on success, -1 on full/invalid args or if max_spin reached
  */
-static inline int c_mq_put_busy(MessageQueue* mq, MessagePayload* msg, size_t max_spin);
+static inline int c_mq_put_busy(message_queue* mq, evt_message_payload* msg, size_t max_spin);
 
 /**
  * @brief Busy-looping get (spin up to max_spin times until item).
  * @param mq queue pointer
- * @param out_msg out parameter to receive MessagePayload*
+ * @param out_msg out parameter to receive evt_message_payload*
  * @param max_spin maximum spin attempts before giving up
  * @return 0 on success, -1 on empty/invalid args or if max_spin reached
  */
-static inline int c_mq_get_busy(MessageQueue* mq, MessagePayload** out_msg, size_t max_spin);
+static inline int c_mq_get_busy(message_queue* mq, evt_message_payload** out_msg, size_t max_spin);
 
 /**
  * @brief Hybrid put: busy-spin for a short while then block (timeout does not include spin time).
  * @param mq queue pointer
- * @param msg pointer to MessagePayload
+ * @param msg pointer to evt_message_payload
  * @param timeout_seconds maximum seconds to wait in blocking phase (<=0 means wait forever)
  * @return 0 on success, -1 on timeout/invalid args or error
  */
-static inline int c_mq_put_hybrid(MessageQueue* mq, MessagePayload* msg, size_t max_spin, double timeout_seconds);
+static inline int c_mq_put_hybrid(message_queue* mq, evt_message_payload* msg, size_t max_spin, double timeout_seconds);
 
 /**
  * @brief Hybrid get: busy-spin for a short while then block (timeout does not include spin time).
  * @param mq queue pointer
- * @param out_msg out parameter to receive MessagePayload*
+ * @param out_msg out parameter to receive evt_message_payload*
  * @param timeout_seconds maximum seconds to wait in blocking phase (<=0 means wait forever)
  * @return 0 on success, -1 on timeout/invalid args or error
  */
-static inline int c_mq_get_hybrid(MessageQueue* mq, MessagePayload** out_msg, size_t max_spin, double timeout_seconds);
+static inline int c_mq_get_hybrid(message_queue* mq, evt_message_payload** out_msg, size_t max_spin, double timeout_seconds);
 
 /**
  * @brief Get current occupied count of the queue.
  * @param mq queue pointer
  * @return number of occupied entries, or 0 on invalid arg
  */
-static inline size_t c_mq_occupied(MessageQueue* mq);
+static inline size_t c_mq_occupied(message_queue* mq);
 
 /* ----------------------------------------------------------------------
  * Implementations
@@ -171,17 +171,17 @@ static inline void timespec_add_seconds(struct timespec* ts, double seconds) {
 }
 
 /* Create a new queue. Returns NULL on allocation failure. */
-static inline MessageQueue* c_mq_new(size_t capacity, Topic* topic, MemoryAllocator* allocator) {
+static inline message_queue* c_mq_new(size_t capacity, evt_topic* topic, heap_allocator* allocator) {
     if (capacity == 0) return NULL;
 
-    size_t total_bytes = sizeof(MessageQueue) + capacity * sizeof(MessagePayload*);
-    MessageQueue* mq;
+    size_t total_bytes = sizeof(message_queue) + capacity * sizeof(evt_message_payload*);
+    message_queue* mq;
 
-    if (allocator && allocator->active) {
-        mq = (MessageQueue*) c_heap_request(allocator, total_bytes);
+    if (allocator) {
+        mq = (message_queue*) c_heap_request(allocator, total_bytes, 1, &allocator->lock);
     }
     else {
-        mq = (MessageQueue*) calloc(1, total_bytes);
+        mq = (message_queue*) calloc(1, total_bytes);
     }
     if (!mq) return NULL;
 
@@ -198,7 +198,7 @@ static inline MessageQueue* c_mq_new(size_t capacity, Topic* topic, MemoryAlloca
 }
 
 /* Destroy queue. Does not free message payloads pointed to by entries. */
-static inline int c_mq_free(MessageQueue* mq, int free_self) {
+static inline int c_mq_free(message_queue* mq, int free_self) {
     if (!mq) {
         return -1;
     }
@@ -209,10 +209,10 @@ static inline int c_mq_free(MessageQueue* mq, int free_self) {
     pthread_cond_destroy(&mq->not_full);
     pthread_mutex_destroy(&mq->mutex);
 
-    MemoryAllocator* allocator = mq->allocator;
+    heap_allocator* allocator = mq->allocator;
     if (free_self) {
-        if (allocator && allocator->active) {
-            c_heap_recycle(allocator, mq);
+        if (allocator) {
+            c_heap_free(mq, &allocator->lock);
         }
         else {
             free(mq);
@@ -222,7 +222,7 @@ static inline int c_mq_free(MessageQueue* mq, int free_self) {
 }
 
 /* Non-blocking put. Returns 0 on success, -1 on full/invalid args. */
-static inline int c_mq_put(MessageQueue* mq, MessagePayload* msg) {
+static inline int c_mq_put(message_queue* mq, evt_message_payload* msg) {
     if (!mq || !msg) return -1;
     int ret = -1;
     pthread_mutex_lock(&mq->mutex);
@@ -241,7 +241,7 @@ static inline int c_mq_put(MessageQueue* mq, MessagePayload* msg) {
 }
 
 /* Non-blocking get. On success *out_msg is set and returns 0. Returns -1 if empty/invalid args. */
-static inline int c_mq_get(MessageQueue* mq, MessagePayload** out_msg) {
+static inline int c_mq_get(message_queue* mq, evt_message_payload** out_msg) {
     if (!mq || !out_msg) return -1;
     int ret = -1;
     pthread_mutex_lock(&mq->mutex);
@@ -261,7 +261,7 @@ static inline int c_mq_get(MessageQueue* mq, MessagePayload** out_msg) {
 }
 
 /* Blocking put. Waits until space is available. Returns 0 on success, -1 on error. */
-static inline int c_mq_put_await(MessageQueue* mq, MessagePayload* msg, double timeout_seconds) {
+static inline int c_mq_put_await(message_queue* mq, evt_message_payload* msg, double timeout_seconds) {
     if (!mq || !msg) return -1;
     pthread_mutex_lock(&mq->mutex);
     struct timespec ts;
@@ -294,7 +294,7 @@ static inline int c_mq_put_await(MessageQueue* mq, MessagePayload* msg, double t
 }
 
 /* Blocking get. Waits until an item is available. Returns 0 on success, -1 on error. */
-static inline int c_mq_get_await(MessageQueue* mq, MessagePayload** out_msg, double timeout_seconds) {
+static inline int c_mq_get_await(message_queue* mq, evt_message_payload** out_msg, double timeout_seconds) {
     if (!mq || !out_msg) return -1;
     pthread_mutex_lock(&mq->mutex);
     struct timespec ts;
@@ -328,7 +328,7 @@ static inline int c_mq_get_await(MessageQueue* mq, MessagePayload** out_msg, dou
 }
 
 /* Busy-looping put (spin up to max_spin times until space). */
-static inline int c_mq_put_busy(MessageQueue* mq, MessagePayload* msg, size_t max_spin) {
+static inline int c_mq_put_busy(message_queue* mq, evt_message_payload* msg, size_t max_spin) {
     if (!mq || !msg) return -1;
     for (size_t i = 0; i < max_spin; ++i) {
         pthread_mutex_lock(&mq->mutex);
@@ -347,7 +347,7 @@ static inline int c_mq_put_busy(MessageQueue* mq, MessagePayload* msg, size_t ma
 }
 
 /* Busy-looping get (spin up to max_spin times until item). */
-static inline int c_mq_get_busy(MessageQueue* mq, MessagePayload** out_msg, size_t max_spin) {
+static inline int c_mq_get_busy(message_queue* mq, evt_message_payload** out_msg, size_t max_spin) {
     if (!mq || !out_msg) return -1;
     for (size_t i = 0; i < max_spin; ++i) {
         pthread_mutex_lock(&mq->mutex);
@@ -367,7 +367,7 @@ static inline int c_mq_get_busy(MessageQueue* mq, MessagePayload** out_msg, size
 }
 
 /* Hybrid put: busy-spin for max_spin iterations then block */
-static inline int c_mq_put_hybrid(MessageQueue* mq, MessagePayload* msg, size_t max_spin, double timeout_seconds) {
+static inline int c_mq_put_hybrid(message_queue* mq, evt_message_payload* msg, size_t max_spin, double timeout_seconds) {
     if (!mq || !msg) return -1;
     if (c_mq_put_busy(mq, msg, max_spin) == 0) {
         return 0;
@@ -377,7 +377,7 @@ static inline int c_mq_put_hybrid(MessageQueue* mq, MessagePayload* msg, size_t 
 }
 
 /* Hybrid get: busy-spin for max_spin iterations then block */
-static inline int c_mq_get_hybrid(MessageQueue* mq, MessagePayload** out_msg, size_t max_spin, double timeout_seconds) {
+static inline int c_mq_get_hybrid(message_queue* mq, evt_message_payload** out_msg, size_t max_spin, double timeout_seconds) {
     if (!mq || !out_msg) return -1;
     if (c_mq_get_busy(mq, out_msg, max_spin) == 0) {
         return 0;
@@ -387,7 +387,7 @@ static inline int c_mq_get_hybrid(MessageQueue* mq, MessagePayload** out_msg, si
 }
 
 /* Get current occupied count */
-static inline size_t c_mq_occupied(MessageQueue* mq) {
+static inline size_t c_mq_occupied(message_queue* mq) {
     if (!mq) return 0;
     pthread_mutex_lock(&mq->mutex);
     size_t n = mq->count;

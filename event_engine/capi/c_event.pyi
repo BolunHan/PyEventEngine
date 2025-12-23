@@ -2,10 +2,10 @@ from collections.abc import Callable, Iterator
 from logging import Logger
 from typing import TypedDict
 
-from .c_topic import PyTopic
+from .c_topic import Topic
 
 
-class PyMessagePayload:
+class MessagePayload:
     """
     Python wrapper for a C message payload structure.
 
@@ -25,7 +25,7 @@ class PyMessagePayload:
 
     def __init__(self, alloc: bool = False) -> None:
         """
-        Initialize a ``PyMessagePayload`` instance.
+        Initialize a ``MessagePayload`` instance.
 
         Args:
             alloc: If ``True``, allocate a new C message payload.
@@ -37,7 +37,7 @@ class PyMessagePayload:
         """
 
     @property
-    def topic(self) -> PyTopic:
+    def topic(self) -> Topic:
         """
         The topic associated with this payload.
         """
@@ -65,23 +65,23 @@ class EventHook:
     """
     Event dispatcher for registering and triggering handlers.
 
-    Handlers are triggered with a ``PyMessagePayload``. The dispatcher supports two calling conventions:
+    Handlers are triggered with a ``MessagePayload``. The dispatcher supports two calling conventions:
     - **With-topic**: the handler receives the topic as a positional or keyword argument.
     - **No-topic**: the handler receives only ``args`` and ``kwargs`` from the payload.
 
     Handlers that accept ``**kwargs`` are recommended to ensure compatibility with both conventions.
 
     Attributes:
-        topic (PyTopic): The topic associated with this hook.
+        topic (Topic): The topic associated with this hook.
         logger (Logger | None): Optional logger instance.
         retry_on_unexpected_topic (bool): If ``True``, retries with no-topic calling convention if a with-topic handler raises a ``TypeError`` and the error message indicates an unexpected topic argument.
     """
 
-    topic: PyTopic
+    topic: Topic
     logger: Logger
     retry_on_unexpected_topic: bool
 
-    def __init__(self, topic: PyTopic, logger: Logger = None, retry_on_unexpected_topic: bool = False) -> None:
+    def __init__(self, topic: Topic, logger: Logger = None, retry_on_unexpected_topic: bool = False) -> None:
         """
         Initialize an ``EventHook``.
 
@@ -91,7 +91,7 @@ class EventHook:
             retry_on_unexpected_topic: If ``True``, enables retrying on unexpected topic argument errors.
         """
 
-    def __call__(self, msg: PyMessagePayload) -> None:
+    def __call__(self, msg: MessagePayload) -> None:
         """
         Trigger all registered handlers with the given message payload.
 
@@ -146,7 +146,7 @@ class EventHook:
             ``True`` if the handler is registered; ``False`` otherwise.
         """
 
-    def trigger(self, msg: PyMessagePayload) -> None:
+    def trigger(self, msg: MessagePayload) -> None:
         """
         Trigger all registered handlers with the given message payload.
 

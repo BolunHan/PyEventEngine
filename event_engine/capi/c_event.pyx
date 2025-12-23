@@ -7,19 +7,17 @@ from cpython.ref cimport Py_INCREF, Py_XDECREF
 from cpython.time cimport perf_counter
 from libc.stdlib cimport calloc, free
 
-from .c_allocator cimport c_heap_recycle
-from .c_bytemap cimport MapEntry, c_bytemap_new, c_bytemap_free, c_bytemap_set, c_bytemap_get, c_bytemap_pop, DEFAULT_BYTEMAP_CAPACITY, C_BYTEMAP_NOT_FOUND
 from ..base import LOGGER
 
 LOGGER = LOGGER.getChild('Event')
 
 
-cdef class PyMessagePayload:
+cdef class MessagePayload:
     def __cinit__(self, bint alloc=False):
         if not alloc:
             return
 
-        self.header = <MessagePayload*> calloc(1, sizeof(MessagePayload))
+        self.header = <evt_message_payload*> calloc(1, sizeof(evt_message_payload))
         if not self.header:
             raise MemoryError('Failed to allocate memory')
         self.header.topic = NULL
@@ -46,25 +44,25 @@ cdef class PyMessagePayload:
             self.header.kwargs = NULL
             Py_XDECREF(kwargs)
 
-        cdef MemoryAllocator* allocator = self.header.allocator
+        cdef heap_allocator* allocator = self.header.allocator
         if self.owner and self.header:
-            if allocator and allocator.active:
-                c_heap_recycle(allocator, self.header)
+            if allocator:
+                c_heap_free(self.header, <pthread_mutex_t*> &allocator.lock)
             else:
                 free(self.header)
             self.header = NULL
 
     def __repr__(self):
         if not self.header:
-            return '<PyMessagePayload uninitialized>'
+            return '<MessagePayload uninitialized>'
         if self.header.topic:
-            return f'<PyMessagePayload "{self.topic.value}">(seq_id={self.seq_id}, args={self.args}, kwargs={self.kwargs})'
-        return f'<PyMessagePayload NO_TOPIC>(seq_id={self.seq_id}, args={self.args}, kwargs={self.kwargs})'
+            return f'<MessagePayload "{self.topic.value}">(seq_id={self.seq_id}, args={self.args}, kwargs={self.kwargs})'
+        return f'<MessagePayload NO_TOPIC>(seq_id={self.seq_id}, args={self.args}, kwargs={self.kwargs})'
 
     @staticmethod
-    cdef PyMessagePayload c_from_header(MessagePayload* header, bint owner=False, bint args_owner=False, bint kwargs_owner=False):
+    cdef MessagePayload c_from_header(evt_message_payload* header, bint owner=False, bint args_owner=False, bint kwargs_owner=False):
         # Create a wrapper around an existing header pointer.
-        cdef PyMessagePayload instance = PyMessagePayload.__new__(PyMessagePayload, alloc=False)
+        cdef MessagePayload instance = MessagePayload.__new__(MessagePayload, alloc=False)
         instance.header = header
         instance.owner = owner
         instance.args_owner = args_owner
@@ -76,12 +74,12 @@ cdef class PyMessagePayload:
             if not self.header:
                 raise RuntimeError('Not initialized!')
 
-            cdef Topic* topic = self.header.topic
+            cdef evt_topic* topic = self.header.topic
             if not topic:
                 return None
-            return PyTopic.c_from_header(topic)
+            return Topic.c_from_header(topic, False)
 
-        def __set__(self, PyTopic topic):
+        def __set__(self, Topic topic):
             topic.owner = False
             self.header.topic = topic.header
 
@@ -135,7 +133,7 @@ cdef str TOPIC_UNEXPECTED_ERROR = f"an unexpected keyword argument '{TOPIC_FIELD
 
 
 cdef class EventHook:
-    def __cinit__(self, PyTopic topic, object logger=None, bint retry_on_unexpected_topic=False):
+    def __cinit__(self, Topic topic, object logger=None, bint retry_on_unexpected_topic=False):
         self.topic = topic
         self.logger = LOGGER.getChild(f'EventHook.{topic}') if logger is None else logger
         self.retry_on_unexpected_topic = retry_on_unexpected_topic
@@ -218,7 +216,7 @@ cdef class EventHook:
         Py_XDECREF(etrace)
         PyErr_Clear()
 
-    cdef inline void c_trigger_no_topic(self, MessagePayload* msg):
+    cdef inline void c_trigger_no_topic(self, evt_message_payload* msg):
         cdef PyObject* args_ptr = <PyObject*> msg.args
         cdef PyObject* kwargs_ptr = <PyObject*> msg.kwargs
         cdef EventHandler* handler = self.handlers_no_topic
@@ -239,10 +237,10 @@ cdef class EventHook:
             self.c_safe_call_no_topic(handler, args, kwargs)
             handler = handler.next
 
-    cdef inline void c_trigger_with_topic(self, MessagePayload* msg):
+    cdef inline void c_trigger_with_topic(self, evt_message_payload* msg):
         cdef PyObject* args_ptr = <PyObject*> msg.args
         cdef PyObject* kwargs_ptr = <PyObject*> msg.kwargs
-        cdef Topic* topic = msg.topic
+        cdef evt_topic* topic = msg.topic
         cdef EventHandler* handler = self.handlers_with_topic
 
         cdef tuple args
@@ -253,11 +251,11 @@ cdef class EventHook:
 
         cdef dict kwargs
         if not kwargs_ptr:
-            kwargs = {TOPIC_FIELD_NAME: PyTopic.c_from_header(topic, False)}
+            kwargs = {TOPIC_FIELD_NAME: Topic.c_from_header(topic, False)}
         else:
             kwargs = (<dict> kwargs_ptr).copy()
             if TOPIC_FIELD_NAME not in kwargs:
-                kwargs[TOPIC_FIELD_NAME] = PyTopic.c_from_header(topic, False)
+                kwargs[TOPIC_FIELD_NAME] = Topic.c_from_header(topic, False)
 
         while handler:
             self.c_safe_call_with_topic(handler, args, kwargs)
@@ -343,7 +341,7 @@ cdef class EventHook:
             node = node.next
         return NULL
 
-    def __call__(self, PyMessagePayload msg):
+    def __call__(self, MessagePayload msg):
         self.c_trigger_no_topic(msg.header)
         self.c_trigger_with_topic(msg.header)
 
@@ -393,7 +391,7 @@ cdef class EventHook:
             node = node.next
         return False
 
-    def trigger(self, PyMessagePayload msg):
+    def trigger(self, MessagePayload msg):
         self.c_trigger_no_topic(msg.header)
         self.c_trigger_with_topic(msg.header)
 
@@ -440,13 +438,13 @@ cdef class EventHook:
 
 
 cdef class EventHookEx(EventHook):
-    def __cinit__(self, PyTopic topic, object logger=None, bint retry_on_unexpected_topic=False):
-        self.stats_mapping = c_bytemap_new(DEFAULT_BYTEMAP_CAPACITY, NULL)
+    def __cinit__(self, Topic topic, object logger=None, bint retry_on_unexpected_topic=False):
+        self.stats_mapping = c_strmap_new(0, NULL, 0)
         if not self.stats_mapping:
             raise MemoryError(f'Failed to allocate ByteMap for {self.__class__.__name__} stats mapping.')
 
     def __dealloc__(self):
-        cdef MapEntry* entry
+        cdef strmap_entry* entry
         if self.stats_mapping:
             entry = self.stats_mapping.first
             while entry:
@@ -454,40 +452,38 @@ cdef class EventHookEx(EventHook):
                     free(entry.value)
                     entry.value = NULL
                 entry = entry.next
-            c_bytemap_free(self.stats_mapping, 1)
+            c_strmap_free(self.stats_mapping, 1, 1)
 
     cdef EventHandler* c_add_handler(self, object py_callable, bint with_topic, bint deduplicate):
         cdef EventHandler* node = EventHook.c_add_handler(self, py_callable, with_topic, deduplicate)
         if not node:
             return node
         cdef HandlerStats* stats = <HandlerStats*> calloc(1, sizeof(HandlerStats))
-        c_bytemap_set(self.stats_mapping, <char*> node, sizeof(EventHandler), <void*> stats)
+        c_strmap_set(self.stats_mapping, <char*> node, sizeof(EventHandler), <void*> stats, NULL, 1)
         return node
 
     cdef EventHandler* c_remove_handler(self, object py_callable):
         cdef EventHandler* node = EventHook.c_remove_handler(self, py_callable)
         if not node:
             return node
-        c_bytemap_pop(self.stats_mapping, <char*> node, sizeof(EventHandler), NULL)
+        c_strmap_pop(self.stats_mapping, <char*> node, sizeof(EventHandler), NULL, 1)
         return node
 
     cdef void c_safe_call_no_topic(self, EventHandler* handler, tuple args, dict kwargs):
-        cdef void* stats = c_bytemap_get(self.stats_mapping, <char*> handler, sizeof(EventHandler))
-        if stats == C_BYTEMAP_NOT_FOUND or not stats:
+        cdef HandlerStats* handler_stats = NULL
+        cdef int ret_code = c_strmap_get(self.stats_mapping, <char*> handler, sizeof(EventHandler), <void**> &handler_stats)
+        if not handler_stats:
             EventHook.c_safe_call_no_topic(self, handler, args, kwargs)
-            return
-        cdef HandlerStats* handler_stats = <HandlerStats*> stats
         cdef double start_time = perf_counter()
         EventHook.c_safe_call_no_topic(self, handler, args, kwargs)
         handler_stats.calls += 1
         handler_stats.total_time += perf_counter() - start_time
 
     cdef void c_safe_call_with_topic(self, EventHandler* handler, tuple args, dict kwargs):
-        cdef void* stats = c_bytemap_get(self.stats_mapping, <char*> handler, sizeof(EventHandler))
-        if stats == C_BYTEMAP_NOT_FOUND or not stats:
+        cdef HandlerStats* handler_stats = NULL
+        cdef int ret_code = c_strmap_get(self.stats_mapping, <char*> handler, sizeof(EventHandler), <void**> &handler_stats)
+        if not handler_stats:
             EventHook.c_safe_call_with_topic(self, handler, args, kwargs)
-            return
-        cdef HandlerStats* handler_stats = <HandlerStats*> stats
         cdef double start_time = perf_counter()
         EventHook.c_safe_call_with_topic(self, handler, args, kwargs)
         handler_stats.calls += 1
@@ -498,23 +494,20 @@ cdef class EventHookEx(EventHook):
         Return a dict with stats for the given handler, or None if not found.
         """
         cdef EventHandler* node = self.handlers_no_topic
-        cdef void* stats
-        cdef HandlerStats* handler_stats
+        cdef HandlerStats* handler_stats = NULL
         while node:
             if node.handler == <PyObject*> py_callable:
-                stats = c_bytemap_get(self.stats_mapping, <char*> node, sizeof(EventHandler))
-                if stats == C_BYTEMAP_NOT_FOUND or not stats:
+                c_strmap_get(self.stats_mapping, <char*> node, sizeof(EventHandler), <void**> &handler_stats)
+                if not handler_stats:
                     return None
-                handler_stats = <HandlerStats*> stats
                 return {'calls': handler_stats.calls, 'total_time': handler_stats.total_time}
             node = node.next
         node = self.handlers_with_topic
         while node:
             if node.handler == <PyObject*> py_callable:
-                stats = c_bytemap_get(self.stats_mapping, <char*> node, sizeof(EventHandler))
-                if stats == C_BYTEMAP_NOT_FOUND or not stats:
+                c_strmap_get(self.stats_mapping, <char*> node, sizeof(EventHandler), <void**> &handler_stats)
+                if not handler_stats:
                     return None
-                handler_stats = <HandlerStats*> stats
                 return {'calls': handler_stats.calls, 'total_time': handler_stats.total_time}
             node = node.next
         return None
@@ -525,16 +518,15 @@ cdef class EventHookEx(EventHook):
         Yields (py_callable, dict) for all handlers.
         """
         cdef EventHandler* node
-        cdef void* stats
         cdef HandlerStats* handler_stats
+        cdef int ret_code
 
         # no_topic handlers
         node = self.handlers_no_topic
         while node:
             if node.handler:
-                stats = c_bytemap_get(self.stats_mapping, <char*> node, sizeof(EventHandler))
-                if stats != C_BYTEMAP_NOT_FOUND and stats:
-                    handler_stats = <HandlerStats*> stats
+                ret_code = c_strmap_get(self.stats_mapping, <char*> node, sizeof(EventHandler), <void**> &handler_stats)
+                if ret_code == STRMAP_OK and handler_stats:
                     yield <object> node.handler, {'calls': handler_stats.calls, 'total_time': handler_stats.total_time}
             node = node.next
 
@@ -542,8 +534,7 @@ cdef class EventHookEx(EventHook):
         node = self.handlers_with_topic
         while node:
             if node.handler:
-                stats = c_bytemap_get(self.stats_mapping, <char*> node, sizeof(EventHandler))
-                if stats != C_BYTEMAP_NOT_FOUND and stats:
-                    handler_stats = <HandlerStats*> stats
+                ret_code = c_strmap_get(self.stats_mapping, <char*> node, sizeof(EventHandler), <void**> &handler_stats)
+                if ret_code == STRMAP_OK and handler_stats:
                     yield <object> node.handler, {'calls': handler_stats.calls, 'total_time': handler_stats.total_time}
             node = node.next

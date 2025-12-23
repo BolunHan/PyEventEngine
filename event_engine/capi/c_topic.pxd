@@ -142,6 +142,8 @@ cdef class TopicPartPattern(TopicPart):
     pass
 
 
+cdef heap_allocator* HEAP_ALLOCATOR
+
 cpdef Topic get_internal_topic(str key, bint owner=*)
 
 cpdef dict get_internal_map()

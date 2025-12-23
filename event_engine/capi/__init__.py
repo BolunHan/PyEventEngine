@@ -2,46 +2,38 @@ import logging
 
 LOGGER = None
 
-from .c_topic import (TopicType, PyTopicPart, PyTopicPartExact, PyTopicPartAny, PyTopicPartRange, PyTopicPartPattern,
-                      PyTopicMatchResult, PyTopic,
-                      get_internal_topic, get_internal_map)
 
-# from .c_event import PyMessagePayload, EventHook as EventHookBase, EventHookEx
-#
-# # Try to import the Cython implementation first, fall back to pure Python if unavailable
-# USING_FALLBACK = False
-#
-# try:
-#     assert not USING_FALLBACK
-#     from .c_engine import Full, Empty, EventEngine as EventEngineBase, EventEngineEx
-#
-#     USING_FALLBACK = False
-# except (ImportError, AssertionError) as e:
-#     # Cython module not available (e.g., on Windows or not compiled)
-#     # Use the pure Python fallback implementation
-#     import warnings
-#
-#     warnings.warn(
-#         f"Cython c_engine module not available ({e}), using pure Python fallback implementation. "
-#         "Performance may be reduced compared to the Cython version.",
-#         ImportWarning,
-#         stacklevel=2
-#     )
-#     from .fallback_engine import Full, Empty, EventEngine as EventEngineBase, EventEngineEx
-#
-#     USING_FALLBACK = True
+from .c_topic import (
+    TopicType,
+    TopicPart, TopicPartExact, TopicPartAny, TopicPartRange, TopicPartPattern,
+    TopicMatchResult, Topic,
+    get_internal_topic, get_internal_map
+)
 
-# alias for consistency
-TopicPart = PyTopicPart
-TopicPartExact = PyTopicPartExact
-TopicPartAny = PyTopicPartAny
-TopicPartRange = PyTopicPartRange
-TopicPartPattern = PyTopicPartPattern
-TopicMatchResult = PyTopicMatchResult
-Topic = PyTopic
-# MessagePayload = PyMessagePayload
-# EventHook = EventHookEx
-# EventEngine = EventEngineEx
+from .c_event import MessagePayload, EventHook, EventHookEx
+
+# Try to import the Cython implementation first, fall back to pure Python if unavailable
+USING_FALLBACK = False
+
+try:
+    assert not USING_FALLBACK
+    from .c_engine import Full, Empty, EventEngine, EventEngineEx
+
+    USING_FALLBACK = False
+except (ImportError, AssertionError) as e:
+    # Cython module not available (e.g., on Windows or not compiled)
+    # Use the pure Python fallback implementation
+    import warnings
+
+    warnings.warn(
+        f"Cython c_engine module not available ({e}), using pure Python fallback implementation. "
+        "Performance may be reduced compared to the Cython version.",
+        ImportWarning,
+        stacklevel=2
+    )
+    from .fallback_engine import Full, Empty, EventEngine, EventEngineEx
+
+    USING_FALLBACK = True
 
 
 def set_logger(logger: logging.Logger):
@@ -86,7 +78,7 @@ __all__ = [
     'TopicType', 'TopicPart', 'TopicPartExact', 'TopicPartAny', 'TopicPartRange', 'TopicPartPattern',
     'TopicMatchResult', 'Topic',
     'get_internal_topic', 'get_internal_map',
-    'MessagePayload', 'EventHookBase', 'EventHook',
-    'Full', 'Empty', 'EventEngineBase', 'EventEngine', 'USING_FALLBACK',
+    'MessagePayload', 'EventHook', 'EventHookEx',
+    'Full', 'Empty', 'EventEngine', 'EventEngineEx', 'USING_FALLBACK',
     'set_logger'
 ]

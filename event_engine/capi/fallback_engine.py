@@ -7,7 +7,7 @@ that work on Windows and other platforms without requiring Cython/C extensions.
 Uses:
 - threading.Lock, threading.Condition for synchronization
 - dict for topic-to-hook mappings (instead of ByteMap)
-- PyTopic, PyMessagePayload, EventHook from c_topic and c_event modules
+- Topic, MessagePayload, EventHook from c_topic and c_event modules
 """
 
 import threading
@@ -18,8 +18,8 @@ from threading import Thread
 from time import sleep, time
 from typing import Optional
 
-from .c_event import EventHook, EventHookEx, PyMessagePayload
-from .c_topic import PyTopic
+from .c_event import EventHook, EventHookEx, MessagePayload
+from .c_topic import Topic
 from ..base import LOGGER
 
 LOGGER = LOGGER.getChild('Event')
@@ -91,7 +91,7 @@ class EventEngine:
             if msg is not None:
                 self._trigger(msg)
 
-    def _get_message(self, block: bool = True, timeout: float = 0.0) -> Optional[PyMessagePayload]:
+    def _get_message(self, block: bool = True, timeout: float = 0.0) -> Optional[MessagePayload]:
         """
         Get a message from the queue.
 
@@ -100,7 +100,7 @@ class EventEngine:
             timeout: Timeout in seconds (0 means no timeout)
 
         Returns:
-            PyMessagePayload or None if timeout/non-blocking and queue is empty
+            MessagePayload or None if timeout/non-blocking and queue is empty
         """
         with self._not_empty:
             if not block:
@@ -128,7 +128,7 @@ class EventEngine:
             self._not_full.notify()
             return msg
 
-    def _publish(self, topic: PyTopic, args: tuple, kwargs: dict, block: bool = True, max_spin: int = DEFAULT_MQ_SPIN_LIMIT, timeout: float = 0.0) -> int:
+    def _publish(self, topic: Topic, args: tuple, kwargs: dict, block: bool = True, max_spin: int = DEFAULT_MQ_SPIN_LIMIT, timeout: float = 0.0) -> int:
         """
         Publish a message to the queue.
 
@@ -147,7 +147,7 @@ class EventEngine:
             raise ValueError('Topic must be all of exact parts')
 
         # Create payload
-        payload = PyMessagePayload(alloc=True)
+        payload = MessagePayload(alloc=True)
         payload.topic = topic
         payload.args = args
         payload.kwargs = kwargs
@@ -187,7 +187,7 @@ class EventEngine:
             self._not_empty.notify()
             return 0
 
-    def _trigger(self, msg: PyMessagePayload):
+    def _trigger(self, msg: MessagePayload):
         """
         Trigger event hooks matching the message topic.
 
@@ -203,7 +203,7 @@ class EventEngine:
 
         # Step 2: Match generic topic hooks (wildcards, patterns, etc.)
         for hook_topic_str, hook in self._generic_topic_hooks.items():
-            # Use topic matching from PyTopic
+            # Use topic matching from Topic
             if hook.topic.match(msg_topic).matched:
                 hook.trigger(msg)
 
@@ -226,7 +226,7 @@ class EventEngine:
                 raise KeyError(f'Another EventHook already registered for {topic_str}')
             self._generic_topic_hooks[topic_str] = hook
 
-    def _unregister_hook(self, topic: PyTopic) -> EventHook:
+    def _unregister_hook(self, topic: Topic) -> EventHook:
         """
         Unregister an event hook by topic.
 
@@ -247,7 +247,7 @@ class EventEngine:
                 raise KeyError(f'No EventHook registered for {topic_str}')
             return self._generic_topic_hooks.pop(topic_str)
 
-    def _register_handler(self, topic: PyTopic, handler, deduplicate: bool = False):
+    def _register_handler(self, topic: Topic, handler, deduplicate: bool = False):
         """
         Register a handler for a topic (creates hook if needed).
 
@@ -271,7 +271,7 @@ class EventEngine:
 
         hook.add_handler(handler, deduplicate=deduplicate)
 
-    def _unregister_handler(self, topic: PyTopic, handler):
+    def _unregister_handler(self, topic: Topic, handler):
         """
         Unregister a handler from a topic.
 
@@ -354,7 +354,7 @@ class EventEngine:
 
         self._clear()
 
-    def get(self, block: bool = True, max_spin: int = DEFAULT_MQ_SPIN_LIMIT, timeout: float = 0.0) -> PyMessagePayload:
+    def get(self, block: bool = True, max_spin: int = DEFAULT_MQ_SPIN_LIMIT, timeout: float = 0.0) -> MessagePayload:
         """
         Get a message from the queue.
 
@@ -364,7 +364,7 @@ class EventEngine:
             timeout: Timeout in seconds
 
         Returns:
-            PyMessagePayload
+            MessagePayload
 
         Raises:
             Empty: If no message available
@@ -378,7 +378,7 @@ class EventEngine:
         msg.kwargs_owner = True
         return msg
 
-    def put(self, topic: PyTopic, *args, block: bool = True, max_spin: int = DEFAULT_MQ_SPIN_LIMIT, timeout: float = 0.0, **kwargs):
+    def put(self, topic: Topic, *args, block: bool = True, max_spin: int = DEFAULT_MQ_SPIN_LIMIT, timeout: float = 0.0, **kwargs):
         """
         Put a message into the queue.
 
@@ -397,7 +397,7 @@ class EventEngine:
         if ret_code:
             raise Full()
 
-    def publish(self, topic: PyTopic, args: tuple, kwargs: dict, block: bool = True, max_spin: int = DEFAULT_MQ_SPIN_LIMIT, timeout: float = 0.0):
+    def publish(self, topic: Topic, args: tuple, kwargs: dict, block: bool = True, max_spin: int = DEFAULT_MQ_SPIN_LIMIT, timeout: float = 0.0):
         """
         Publish a message to the queue.
 
@@ -425,7 +425,7 @@ class EventEngine:
         """
         self._register_hook(hook)
 
-    def unregister_hook(self, topic: PyTopic) -> EventHook:
+    def unregister_hook(self, topic: Topic) -> EventHook:
         """
         Unregister a hook by topic.
 
@@ -437,7 +437,7 @@ class EventEngine:
         """
         return self._unregister_hook(topic)
 
-    def register_handler(self, topic: PyTopic, handler, deduplicate: bool = False):
+    def register_handler(self, topic: Topic, handler, deduplicate: bool = False):
         """
         Register a handler for a topic.
 
@@ -448,7 +448,7 @@ class EventEngine:
         """
         self._register_handler(topic, handler, deduplicate)
 
-    def unregister_handler(self, topic: PyTopic, handler):
+    def unregister_handler(self, topic: Topic, handler):
         """
         Unregister a handler from a topic.
 
@@ -518,7 +518,7 @@ class EventEngineEx(EventEngine):
         return (f'<{self.__class__.__name__} {"active" if self.active else "idle"}>'
                 f'(capacity={self.capacity}, timers={list(self.timer.keys())})')
 
-    def _timer_loop(self, interval: float, topic: PyTopic, activate_time: Optional[datetime]):
+    def _timer_loop(self, interval: float, topic: Topic, activate_time: Optional[datetime]):
         """
         Timer loop for custom intervals.
 
@@ -546,7 +546,7 @@ class EventEngineEx(EventEngine):
                 scheduled_time += timedelta(seconds=interval)
             kwargs['trigger_time'] = scheduled_time
 
-    def _minute_timer_loop(self, topic: PyTopic):
+    def _minute_timer_loop(self, topic: Topic):
         """
         Minute-aligned timer loop.
 
@@ -564,7 +564,7 @@ class EventEngineEx(EventEngine):
             kwargs['timestamp'] = scheduled_time
             self._publish(topic, (), kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
 
-    def _second_timer_loop(self, topic: PyTopic):
+    def _second_timer_loop(self, topic: Topic):
         """
         Second-aligned timer loop.
 
@@ -582,7 +582,7 @@ class EventEngineEx(EventEngine):
             kwargs['timestamp'] = scheduled_time
             self._publish(topic, (), kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
 
-    def run_timer(self, interval: float, topic: PyTopic, activate_time: Optional[datetime] = None):
+    def run_timer(self, interval: float, topic: Topic, activate_time: Optional[datetime] = None):
         """
         Run a timer with custom interval (blocking call).
 
@@ -595,7 +595,7 @@ class EventEngineEx(EventEngine):
             raise RuntimeError('EventEngine must be started before getting timer!')
         self._timer_loop(interval, topic, activate_time)
 
-    def minute_timer(self, topic: PyTopic):
+    def minute_timer(self, topic: Topic):
         """
         Run minute-aligned timer (blocking call).
 
@@ -606,7 +606,7 @@ class EventEngineEx(EventEngine):
             raise RuntimeError('EventEngine must be started before getting timer!')
         self._minute_timer_loop(topic)
 
-    def second_timer(self, topic: PyTopic):
+    def second_timer(self, topic: Topic):
         """
         Run second-aligned timer (blocking call).
 
@@ -617,7 +617,7 @@ class EventEngineEx(EventEngine):
             raise RuntimeError('EventEngine must be started before getting timer!')
         self._second_timer_loop(topic)
 
-    def get_timer(self, interval: float, activate_time: Optional[datetime] = None) -> PyTopic:
+    def get_timer(self, interval: float, activate_time: Optional[datetime] = None) -> Topic:
         """
         Get or create a timer with the specified interval.
 
@@ -626,19 +626,19 @@ class EventEngineEx(EventEngine):
             activate_time: Optional activation time
 
         Returns:
-            PyTopic for the timer
+            Topic for the timer
         """
         if not self.active:
             raise RuntimeError('EventEngine must be started before getting timer!')
 
         if interval == 1:
-            topic = PyTopic('EventEngine.Internal.Timer.Second')
+            topic = Topic('EventEngine.Internal.Timer.Second')
             timer = Thread(target=self.second_timer, kwargs={'topic': topic})
         elif interval == 60:
-            topic = PyTopic('EventEngine.Internal.Timer.Minute')
+            topic = Topic('EventEngine.Internal.Timer.Minute')
             timer = Thread(target=self.minute_timer, kwargs={'topic': topic})
         else:
-            topic = PyTopic.join(['EventEngine', 'Internal', 'Timer', str(interval)])
+            topic = Topic.join(['EventEngine', 'Internal', 'Timer', str(interval)])
             timer = Thread(target=self.run_timer,
                            kwargs={'interval': interval, 'topic': topic, 'activate_time': activate_time})
 

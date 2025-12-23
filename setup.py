@@ -42,37 +42,30 @@ match os.environ.get("PYEE_OPT", "").lower():
     case _:  # default to -O3
         opt_flags = ["-O3"]
 
-cython_extension.extend(
-    [
+if os.name == 'posix':
+    cython_extension.extend([
         Extension(
-            name="event_engine.capi.c_allocator",
-            sources=["event_engine/capi/c_allocator.pyx"],
-            extra_compile_args=opt_flags,
-        ),
-        Extension(
-            name="event_engine.capi.c_bytemap",
-            sources=["event_engine/capi/c_bytemap.pyx"],
+            name="event_engine.base.c_strmap",
+            sources=["event_engine/base/c_strmap.pyx"],
             extra_compile_args=opt_flags,
         ),
         Extension(
             name="event_engine.capi.c_topic",
             sources=["event_engine/capi/c_topic.pyx"],
             extra_compile_args=opt_flags,
+            include_dirs=["event_engine/base"]
         ),
         Extension(
             name="event_engine.capi.c_event",
             sources=["event_engine/capi/c_event.pyx"],
             extra_compile_args=opt_flags,
-        )
-    ]
-)
-
-if os.name == 'posix':
-    cython_extension.extend([
+            include_dirs=["event_engine/base"]
+        ),
         Extension(
             name="event_engine.capi.c_engine",
             sources=["event_engine/capi/c_engine.pyx"],
             extra_compile_args=opt_flags,
+            include_dirs=["event_engine/base"]
         ),
     ])
 

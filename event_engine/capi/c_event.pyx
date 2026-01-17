@@ -1,9 +1,8 @@
 import inspect
 import traceback
 
-from cpython.exc cimport PyErr_Clear, PyErr_Fetch, PyErr_GivenExceptionMatches
-from cpython.object cimport PyCallable_Check
-from cpython.ref cimport Py_INCREF, Py_XDECREF
+from cpython.exc cimport PyErr_Clear, PyErr_Fetch
+from cpython.ref cimport Py_XINCREF, Py_XDECREF
 from cpython.time cimport perf_counter
 from libc.stdlib cimport calloc, free
 
@@ -12,45 +11,77 @@ from ..base import LOGGER
 LOGGER = LOGGER.getChild('Event')
 
 
+cdef tuple EMPTY_ARGS = ()
+cdef str TOPIC_FIELD_NAME = 'topic'
+
+
+cdef inline evt_message_payload* c_evt_payload_new(heap_allocator* allocator, Topic topic, tuple args, dict kwargs, int with_lock):
+    cdef evt_message_payload* c_payload
+    cdef size_t payload_size = sizeof(evt_message_payload) + sizeof(evt_py_payload)
+
+    if allocator:
+        c_payload = <evt_message_payload*> c_heap_request(allocator, payload_size, 1, &allocator.lock if with_lock else NULL)
+    else:
+        c_payload = <evt_message_payload*> calloc(1, payload_size)
+
+    if not c_payload:
+        return NULL
+
+    cdef evt_py_payload* py_payload = <evt_py_payload*> (c_payload + 1)
+    cdef PyObject* kwargs_aggregated = PyDict_Copy(<PyObject*> kwargs)
+    PyDict_SetDefault(kwargs_aggregated, <PyObject*> TOPIC_FIELD_NAME, <PyObject*> topic)
+
+    py_payload.py_topic = <PyObject*> topic
+    py_payload.py_args = <PyObject*> args
+    py_payload.py_kwargs = <PyObject*> kwargs
+    py_payload.py_kwargs_aggregated = kwargs_aggregated
+
+    Py_XINCREF(<PyObject*> topic)
+    Py_XINCREF(<PyObject*> args)
+    Py_XINCREF(<PyObject*> kwargs)
+    # Py_XINCREF(<PyObject*> kwargs_aggregated)
+
+    c_payload.args = py_payload
+    c_payload.topic = topic.header
+    c_payload.allocator = allocator
+    return c_payload
+
+
+cdef inline void c_evt_payload_free(evt_message_payload* payload, int with_lock):
+    cdef heap_allocator* allocator = payload.allocator
+    cdef evt_py_payload* py_payload = <evt_py_payload*> (payload + 1)
+
+    Py_XDECREF(py_payload.py_topic)
+    Py_XDECREF(py_payload.py_args)
+    Py_XDECREF(py_payload.py_kwargs)
+    Py_XDECREF(py_payload.py_kwargs_aggregated)
+
+    if allocator:
+        c_heap_free(payload, &allocator.lock if with_lock else NULL)
+    else:
+        free(payload)
+
+
 cdef class MessagePayload:
-    def __cinit__(self, bint alloc=False):
-        if not alloc:
-            return
-
-        self.header = <evt_message_payload*> calloc(1, sizeof(evt_message_payload))
+    def __init__(self, Topic topic, tuple args, dict kwargs):
+        self.header = c_evt_payload_new(NULL, topic, args, kwargs, 1)
         if not self.header:
-            raise MemoryError('Failed to allocate memory')
-        self.header.topic = NULL
-        self.header.args = NULL
-        self.header.kwargs = NULL
-        self.header.seq_id = 0
-        self.header.allocator = NULL
-
+            raise MemoryError('Failed to allocate memory for evt_message_payload')
         self.owner = True
-        self.args_owner = False
-        self.kwargs_owner = False
 
     def __dealloc__(self):
-        cdef PyObject* args
-        cdef PyObject* kwargs
+        if not self.owner:
+            return
 
-        if self.args_owner and self.header and self.header.args:
-            args = <PyObject*> self.header.args
-            self.header.args = NULL
-            Py_XDECREF(args)
+        if self.header:
+            c_evt_payload_free(self.header, 1)
 
-        if self.kwargs_owner and self.header and self.header.kwargs:
-            kwargs = <PyObject*> self.header.kwargs
-            self.header.kwargs = NULL
-            Py_XDECREF(kwargs)
-
-        cdef heap_allocator* allocator = self.header.allocator
-        if self.owner and self.header:
-            if allocator:
-                c_heap_free(self.header, <pthread_mutex_t*> &allocator.lock)
-            else:
-                free(self.header)
-            self.header = NULL
+    @staticmethod
+    cdef MessagePayload c_from_header(evt_message_payload* payload, bint owner=False):
+        cdef MessagePayload instance = MessagePayload.__new__(MessagePayload)
+        instance.header = payload
+        instance.owner = owner
+        return instance
 
     def __repr__(self):
         if not self.header:
@@ -59,136 +90,97 @@ cdef class MessagePayload:
             return f'<MessagePayload "{self.topic.value}">(seq_id={self.seq_id}, args={self.args}, kwargs={self.kwargs})'
         return f'<MessagePayload NO_TOPIC>(seq_id={self.seq_id}, args={self.args}, kwargs={self.kwargs})'
 
-    @staticmethod
-    cdef MessagePayload c_from_header(evt_message_payload* header, bint owner=False, bint args_owner=False, bint kwargs_owner=False):
-        # Create a wrapper around an existing header pointer.
-        cdef MessagePayload instance = MessagePayload.__new__(MessagePayload, alloc=False)
-        instance.header = header
-        instance.owner = owner
-        instance.args_owner = args_owner
-        instance.kwargs_owner = kwargs_owner
-        return instance
-
     property topic:
         def __get__(self):
             if not self.header:
-                raise RuntimeError('Not initialized!')
-
+                raise RuntimeError('Uninitialized c payload')
+            if not self.header.args:
+                raise RuntimeError('Uninitialized python payload')
+            cdef evt_py_payload* py_payload = <evt_py_payload*> self.header.args
+            cdef PyObject* py_topic = py_payload.py_topic
+            if py_topic:
+                Py_XINCREF(py_topic)
+                return <Topic> py_topic
             cdef evt_topic* topic = self.header.topic
-            if not topic:
-                return None
-            return Topic.c_from_header(topic, False)
-
-        def __set__(self, Topic topic):
-            topic.owner = False
-            self.header.topic = topic.header
+            if topic:
+                return Topic.c_from_header(topic, False)
+            return None
 
     property args:
         def __get__(self):
             if not self.header:
-                raise RuntimeError('Not initialized!')
-
-            cdef PyObject* args = <PyObject*> self.header.args
-            if not args:
-                return None
-            return <object> args
-
-        def __set__(self, tuple args):
-            Py_INCREF(args)
-            self.header.args = <void*> <PyObject*> args
+                raise RuntimeError('Uninitialized c payload')
+            if not self.header.args:
+                raise RuntimeError('Uninitialized python payload')
+            cdef evt_py_payload* py_payload = <evt_py_payload*> self.header.args
+            cdef PyObject* py_args = py_payload.py_args
+            if py_args:
+                Py_XINCREF(py_args)
+                return <tuple> py_args
+            return None
 
     property kwargs:
         def __get__(self):
             if not self.header:
-                raise RuntimeError('Not initialized!')
+                raise RuntimeError('Uninitialized c payload')
+            if not self.header.args:
+                raise RuntimeError('Uninitialized python payload')
+            cdef evt_py_payload* py_payload = <evt_py_payload*> self.header.args
+            cdef PyObject* py_kwargs = py_payload.py_kwargs
+            if py_kwargs:
+                Py_XINCREF(py_kwargs)
+                return <dict> py_kwargs
+            return None
 
-            cdef PyObject* kwargs = <PyObject*> self.header.kwargs
-            if not kwargs:
-                return None
-            return <object> kwargs
-
-        def __set__(self, dict kwargs):
-            Py_INCREF(kwargs)
-            self.header.kwargs = <void*> <PyObject*> kwargs
+    property kwargs_with_topic:
+        def __get__(self):
+            if not self.header:
+                raise RuntimeError('Uninitialized c payload')
+            if not self.header.args:
+                raise RuntimeError('Uninitialized python payload')
+            cdef evt_py_payload* py_payload = <evt_py_payload*> self.header.args
+            cdef PyObject* py_kwargs_aggregated = py_payload.py_kwargs_aggregated
+            if py_kwargs_aggregated:
+                Py_XINCREF(py_kwargs_aggregated)
+                return <dict> py_kwargs_aggregated
+            return None
 
     property seq_id:
         def __get__(self):
             if not self.header:
-                raise RuntimeError('Not initialized!')
+                raise RuntimeError('Uninitialized c payload')
             return self.header.seq_id
 
         def __set__(self, uint64_t seq_id):
             if not self.header:
-                raise RuntimeError('Not initialized!')
+                raise RuntimeError('Uninitialized c payload')
             self.header.seq_id = seq_id
 
 
-cdef tuple C_INTERNAL_EMPTY_ARGS = ()
-
-cdef dict C_INTERNAL_EMPTY_KWARGS = {}
-
-cdef str TOPIC_FIELD_NAME = 'topic'
-
-cdef str TOPIC_UNEXPECTED_ERROR = f"an unexpected keyword argument '{TOPIC_FIELD_NAME}'"
-
-
 cdef class EventHook:
-    def __cinit__(self, Topic topic, object logger=None, bint retry_on_unexpected_topic=False):
+    def __cinit__(self, Topic topic, object logger=None):
+        self.header = c_evt_hook_new(topic.header)
+        if not self.header:
+            raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
+        self.callables = NULL
         self.topic = topic
         self.logger = LOGGER.getChild(f'EventHook.{topic}') if logger is None else logger
-        self.retry_on_unexpected_topic = retry_on_unexpected_topic
-        self.header = c_evt_hook_new(topic.header)
-        self.handlers_no_topic = NULL
-        self.handlers_with_topic = NULL
 
     def __dealloc__(self):
+        self.c_free_py_callable()
         if self.header:
             c_evt_hook_free(self.header)
 
-        EventHook.c_free_handlers(self.handlers_no_topic)
-        self.handlers_no_topic = NULL
-
-        EventHook.c_free_handlers(self.handlers_with_topic)
-        self.handlers_with_topic = NULL
-
     @staticmethod
-    cdef inline void c_free_handlers(EventHandler* handlers):
-        cdef EventHandler* handler = handlers
-        cdef EventHandler* next_handler
-        while handler:
-            next_handler = handler.next
-            if handler.fn:
-                Py_XDECREF(handler.fn)
-            free(handler)
-            handler = next_handler
-
-    @staticmethod
-    cdef void c_evt_pycallback_adapter(evt_message_payload* payload, void* user_data):
-        cdef EventHandler* ctx = <EventHandler*> user_data
+    cdef inline void c_invoke_py_callable(evt_message_payload* payload, void* user_data):
+        cdef evt_py_callable* ctx = <evt_py_callable*> user_data
         cdef bint with_topic = ctx.with_topic
+        cdef evt_py_payload* py_payload = <evt_py_payload*> payload.args
 
-        cdef PyObject* args_ptr = <PyObject*> payload.args
-        cdef PyObject* kwargs_ptr = <PyObject*> payload.kwargs
-        cdef PyObject* kwargs_with_topic
-        cdef evt_topic* topic = payload.topic
-        cdef Topic py_topic = Topic.c_from_header(topic, False)
-
-        if not with_topic:
-            if kwargs_ptr:
-                res = PyObject_Call(ctx.fn, args_ptr, kwargs_ptr)
-            else:
-                res = PyObject_CallObject(ctx.fn, args_ptr)
-        else:
-            if kwargs_ptr:
-                kwargs_with_topic = PyDict_Copy(kwargs_ptr)
-            else:
-                kwargs_with_topic = PyDict_New()
-            PyDict_SetDefault(kwargs_with_topic, <PyObject*> TOPIC_FIELD_NAME, <PyObject*> py_topic)
-
-            if args_ptr:
-                res = PyObject_Call(ctx.fn, args_ptr, kwargs_ptr)
-            else:
-                res = PyObject_Call(ctx.fn, <PyObject*> C_INTERNAL_EMPTY_ARGS, kwargs_ptr)
+        cdef PyObject* fn = ctx.fn
+        cdef PyObject* args = py_payload.py_args
+        cdef PyObject* kwargs = py_payload.py_kwargs_aggregated if with_topic else py_payload.py_kwargs
+        cdef PyObject* res = PyObject_Call(fn, args, kwargs)
 
         if res:
             Py_XDECREF(res)
@@ -209,232 +201,123 @@ cdef class EventHook:
         Py_XDECREF(etrace)
         PyErr_Clear()
 
-    cdef void c_safe_call_no_topic(self, EventHandler* handler, PyObject* args, PyObject* kwargs):
-        if kwargs:
-            res = PyObject_Call(handler.fn, args, kwargs)
-        else:
-            res = PyObject_CallObject(handler.fn, args)
-
-        if res:
-            Py_XDECREF(res)
-            return
-
-        # Fetch the current Python exception (steals references; clears the indicator)
-        cdef PyObject* etype = NULL
-        cdef PyObject* evalue = NULL
-        cdef PyObject* etrace = NULL
-        cdef object formatted
-
-        PyErr_Fetch(&etype, &evalue, &etrace)
-        formatted = traceback.format_exception(<object> etype, (<object> evalue) if evalue else None, (<object> etrace) if etrace else None)
-        self.logger.error("".join(formatted))
-        Py_XDECREF(etype)
-        Py_XDECREF(evalue)
-        Py_XDECREF(etrace)
-        PyErr_Clear()
-
-    cdef void c_safe_call_with_topic(self, EventHandler* handler, PyObject* args, PyObject* kwargs):
-        cdef PyObject* res = PyObject_Call(handler.fn, args, kwargs)
-
-        if res:
-            Py_XDECREF(res)
-            return
-        cdef PyObject* etype = NULL
-        cdef PyObject* evalue = NULL
-        cdef PyObject* etrace = NULL
-        cdef object formatted
-
-        PyErr_Fetch(&etype, &evalue, &etrace)
-        formatted = traceback.format_exception(<object> etype, (<object> evalue) if evalue else None, (<object> etrace) if etrace else None)
-        if (self.retry_on_unexpected_topic
-                and evalue is not NULL
-                and PyErr_GivenExceptionMatches(<object> evalue, TypeError)
-                and str(<object> evalue).endswith(TOPIC_UNEXPECTED_ERROR)):
-            LOGGER.warning("".join(formatted))
-            LOGGER.warning(f'Retrying without {TOPIC_FIELD_NAME} kwargs...')
-            # Retry without the topic kwarg
-            Py_XDECREF(etype)
-            Py_XDECREF(evalue)
-            Py_XDECREF(etrace)
-            PyErr_Clear()
-
-            if PyDict_Size(kwargs) == 1:
-                EventHook.c_safe_call_no_topic(self, handler, args, NULL)
-            else:
-                kwargs = PyDict_Copy(kwargs)
-                PyDict_Pop(kwargs, <PyObject*> TOPIC_FIELD_NAME, NULL)
-                EventHook.c_safe_call_no_topic(self, handler, args, kwargs)
-            return
-
-        self.logger.error("".join(formatted))
-        Py_XDECREF(etype)
-        Py_XDECREF(evalue)
-        Py_XDECREF(etrace)
-        PyErr_Clear()
-
-    cdef inline void c_trigger_no_topic(self, evt_message_payload* msg):
-        cdef PyObject* args_ptr = <PyObject*> msg.args
-        cdef PyObject* kwargs_ptr = <PyObject*> msg.kwargs
-        cdef EventHandler* handler = self.handlers_no_topic
-
-        while handler:
-            self.c_safe_call_no_topic(handler, args_ptr, kwargs_ptr)
-            handler = handler.next
-
-    cdef inline void c_trigger_with_topic(self, evt_message_payload* msg):
-        cdef evt_topic* topic = msg.topic
-        cdef PyObject* args_ptr = <PyObject*> msg.args
-        cdef PyObject* kwargs_ptr = <PyObject*> msg.kwargs
-        cdef Topic py_topic = Topic.c_from_header(topic, False)
-        cdef EventHandler* handler = self.handlers_with_topic
-
-        if not args_ptr:
-            args_ptr = <PyObject*> C_INTERNAL_EMPTY_ARGS
-
-        if kwargs_ptr:
-            kwargs_ptr = PyDict_Copy(kwargs_ptr)
-        else:
-            kwargs_ptr = PyDict_New()
-        PyDict_SetDefault(kwargs_ptr, <PyObject*> TOPIC_FIELD_NAME, <PyObject*> py_topic)
-
-        while handler:
-            self.c_safe_call_with_topic(handler, args_ptr, kwargs_ptr)
-            handler = handler.next
-
-    cdef EventHandler* c_add_handler(self, object py_callable, bint with_topic, bint deduplicate):
+    cdef inline evt_py_callable* c_add_py_callable(self, PyObject* py_callable, PyObject* logger, bint with_topic, bint deduplicate):
         if not PyCallable_Check(py_callable):
             raise ValueError('Callback handler must be callable')
 
-        cdef PyObject* handler = <PyObject*> py_callable
-        cdef EventHandler* node = self.handlers_with_topic if with_topic else self.handlers_no_topic
-        cdef EventHandler* prev = NULL
-        cdef bint found = False
+        cdef evt_py_callable* callable_frame = self.callables
 
         # Walk list to detect duplicates and position at tail
-        while node:
-            if node.fn == handler:
-                found = True
+        cdef evt_py_callable* tail = NULL
+        while callable_frame:
+            if callable_frame.fn == py_callable:
                 if deduplicate:
-                    return NULL
+                    return callable_frame
                 else:
-                    try:
-                        self.logger.warning(f'Handler {py_callable} already registered in {self}. Adding again will be called multiple times when triggered.')
-                    except Exception:
-                        pass
-            prev = node
-            node = node.next
+                    self.logger.warning(f'Handler {<object> py_callable} already registered in {self}. Adding again will be called multiple times when triggered.')
+            tail = callable_frame
+            callable_frame = callable_frame.next
 
         # Allocate new node
-        node = <EventHandler*> calloc(1, sizeof(EventHandler))
-        if not node:
-            raise MemoryError('Failed to allocate EventHandler')
-        Py_INCREF(<object> handler)  # hold a reference from the list
-        node.fn = handler
-        node.next = NULL
+        callable_frame = <evt_py_callable*> calloc(1, sizeof(evt_py_callable))
+        if not callable_frame:
+            raise MemoryError('Failed to allocate memory for new evt_py_callable')
 
-        if prev == NULL:
-            if with_topic:
-                self.handlers_with_topic = node
-            else:
-                self.handlers_no_topic = node
+        Py_XINCREF(logger)
+        Py_XINCREF(py_callable)
+
+        callable_frame.fn = py_callable
+        callable_frame.logger = logger
+        callable_frame.idx = self.header.n_callbacks
+        callable_frame.with_topic = with_topic
+
+        if tail:
+            tail.next = callable_frame
         else:
-            prev.next = node
-        return node
+            self.callables = callable_frame
 
-    cdef EventHandler* c_remove_handler(self, object py_callable):
-        cdef PyObject* handler = <PyObject*> py_callable
-        cdef EventHandler* node = self.handlers_no_topic
-        cdef EventHandler* prev = NULL
+        c_evt_hook_register_callback(
+            self.header,
+            <const void*> EventHook.c_invoke_py_callable,
+            evt_callback_type.EVT_CALLBACK_WITH_PAYLOAD_USERDATA,
+            <void*> callable_frame,
+            0
+        )
+        return callable_frame
 
-        while node:
-            if node.fn == handler:
-                # unlink node
-                if prev:
-                    prev.next = node.next
+    cdef inline int c_remove_py_callable(self, PyObject* py_callable):
+        cdef evt_py_callable* curr = self.callables
+        cdef evt_py_callable* prior = NULL
+
+        while curr:
+            if curr.fn == py_callable:
+                Py_XDECREF(curr.fn)
+                Py_XDECREF(curr.logger)
+                if prior:
+                    prior.next = curr.next
                 else:
-                    self.handlers_no_topic = node.next
+                    self.callables = curr.next
+                c_evt_hook_pop_callback(self.header, curr.idx)
+                prior = curr.next
+                while prior:
+                    prior.idx -= 1
+                    prior = prior.next
+                free(curr)
+                return 1
+            prior = curr
+            curr = curr.next
+        return 0
 
-                Py_XDECREF(node.fn)  # drop the list's reference
-                node.fn = NULL
-                # free(node)
-                return node
-            prev = node
-            node = node.next
+    cdef inline bint c_contains_py_callable(self, PyObject* py_callable):
+        cdef evt_py_callable* curr = self.callables
 
-        node = self.handlers_with_topic
-        prev = NULL
-        while node:
-            if node.fn == handler:
-                # unlink node
-                if prev:
-                    prev.next = node.next
-                else:
-                    self.handlers_with_topic = node.next
+        while curr:
+            if curr.fn == py_callable:
+                return True
+            curr = curr.next
+        return False
 
-                if node.fn:
-                    Py_XDECREF(node.fn)
-                    node.fn = NULL
-                # free(node)
-                return node
-            prev = node
-            node = node.next
-        return NULL
+    cdef void c_free_py_callable(self):
+        cdef evt_py_callable* curr = self.callables
+        cdef evt_py_callable* next
+        while curr:
+            next = curr.next
+            Py_XDECREF(curr.fn)
+            Py_XDECREF(curr.logger)
+            c_evt_hook_pop_callback(self.header, 0)
+            free(curr)
+            curr = next
+        self.callables = NULL
 
     def __call__(self, MessagePayload msg):
-        self.c_trigger_no_topic(msg.header)
-        self.c_trigger_with_topic(msg.header)
+        c_evt_hook_invoke(self.header, msg.header)
 
     def __iadd__(self, object py_callable):
-        self.add_handler(py_callable, True)
+        self.add_handler(py_callable, None, True)
         return self
 
     def __isub__(self, object py_callable):
-        cdef EventHandler* node = self.c_remove_handler(py_callable)
-        if node:
-            free(node)
+        self.c_remove_py_callable(<PyObject*> py_callable)
         return self
 
     def __len__(self):
-        cdef int count = 0
-        cdef EventHandler* node = self.handlers_no_topic
-        while node:
-            count += 1
-            node = node.next
-
-        node = self.handlers_with_topic
-        while node:
-            count += 1
-            node = node.next
-        return count
+        return self.header.n_callbacks
 
     def __repr__(self):
         if self.topic:
-            return f'<{self.__class__.__name__} "{self.topic.value}">(handlers={len(self)})'
-        return f'<{self.__class__.__name__} NO_TOPIC>(handlers={len(self)})'
+            return f'<{self.__class__.__name__} "{self.topic.value}">(n={len(self)})'
+        return f'<{self.__class__.__name__} NO_TOPIC>(n={len(self)})'
 
     def __iter__(self):
         return self.handlers.__iter__()
 
     def __contains__(self, object py_callable):
-        cdef PyObject* target = <PyObject*> py_callable
-        cdef EventHandler* node = self.handlers_no_topic
-        while node:
-            if node.fn == target:
-                return True
-            node = node.next
-
-        node = self.handlers_with_topic
-        while node:
-            if node.fn == target:
-                return True
-            node = node.next
-        return False
+        return self.c_contains_py_callable(<PyObject*> py_callable)
 
     def trigger(self, MessagePayload msg):
-        self.c_trigger_no_topic(msg.header)
-        self.c_trigger_with_topic(msg.header)
+        c_evt_hook_invoke(self.header, msg.header)
 
-    def add_handler(self, object py_callable, bint deduplicate=False):
+    def add_handler(self, object py_callable, object logger=None, bint deduplicate=False):
         cdef object sig = inspect.signature(py_callable)
         cdef object param
         cdef bint with_topic = False
@@ -444,136 +327,59 @@ cdef class EventHook:
                 with_topic = True
                 break
 
-        self.c_add_handler(py_callable, with_topic, deduplicate)
+        if logger is None:
+            logger = self.logger
+
+        self.c_add_py_callable(<PyObject*> py_callable, <PyObject*> logger, with_topic, deduplicate)
 
     def remove_handler(self, object py_callable):
-        cdef EventHandler* node = self.c_remove_handler(py_callable)
-        if node:
-            free(node)
-        return self
+        cdef int removed = self.c_remove_py_callable(<PyObject*> py_callable)
+        if not removed:
+            LOGGER.warning(f'{py_callable} not exist in {self} call stacks')
 
     def clear(self):
-        EventHook.c_free_handlers(self.handlers_no_topic)
-        self.handlers_no_topic = NULL
-
-        EventHook.c_free_handlers(self.handlers_with_topic)
-        self.handlers_with_topic = NULL
+        self.c_free_py_callable()
 
     property handlers:
         def __get__(self):
-            cdef EventHandler* node = self.handlers_no_topic
+            cdef evt_py_callable* curr = self.callables
             cdef list out = []
-            while node:
-                if node.fn:
-                    out.append(<object> node.fn)
-                node = node.next
-
-            node = self.handlers_with_topic
-            while node:
-                if node.fn:
-                    out.append(<object> node.fn)
-                node = node.next
+            while curr:
+                out.append(dict(
+                    fn = <object> curr.fn,
+                    logger = <object> curr.logger,
+                    idx = curr.idx,
+                    with_topic = curr.with_topic
+                ))
+                Py_XINCREF(curr.fn)
+                Py_XINCREF(curr.logger)
+                curr = curr.next
             return out
 
 
+cdef inline void c_hook_enter(evt_hook* hook, evt_hook_watcher_type watcher_type, evt_message_payload* payload, void* user_data) noexcept nogil:
+    cdef evt_hook_stats* stats = <evt_hook_stats*> user_data
+    stats.n_calls += 1
+    stats.ts_call_start = perf_counter()
+
+
+cdef inline void c_hook_exit(evt_hook* hook, evt_hook_watcher_type watcher_type, evt_message_payload* payload, void* user_data) noexcept nogil:
+    cdef evt_hook_stats* stats = <evt_hook_stats*> user_data
+    stats.ts_call_complete = perf_counter()
+    stats.elapsed_seconds += stats.ts_call_complete - stats.ts_call_start
+
+
 cdef class EventHookEx(EventHook):
-    def __cinit__(self, Topic topic, object logger=None, bint retry_on_unexpected_topic=False):
-        self.stats_mapping = c_strmap_new(0, NULL, 0)
-        if not self.stats_mapping:
-            raise MemoryError(f'Failed to allocate ByteMap for {self.__class__.__name__} stats mapping.')
+    def __cinit__(self, Topic topic, object logger=None):
+        c_evt_hook_add_watcher(self.header, c_hook_enter, <void*> &self.hook_stats, evt_hook_watcher_type.EVT_HOOK_WATCHER_PRE_INVOKED)
+        c_evt_hook_add_watcher(self.header, c_hook_exit, <void*> &self.hook_stats, evt_hook_watcher_type.EVT_HOOK_WATCHER_POST_INVOKED)
 
-    def __dealloc__(self):
-        cdef strmap_entry* entry
-        if self.stats_mapping:
-            entry = self.stats_mapping.first
-            while entry:
-                if entry.value:
-                    free(entry.value)
-                    entry.value = NULL
-                entry = entry.next
-            c_strmap_free(self.stats_mapping, 1, 1)
-
-    cdef EventHandler* c_add_handler(self, object py_callable, bint with_topic, bint deduplicate):
-        cdef EventHandler* node = EventHook.c_add_handler(self, py_callable, with_topic, deduplicate)
-        if not node:
-            return node
-        cdef HandlerStats* stats = <HandlerStats*> calloc(1, sizeof(HandlerStats))
-        c_strmap_set(self.stats_mapping, <char*> node, sizeof(EventHandler), <void*> stats, NULL, 1)
-        return node
-
-    cdef EventHandler* c_remove_handler(self, object py_callable):
-        cdef EventHandler* node = EventHook.c_remove_handler(self, py_callable)
-        if not node:
-            return node
-        c_strmap_pop(self.stats_mapping, <char*> node, sizeof(EventHandler), NULL, 1)
-        return node
-
-    cdef void c_safe_call_no_topic(self, EventHandler* handler, PyObject* args, PyObject* kwargs):
-        cdef HandlerStats* handler_stats = NULL
-        cdef int ret_code = c_strmap_get(self.stats_mapping, <char*> handler, sizeof(EventHandler), <void**> &handler_stats)
-        if not handler_stats:
-            EventHook.c_safe_call_no_topic(self, handler, args, kwargs)
-        cdef double start_time = perf_counter()
-        EventHook.c_safe_call_no_topic(self, handler, args, kwargs)
-        handler_stats.calls += 1
-        handler_stats.total_time += perf_counter() - start_time
-
-    cdef void c_safe_call_with_topic(self, EventHandler* handler, PyObject* args, PyObject* kwargs):
-        cdef HandlerStats* handler_stats = NULL
-        cdef int ret_code = c_strmap_get(self.stats_mapping, <char*> handler, sizeof(EventHandler), <void**> &handler_stats)
-        if not handler_stats:
-            EventHook.c_safe_call_with_topic(self, handler, args, kwargs)
-        cdef double start_time = perf_counter()
-        EventHook.c_safe_call_with_topic(self, handler, args, kwargs)
-        handler_stats.calls += 1
-        handler_stats.total_time += perf_counter() - start_time
-
-    def get_stats(self, object py_callable):
-        """
-        Return a dict with stats for the given handler, or None if not found.
-        """
-        cdef EventHandler* node = self.handlers_no_topic
-        cdef HandlerStats* handler_stats = NULL
-        while node:
-            if node.fn == <PyObject*> py_callable:
-                c_strmap_get(self.stats_mapping, <char*> node, sizeof(EventHandler), <void**> &handler_stats)
-                if not handler_stats:
-                    return None
-                return {'calls': handler_stats.calls, 'total_time': handler_stats.total_time}
-            node = node.next
-        node = self.handlers_with_topic
-        while node:
-            if node.fn == <PyObject*> py_callable:
-                c_strmap_get(self.stats_mapping, <char*> node, sizeof(EventHandler), <void**> &handler_stats)
-                if not handler_stats:
-                    return None
-                return {'calls': handler_stats.calls, 'total_time': handler_stats.total_time}
-            node = node.next
-        return None
-
-    @property
-    def stats(self):
-        """
-        Yields (py_callable, dict) for all handlers.
-        """
-        cdef EventHandler* node
-        cdef HandlerStats* handler_stats
-        cdef int ret_code
-
-        # no_topic handlers
-        node = self.handlers_no_topic
-        while node:
-            if node.fn:
-                ret_code = c_strmap_get(self.stats_mapping, <char*> node, sizeof(EventHandler), <void**> &handler_stats)
-                if ret_code == STRMAP_OK and handler_stats:
-                    yield <object> node.fn, {'calls': handler_stats.calls, 'total_time': handler_stats.total_time}
-            node = node.next
-
-        # with_topic handlers
-        node = self.handlers_with_topic
-        while node:
-            if node.fn:
-                ret_code = c_strmap_get(self.stats_mapping, <char*> node, sizeof(EventHandler), <void**> &handler_stats)
-                if ret_code == STRMAP_OK and handler_stats:
-                    yield <object> node.fn, {'calls': handler_stats.calls, 'total_time': handler_stats.total_time}
-            node = node.next
+    property stats:
+        def __get__(self):
+            cdef dict stats = {
+                'n_calls': self.hook_stats.n_calls,
+                'last_call_start': self.hook_stats.ts_call_start,
+                'last_call_complete': self.hook_stats.ts_call_complete,
+                'elapsed_seconds': self.hook_stats.elapsed_seconds
+            }
+            return stats

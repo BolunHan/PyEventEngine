@@ -11,17 +11,13 @@ class MessagePayload:
 
     Attributes:
         owner (bool): Indicates whether this instance owns the underlying C payload.
-        args_owner (bool): Indicates whether this instance owns the positional arguments.
+        ctx_owner (bool): Indicates whether this instance owns the payload context.
             If ``True``, the ``args`` field in the internal buffer is cleared upon deallocation.
-            Defaults to ``False``.
-        kwargs_owner (bool): Indicates whether this instance owns the keyword arguments.
-            If ``True``, the ``kwargs`` field in the internal buffer is cleared upon deallocation.
             Defaults to ``False``.
     """
 
     owner: bool
-    args_owner: bool
-    kwargs_owner: bool
+    ctx_owner: bool
 
     def __init__(self, alloc: bool = False) -> None:
         """

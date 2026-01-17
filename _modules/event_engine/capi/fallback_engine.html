@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
 
-    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
-        <title>event_engine.capi.fallback_engine - PyEventEngine v0.4.4.post1</title>
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>event_engine.capi.fallback_engine - PyEventEngine v0.4.6</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
     
@@ -160,7 +160,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../../index.html"><div class="brand">PyEventEngine v0.4.4.post1</div></a>
+      <a href="../../../index.html"><div class="brand">PyEventEngine v0.4.6</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -181,7 +181,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
   
-  <span class="sidebar-brand-text">PyEventEngine v0.4.4.post1</span>
+  <span class="sidebar-brand-text">PyEventEngine v0.4.6</span>
   
 </a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -241,7 +241,7 @@
 <span class="sd">Uses:</span>
 <span class="sd">- threading.Lock, threading.Condition for synchronization</span>
 <span class="sd">- dict for topic-to-hook mappings (instead of ByteMap)</span>
-<span class="sd">- PyTopic, PyMessagePayload, EventHook from c_topic and c_event modules</span>
+<span class="sd">- Topic, MessagePayload, EventHook from c_topic and c_event modules</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
@@ -252,8 +252,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">sleep</span><span class="p">,</span> <span class="n">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.c_event</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventHook</span><span class="p">,</span> <span class="n">EventHookEx</span><span class="p">,</span> <span class="n">PyMessagePayload</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.c_topic</span><span class="w"> </span><span class="kn">import</span> <span class="n">PyTopic</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.c_event</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventHook</span><span class="p">,</span> <span class="n">EventHookEx</span><span class="p">,</span> <span class="n">MessagePayload</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.c_topic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Topic</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span>
 
 <span class="n">LOGGER</span> <span class="o">=</span> <span class="n">LOGGER</span><span class="o">.</span><span class="n">getChild</span><span class="p">(</span><span class="s1">&#39;Event&#39;</span><span class="p">)</span>
@@ -342,7 +342,7 @@
             <span class="k">if</span> <span class="n">msg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_trigger</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PyMessagePayload</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MessagePayload</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a message from the queue.</span>
 
@@ -351,7 +351,7 @@
 <span class="sd">            timeout: Timeout in seconds (0 means no timeout)</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            PyMessagePayload or None if timeout/non-blocking and queue is empty</span>
+<span class="sd">            MessagePayload or None if timeout/non-blocking and queue is empty</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_not_empty</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">block</span><span class="p">:</span>
@@ -379,7 +379,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_not_full</span><span class="o">.</span><span class="n">notify</span><span class="p">()</span>
             <span class="k">return</span> <span class="n">msg</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">max_spin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_MQ_SPIN_LIMIT</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">max_spin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_MQ_SPIN_LIMIT</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Publish a message to the queue.</span>
 
@@ -398,7 +398,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Topic must be all of exact parts&#39;</span><span class="p">)</span>
 
         <span class="c1"># Create payload</span>
-        <span class="n">payload</span> <span class="o">=</span> <span class="n">PyMessagePayload</span><span class="p">(</span><span class="n">alloc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">MessagePayload</span><span class="p">(</span><span class="n">alloc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">payload</span><span class="o">.</span><span class="n">topic</span> <span class="o">=</span> <span class="n">topic</span>
         <span class="n">payload</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
         <span class="n">payload</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
@@ -438,7 +438,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_not_empty</span><span class="o">.</span><span class="n">notify</span><span class="p">()</span>
             <span class="k">return</span> <span class="mi">0</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">PyMessagePayload</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">MessagePayload</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Trigger event hooks matching the message topic.</span>
 
@@ -454,7 +454,7 @@
 
         <span class="c1"># Step 2: Match generic topic hooks (wildcards, patterns, etc.)</span>
         <span class="k">for</span> <span class="n">hook_topic_str</span><span class="p">,</span> <span class="n">hook</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generic_topic_hooks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="c1"># Use topic matching from PyTopic</span>
+            <span class="c1"># Use topic matching from Topic</span>
             <span class="k">if</span> <span class="n">hook</span><span class="o">.</span><span class="n">topic</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">msg_topic</span><span class="p">)</span><span class="o">.</span><span class="n">matched</span><span class="p">:</span>
                 <span class="n">hook</span><span class="o">.</span><span class="n">trigger</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
@@ -477,7 +477,7 @@
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Another EventHook already registered for </span><span class="si">{</span><span class="n">topic_str</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_generic_topic_hooks</span><span class="p">[</span><span class="n">topic_str</span><span class="p">]</span> <span class="o">=</span> <span class="n">hook</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_unregister_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EventHook</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_unregister_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EventHook</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Unregister an event hook by topic.</span>
 
@@ -498,7 +498,7 @@
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No EventHook registered for </span><span class="si">{</span><span class="n">topic_str</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generic_topic_hooks</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">topic_str</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_register_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">,</span> <span class="n">handler</span><span class="p">,</span> <span class="n">deduplicate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_register_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">,</span> <span class="n">handler</span><span class="p">,</span> <span class="n">deduplicate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Register a handler for a topic (creates hook if needed).</span>
 
@@ -522,7 +522,7 @@
 
         <span class="n">hook</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">deduplicate</span><span class="o">=</span><span class="n">deduplicate</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_unregister_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">,</span> <span class="n">handler</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_unregister_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">,</span> <span class="n">handler</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Unregister a handler from a topic.</span>
 
@@ -625,7 +625,7 @@
 
 <div class="viewcode-block" id="EventEngine.get">
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.capi.fallback_engine.EventEngine.get">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">max_spin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_MQ_SPIN_LIMIT</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PyMessagePayload</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">max_spin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_MQ_SPIN_LIMIT</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MessagePayload</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a message from the queue.</span>
 
@@ -635,7 +635,7 @@
 <span class="sd">            timeout: Timeout in seconds</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            PyMessagePayload</span>
+<span class="sd">            MessagePayload</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            Empty: If no message available</span>
@@ -652,7 +652,7 @@
 
 <div class="viewcode-block" id="EventEngine.put">
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.capi.fallback_engine.EventEngine.put">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">max_spin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_MQ_SPIN_LIMIT</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">max_spin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_MQ_SPIN_LIMIT</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Put a message into the queue.</span>
 
@@ -674,7 +674,7 @@
 
 <div class="viewcode-block" id="EventEngine.publish">
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.capi.fallback_engine.EventEngine.publish">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">max_spin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_MQ_SPIN_LIMIT</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">max_spin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_MQ_SPIN_LIMIT</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Publish a message to the queue.</span>
 
@@ -708,7 +708,7 @@
 
 <div class="viewcode-block" id="EventEngine.unregister_hook">
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.capi.fallback_engine.EventEngine.unregister_hook">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">unregister_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EventHook</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unregister_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EventHook</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Unregister a hook by topic.</span>
 
@@ -723,7 +723,7 @@
 
 <div class="viewcode-block" id="EventEngine.register_handler">
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.capi.fallback_engine.EventEngine.register_handler">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">register_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">,</span> <span class="n">handler</span><span class="p">,</span> <span class="n">deduplicate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">,</span> <span class="n">handler</span><span class="p">,</span> <span class="n">deduplicate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Register a handler for a topic.</span>
 
@@ -737,7 +737,7 @@
 
 <div class="viewcode-block" id="EventEngine.unregister_handler">
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.capi.fallback_engine.EventEngine.unregister_handler">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">unregister_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">,</span> <span class="n">handler</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unregister_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">,</span> <span class="n">handler</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Unregister a handler from a topic.</span>
 
@@ -826,7 +826,7 @@
                 <span class="sa">f</span><span class="s1">&#39;(capacity=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">capacity</span><span class="si">}</span><span class="s1">, timers=</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_timer_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">,</span> <span class="n">activate_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_timer_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">,</span> <span class="n">activate_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Timer loop for custom intervals.</span>
 
@@ -854,7 +854,7 @@
                 <span class="n">scheduled_time</span> <span class="o">+=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">interval</span><span class="p">)</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;trigger_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scheduled_time</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_minute_timer_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_minute_timer_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Minute-aligned timer loop.</span>
 
@@ -872,7 +872,7 @@
             <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scheduled_time</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_publish</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="p">(),</span> <span class="n">kwargs</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">DEFAULT_MQ_SPIN_LIMIT</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_second_timer_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_second_timer_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Second-aligned timer loop.</span>
 
@@ -892,7 +892,7 @@
 
 <div class="viewcode-block" id="EventEngineEx.run_timer">
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.capi.fallback_engine.EventEngineEx.run_timer">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run_timer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">,</span> <span class="n">activate_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_timer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">,</span> <span class="n">activate_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Run a timer with custom interval (blocking call).</span>
 
@@ -908,7 +908,7 @@
 
 <div class="viewcode-block" id="EventEngineEx.minute_timer">
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.capi.fallback_engine.EventEngineEx.minute_timer">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">minute_timer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">minute_timer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Run minute-aligned timer (blocking call).</span>
 
@@ -922,7 +922,7 @@
 
 <div class="viewcode-block" id="EventEngineEx.second_timer">
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.capi.fallback_engine.EventEngineEx.second_timer">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">second_timer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">PyTopic</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">second_timer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="n">Topic</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Run second-aligned timer (blocking call).</span>
 
@@ -936,7 +936,7 @@
 
 <div class="viewcode-block" id="EventEngineEx.get_timer">
 <a class="viewcode-back" href="../../../api_reference.html#event_engine.capi.fallback_engine.EventEngineEx.get_timer">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_timer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">activate_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PyTopic</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_timer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">activate_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Topic</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get or create a timer with the specified interval.</span>
 
@@ -945,19 +945,19 @@
 <span class="sd">            activate_time: Optional activation time</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            PyTopic for the timer</span>
+<span class="sd">            Topic for the timer</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;EventEngine must be started before getting timer!&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">interval</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">topic</span> <span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s1">&#39;EventEngine.Internal.Timer.Second&#39;</span><span class="p">)</span>
+            <span class="n">topic</span> <span class="o">=</span> <span class="n">Topic</span><span class="p">(</span><span class="s1">&#39;EventEngine.Internal.Timer.Second&#39;</span><span class="p">)</span>
             <span class="n">timer</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">second_timer</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;topic&#39;</span><span class="p">:</span> <span class="n">topic</span><span class="p">})</span>
         <span class="k">elif</span> <span class="n">interval</span> <span class="o">==</span> <span class="mi">60</span><span class="p">:</span>
-            <span class="n">topic</span> <span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s1">&#39;EventEngine.Internal.Timer.Minute&#39;</span><span class="p">)</span>
+            <span class="n">topic</span> <span class="o">=</span> <span class="n">Topic</span><span class="p">(</span><span class="s1">&#39;EventEngine.Internal.Timer.Minute&#39;</span><span class="p">)</span>
             <span class="n">timer</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">minute_timer</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;topic&#39;</span><span class="p">:</span> <span class="n">topic</span><span class="p">})</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">topic</span> <span class="o">=</span> <span class="n">PyTopic</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;EventEngine&#39;</span><span class="p">,</span> <span class="s1">&#39;Internal&#39;</span><span class="p">,</span> <span class="s1">&#39;Timer&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">interval</span><span class="p">)])</span>
+            <span class="n">topic</span> <span class="o">=</span> <span class="n">Topic</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;EventEngine&#39;</span><span class="p">,</span> <span class="s1">&#39;Internal&#39;</span><span class="p">,</span> <span class="s1">&#39;Timer&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">interval</span><span class="p">)])</span>
             <span class="n">timer</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run_timer</span><span class="p">,</span>
                            <span class="n">kwargs</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;interval&#39;</span><span class="p">:</span> <span class="n">interval</span><span class="p">,</span> <span class="s1">&#39;topic&#39;</span><span class="p">:</span> <span class="n">topic</span><span class="p">,</span> <span class="s1">&#39;activate_time&#39;</span><span class="p">:</span> <span class="n">activate_time</span><span class="p">})</span>
 
@@ -1027,9 +1027,9 @@
       
     </aside>
   </div>
-</div><script src="../../../_static/documentation_options.js?v=6c8d5007"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+</div><script src="../../../_static/documentation_options.js?v=35f785e4"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>

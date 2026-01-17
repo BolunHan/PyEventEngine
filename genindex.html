@@ -4,9 +4,9 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="#"><link rel="search" title="Search" href="search.html">
 
-    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 --><title>Index - PyEventEngine v0.4.4.post1</title>
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 --><title>Index - PyEventEngine v0.4.6</title>
 <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
     
     
@@ -159,7 +159,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">PyEventEngine v0.4.4.post1</div></a>
+      <a href="index.html"><div class="brand">PyEventEngine v0.4.6</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -180,7 +180,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
-  <span class="sidebar-brand-text">PyEventEngine v0.4.4.post1</span>
+  <span class="sidebar-brand-text">PyEventEngine v0.4.6</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -267,9 +267,11 @@
           <li><a href="api_reference.html#event_engine.native.topic.PyTopic.__iadd__">(event_engine.native.topic.PyTopic method)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.fallback_engine.EventEngine.__init__">__init__() (event_engine.capi.fallback_engine.EventEngine method)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_event.MessagePayload.__init__">__init__() (event_engine.capi.c_event.MessagePayload method)</a>
 
         <ul>
+          <li><a href="api_reference.html#event_engine.capi.fallback_engine.EventEngine.__init__">(event_engine.capi.fallback_engine.EventEngine method)</a>
+</li>
           <li><a href="api_reference.html#event_engine.capi.fallback_engine.EventEngineEx.__init__">(event_engine.capi.fallback_engine.EventEngineEx method)</a>
 </li>
           <li><a href="api_reference.html#event_engine.native.engine.EventEngine.__init__">(event_engine.native.engine.EventEngine method)</a>
@@ -383,12 +385,10 @@
           <li><a href="api_reference.html#event_engine.native.event.EventHook.add_handler">(event_engine.native.event.EventHook method)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic.addr">addr (event_engine.capi.c_topic.PyTopic attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.Topic.addr">addr (event_engine.capi.c_topic.Topic attribute)</a>
 
         <ul>
-          <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPart.addr">(event_engine.capi.c_topic.PyTopicPart attribute)</a>
-</li>
-          <li><a href="capi_python.html#event_engine.capi.PyTopic.addr">(event_engine.capi.PyTopic attribute)</a>
+          <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPart.addr">(event_engine.capi.c_topic.TopicPart attribute)</a>
 </li>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopic.addr">(event_engine.native.topic.PyTopic property)</a>
 </li>
@@ -397,26 +397,20 @@
         </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic.append">append() (event_engine.capi.c_topic.PyTopic method)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.Topic.append">append() (event_engine.capi.c_topic.Topic method)</a>
 
         <ul>
-          <li><a href="capi_python.html#event_engine.capi.PyTopic.append">(event_engine.capi.PyTopic method)</a>
-</li>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopic.append">(event_engine.native.topic.PyTopic method)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_event.PyMessagePayload.args">args (event_engine.capi.c_event.PyMessagePayload attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_event.MessagePayload.args">args (event_engine.capi.c_event.MessagePayload attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.event.PyMessagePayload.args">(event_engine.native.event.PyMessagePayload property)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_event.PyMessagePayload.args_owner">args_owner (event_engine.capi.c_event.PyMessagePayload attribute)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.event.PyMessagePayload.args_owner">(event_engine.native.event.PyMessagePayload property)</a>
+        <li><a href="api_reference.html#event_engine.native.event.PyMessagePayload.args_owner">args_owner (event_engine.native.event.PyMessagePayload property)</a>
 </li>
-        </ul></li>
     </ul></td>
   </tr></table>
 </section>
@@ -459,12 +453,8 @@
         </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.clear_internal_map">clear_internal_map() (in module event_engine.capi.c_topic)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.topic.clear_internal_map">(in module event_engine.native.topic)</a>
+        <li><a href="api_reference.html#event_engine.native.topic.clear_internal_map">clear_internal_map() (in module event_engine.native.topic)</a>
 </li>
-        </ul></li>
     </ul></td>
   </tr></table>
 </section>
@@ -607,29 +597,23 @@
   <h2>F</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic.format">format() (event_engine.capi.c_topic.PyTopic method)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.Topic.format">format() (event_engine.capi.c_topic.Topic method)</a>
 
         <ul>
-          <li><a href="capi_python.html#event_engine.capi.PyTopic.format">(event_engine.capi.PyTopic method)</a>
-</li>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopic.format">(event_engine.native.topic.PyTopic method)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic.format_map">format_map() (event_engine.capi.c_topic.PyTopic method)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.Topic.format_map">format_map() (event_engine.capi.c_topic.Topic method)</a>
 
         <ul>
-          <li><a href="capi_python.html#event_engine.capi.PyTopic.format_map">(event_engine.capi.PyTopic method)</a>
-</li>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopic.format_map">(event_engine.native.topic.PyTopic method)</a>
 </li>
         </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic.from_parts">from_parts() (event_engine.capi.c_topic.PyTopic class method)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.Topic.from_parts">from_parts() (event_engine.capi.c_topic.Topic class method)</a>
 
         <ul>
-          <li><a href="capi_python.html#event_engine.capi.PyTopic.from_parts">(event_engine.capi.PyTopic class method)</a>
-</li>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopic.from_parts">(event_engine.native.topic.PyTopic class method)</a>
 </li>
         </ul></li>
@@ -661,26 +645,22 @@
         </ul></li>
         <li><a href="api_reference.html#event_engine.get_include">get_include() (in module event_engine)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api_reference.html#event_engine.capi.c_topic.get_internal_map">get_internal_map() (in module event_engine.capi.c_topic)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.get_internal_map">(in module event_engine.native.topic)</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api_reference.html#event_engine.capi.c_topic.get_internal_topic">get_internal_topic() (in module event_engine.capi.c_topic)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.get_internal_topic">(in module event_engine.native.topic)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_event.EventHookEx.get_stats">get_stats() (event_engine.capi.c_event.EventHookEx method)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.event.EventHookEx.get_stats">(event_engine.native.event.EventHookEx method)</a>
+        <li><a href="api_reference.html#event_engine.native.event.EventHookEx.get_stats">get_stats() (event_engine.native.event.EventHookEx method)</a>
 </li>
-        </ul></li>
         <li><a href="api_reference.html#event_engine.capi.c_engine.EventEngineEx.get_timer">get_timer() (event_engine.capi.c_engine.EventEngineEx method)</a>
 
         <ul>
@@ -715,23 +695,13 @@
   <h2>I</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.init_allocator">init_allocator() (in module event_engine.capi.c_topic)</a>
+        <li><a href="api_reference.html#event_engine.native.topic.init_allocator">init_allocator() (in module event_engine.native.topic)</a>
+</li>
+        <li><a href="api_reference.html#event_engine.native.topic.init_internal_map">init_internal_map() (in module event_engine.native.topic)</a>
+</li>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.Topic.is_exact">is_exact (event_engine.capi.c_topic.Topic attribute)</a>
 
         <ul>
-          <li><a href="api_reference.html#event_engine.native.topic.init_allocator">(in module event_engine.native.topic)</a>
-</li>
-        </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.init_internal_map">init_internal_map() (in module event_engine.capi.c_topic)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.topic.init_internal_map">(in module event_engine.native.topic)</a>
-</li>
-        </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic.is_exact">is_exact (event_engine.capi.c_topic.PyTopic attribute)</a>
-
-        <ul>
-          <li><a href="capi_python.html#event_engine.capi.PyTopic.is_exact">(event_engine.capi.PyTopic attribute)</a>
-</li>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopic.is_exact">(event_engine.native.topic.PyTopic property)</a>
 </li>
         </ul></li>
@@ -753,11 +723,9 @@
   <h2>J</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic.join">join() (event_engine.capi.c_topic.PyTopic class method)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.Topic.join">join() (event_engine.capi.c_topic.Topic class method)</a>
 
         <ul>
-          <li><a href="capi_python.html#event_engine.capi.PyTopic.join">(event_engine.capi.PyTopic class method)</a>
-</li>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopic.join">(event_engine.native.topic.PyTopic class method)</a>
 </li>
         </ul></li>
@@ -769,7 +737,7 @@
   <h2>K</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_event.PyMessagePayload.kwargs">kwargs (event_engine.capi.c_event.PyMessagePayload attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_event.MessagePayload.kwargs">kwargs (event_engine.capi.c_event.MessagePayload attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.event.PyMessagePayload.kwargs">(event_engine.native.event.PyMessagePayload property)</a>
@@ -777,12 +745,10 @@
         </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_event.PyMessagePayload.kwargs_owner">kwargs_owner (event_engine.capi.c_event.PyMessagePayload attribute)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.event.PyMessagePayload.kwargs_owner">(event_engine.native.event.PyMessagePayload property)</a>
+        <li><a href="api_reference.html#event_engine.native.event.PyMessagePayload.kwargs_owner">kwargs_owner (event_engine.native.event.PyMessagePayload property)</a>
 </li>
-        </ul></li>
+        <li><a href="api_reference.html#event_engine.capi.c_event.MessagePayload.kwargs_with_topic">kwargs_with_topic (event_engine.capi.c_event.MessagePayload attribute)</a>
+</li>
     </ul></td>
   </tr></table>
 </section>
@@ -791,7 +757,7 @@
   <h2>L</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicMatchResult.length">length (event_engine.capi.c_topic.PyTopicMatchResult attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicMatchResult.length">length (event_engine.capi.c_topic.TopicMatchResult attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicMatchResult.length">(event_engine.native.topic.PyTopicMatchResult property)</a>
@@ -819,15 +785,13 @@
   <h2>M</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic.match">match() (event_engine.capi.c_topic.PyTopic method)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.Topic.match">match() (event_engine.capi.c_topic.Topic method)</a>
 
         <ul>
-          <li><a href="capi_python.html#event_engine.capi.PyTopic.match">(event_engine.capi.PyTopic method)</a>
-</li>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopic.match">(event_engine.native.topic.PyTopic method)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicMatchResult.matched">matched (event_engine.capi.c_topic.PyTopicMatchResult attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicMatchResult.matched">matched (event_engine.capi.c_topic.TopicMatchResult attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicMatchResult.matched">(event_engine.native.topic.PyTopicMatchResult property)</a>
@@ -835,6 +799,8 @@
           <li><a href="api_reference.html#event_engine.native.topic.TopicMatchNode.matched">(event_engine.native.topic.TopicMatchNode attribute)</a>
 </li>
         </ul></li>
+        <li><a href="api_reference.html#event_engine.capi.c_event.MessagePayload">MessagePayload (class in event_engine.capi.c_event)</a>
+</li>
         <li><a href="api_reference.html#event_engine.capi.c_engine.EventEngineEx.minute_timer">minute_timer() (event_engine.capi.c_engine.EventEngineEx method)</a>
 
         <ul>
@@ -874,7 +840,7 @@
   <h2>N</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPartAny.name">name (event_engine.capi.c_topic.PyTopicPartAny attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPartAny.name">name (event_engine.capi.c_topic.TopicPartAny attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartAny.name">(event_engine.native.topic.PyTopicPartAny property)</a>
@@ -882,7 +848,7 @@
         </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPart.next">next() (event_engine.capi.c_topic.PyTopicPart method)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPart.next">next() (event_engine.capi.c_topic.TopicPart method)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicPart.next">(event_engine.native.topic.PyTopicPart method)</a>
@@ -904,20 +870,18 @@
           <li><a href="api_reference.html#event_engine.native.engine.EventEngine.occupied">(event_engine.native.engine.EventEngine property)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPartRange.options">options() (event_engine.capi.c_topic.PyTopicPartRange method)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPartRange.options">options() (event_engine.capi.c_topic.TopicPartRange method)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartRange.options">(event_engine.native.topic.PyTopicPartRange method)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_event.PyMessagePayload.owner">owner (event_engine.capi.c_event.PyMessagePayload attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_event.MessagePayload.owner">owner (event_engine.capi.c_event.MessagePayload attribute)</a>
 
         <ul>
-          <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic.owner">(event_engine.capi.c_topic.PyTopic attribute)</a>
+          <li><a href="api_reference.html#event_engine.capi.c_topic.Topic.owner">(event_engine.capi.c_topic.Topic attribute)</a>
 </li>
-          <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPart.owner">(event_engine.capi.c_topic.PyTopicPart attribute)</a>
-</li>
-          <li><a href="capi_python.html#event_engine.capi.PyTopic.owner">(event_engine.capi.PyTopic attribute)</a>
+          <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPart.owner">(event_engine.capi.c_topic.TopicPart attribute)</a>
 </li>
           <li><a href="api_reference.html#event_engine.native.event.PyMessagePayload.owner">(event_engine.native.event.PyMessagePayload property)</a>
 </li>
@@ -936,7 +900,7 @@
   <h2>P</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPartExact.part">part (event_engine.capi.c_topic.PyTopicPartExact attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPartExact.part">part (event_engine.capi.c_topic.TopicPartExact attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartExact.part">(event_engine.native.topic.PyTopicPartExact property)</a>
@@ -946,7 +910,7 @@
 </li>
         <li><a href="api_reference.html#event_engine.native.topic.TopicMatchNode.part_b">part_b (event_engine.native.topic.TopicMatchNode attribute)</a>
 </li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPartPattern.pattern">pattern (event_engine.capi.c_topic.PyTopicPartPattern attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPartPattern.pattern">pattern (event_engine.capi.c_topic.TopicPartPattern attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartPattern.pattern">(event_engine.native.topic.PyTopicPartPattern property)</a>
@@ -968,64 +932,26 @@
           <li><a href="api_reference.html#event_engine.native.engine.EventEngine.put">(event_engine.native.engine.EventEngine method)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_event.PyMessagePayload">PyMessagePayload (class in event_engine.capi.c_event)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.event.PyMessagePayload">(class in event_engine.native.event)</a>
-</li>
-        </ul></li>
-        <li><a href="capi_python.html#event_engine.capi.PyTopic">PyTopic (class in event_engine.capi)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic">(class in event_engine.capi.c_topic)</a>
-</li>
-          <li><a href="api_reference.html#event_engine.native.topic.PyTopic">(class in event_engine.native.topic)</a>
-</li>
-        </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicMatchResult">PyTopicMatchResult (class in event_engine.capi.c_topic)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.topic.PyTopicMatchResult">(class in event_engine.native.topic)</a>
+        <li><a href="api_reference.html#event_engine.native.event.PyMessagePayload">PyMessagePayload (class in event_engine.native.event)</a>
 </li>
-        </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPart">PyTopicPart (class in event_engine.capi.c_topic)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.topic.PyTopicPart">(class in event_engine.native.topic)</a>
+        <li><a href="api_reference.html#event_engine.native.topic.PyTopic">PyTopic (class in event_engine.native.topic)</a>
 </li>
-        </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPartAny">PyTopicPartAny (class in event_engine.capi.c_topic)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartAny">(class in event_engine.native.topic)</a>
+        <li><a href="api_reference.html#event_engine.native.topic.PyTopicMatchResult">PyTopicMatchResult (class in event_engine.native.topic)</a>
 </li>
-        </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPartExact">PyTopicPartExact (class in event_engine.capi.c_topic)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartExact">(class in event_engine.native.topic)</a>
+        <li><a href="api_reference.html#event_engine.native.topic.PyTopicPart">PyTopicPart (class in event_engine.native.topic)</a>
 </li>
-        </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPartPattern">PyTopicPartPattern (class in event_engine.capi.c_topic)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartPattern">(class in event_engine.native.topic)</a>
+        <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartAny">PyTopicPartAny (class in event_engine.native.topic)</a>
 </li>
-        </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPartRange">PyTopicPartRange (class in event_engine.capi.c_topic)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartRange">(class in event_engine.native.topic)</a>
+        <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartExact">PyTopicPartExact (class in event_engine.native.topic)</a>
 </li>
-        </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicType">PyTopicType (class in event_engine.capi.c_topic)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.topic.PyTopicType">(class in event_engine.native.topic)</a>
+        <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartPattern">PyTopicPartPattern (class in event_engine.native.topic)</a>
 </li>
-        </ul></li>
+        <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartRange">PyTopicPartRange (class in event_engine.native.topic)</a>
+</li>
+        <li><a href="api_reference.html#event_engine.native.topic.PyTopicType">PyTopicType (class in event_engine.native.topic)</a>
+</li>
     </ul></td>
   </tr></table>
 </section>
@@ -1034,7 +960,7 @@
   <h2>R</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPartPattern.regex">regex (event_engine.capi.c_topic.PyTopicPartPattern attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPartPattern.regex">regex (event_engine.capi.c_topic.TopicPartPattern attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicPartPattern.regex">(event_engine.native.topic.PyTopicPartPattern property)</a>
@@ -1056,20 +982,16 @@
           <li><a href="api_reference.html#event_engine.native.engine.EventEngine.register_hook">(event_engine.native.engine.EventEngine method)</a>
 </li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api_reference.html#event_engine.capi.c_event.EventHook.remove_handler">remove_handler() (event_engine.capi.c_event.EventHook method)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.event.EventHook.remove_handler">(event_engine.native.event.EventHook method)</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_event.EventHook.retry_on_unexpected_topic">retry_on_unexpected_topic (event_engine.capi.c_event.EventHook attribute)</a>
-
-        <ul>
-          <li><a href="api_reference.html#event_engine.native.event.EventHook.retry_on_unexpected_topic">(event_engine.native.event.EventHook attribute)</a>, <a href="api_reference.html#id2">[1]</a>
+        <li><a href="api_reference.html#event_engine.native.event.EventHook.retry_on_unexpected_topic">retry_on_unexpected_topic (event_engine.native.event.EventHook attribute)</a>, <a href="api_reference.html#id2">[1]</a>
 </li>
-        </ul></li>
         <li><a href="api_reference.html#event_engine.capi.c_engine.EventEngine.run">run() (event_engine.capi.c_engine.EventEngine method)</a>
 
         <ul>
@@ -1105,7 +1027,7 @@
         <li><a href="api_reference.html#event_engine.capi.c_engine.EventEngine.seq_id">seq_id (event_engine.capi.c_engine.EventEngine attribute)</a>
 
         <ul>
-          <li><a href="api_reference.html#event_engine.capi.c_event.PyMessagePayload.seq_id">(event_engine.capi.c_event.PyMessagePayload attribute)</a>
+          <li><a href="api_reference.html#event_engine.capi.c_event.MessagePayload.seq_id">(event_engine.capi.c_event.MessagePayload attribute)</a>
 </li>
           <li><a href="api_reference.html#event_engine.native.event.PyMessagePayload.seq_id">(event_engine.native.event.PyMessagePayload property)</a>
 </li>
@@ -1154,49 +1076,63 @@
           <li><a href="api_reference.html#event_engine.native.engine.EventEngineEx.timer">(event_engine.native.engine.EventEngineEx attribute)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicMatchResult.to_dict">to_dict() (event_engine.capi.c_topic.PyTopicMatchResult method)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicMatchResult.to_dict">to_dict() (event_engine.capi.c_topic.TopicMatchResult method)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicMatchResult.to_dict">(event_engine.native.topic.PyTopicMatchResult method)</a>
 </li>
         </ul></li>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.Topic">Topic (class in event_engine.capi.c_topic)</a>
+</li>
         <li><a href="api_reference.html#event_engine.capi.c_event.EventHook.topic">topic (event_engine.capi.c_event.EventHook attribute)</a>
 
         <ul>
-          <li><a href="api_reference.html#event_engine.capi.c_event.PyMessagePayload.topic">(event_engine.capi.c_event.PyMessagePayload attribute)</a>
+          <li><a href="api_reference.html#event_engine.capi.c_event.MessagePayload.topic">(event_engine.capi.c_event.MessagePayload attribute)</a>
 </li>
           <li><a href="api_reference.html#event_engine.native.event.EventHook.topic">(event_engine.native.event.EventHook attribute)</a>, <a href="api_reference.html#id0">[1]</a>
 </li>
           <li><a href="api_reference.html#event_engine.native.event.PyMessagePayload.topic">(event_engine.native.event.PyMessagePayload property)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_ANY">TOPIC_PART_ANY (event_engine.capi.c_topic.PyTopicType attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicType.TOPIC_PART_ANY">TOPIC_PART_ANY (event_engine.capi.c_topic.TopicType attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicType.TOPIC_PART_ANY">(event_engine.native.topic.PyTopicType attribute)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_EXACT">TOPIC_PART_EXACT (event_engine.capi.c_topic.PyTopicType attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicType.TOPIC_PART_EXACT">TOPIC_PART_EXACT (event_engine.capi.c_topic.TopicType attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicType.TOPIC_PART_EXACT">(event_engine.native.topic.PyTopicType attribute)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_PATTERN">TOPIC_PART_PATTERN (event_engine.capi.c_topic.PyTopicType attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicType.TOPIC_PART_PATTERN">TOPIC_PART_PATTERN (event_engine.capi.c_topic.TopicType attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicType.TOPIC_PART_PATTERN">(event_engine.native.topic.PyTopicType attribute)</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicType.TOPIC_PART_RANGE">TOPIC_PART_RANGE (event_engine.capi.c_topic.PyTopicType attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicType.TOPIC_PART_RANGE">TOPIC_PART_RANGE (event_engine.capi.c_topic.TopicType attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicType.TOPIC_PART_RANGE">(event_engine.native.topic.PyTopicType attribute)</a>
 </li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api_reference.html#event_engine.native.topic.TopicMatchNode">TopicMatchNode (class in event_engine.native.topic)</a>
+</li>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicMatchResult">TopicMatchResult (class in event_engine.capi.c_topic)</a>
+</li>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPart">TopicPart (class in event_engine.capi.c_topic)</a>
+</li>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPartAny">TopicPartAny (class in event_engine.capi.c_topic)</a>
+</li>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPartExact">TopicPartExact (class in event_engine.capi.c_topic)</a>
+</li>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPartPattern">TopicPartPattern (class in event_engine.capi.c_topic)</a>
+</li>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPartRange">TopicPartRange (class in event_engine.capi.c_topic)</a>
 </li>
         <li><a href="api_reference.html#event_engine.capi.c_engine.EventEngine.topics">topics() (event_engine.capi.c_engine.EventEngine method)</a>
 
@@ -1206,6 +1142,8 @@
           <li><a href="api_reference.html#event_engine.native.engine.EventEngine.topics">(event_engine.native.engine.EventEngine method)</a>
 </li>
         </ul></li>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicType">TopicType (class in event_engine.capi.c_topic)</a>
+</li>
         <li><a href="api_reference.html#event_engine.native.event.HandlerStats.total_time">total_time (event_engine.native.event.HandlerStats attribute)</a>
 </li>
         <li><a href="api_reference.html#event_engine.capi.c_event.EventHook.trigger">trigger() (event_engine.capi.c_event.EventHook method)</a>
@@ -1216,7 +1154,7 @@
           <li><a href="api_reference.html#event_engine.native.event.EventHookEx.trigger">(event_engine.native.event.EventHookEx method)</a>
 </li>
         </ul></li>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopicPart.ttype">ttype (event_engine.capi.c_topic.PyTopicPart attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.TopicPart.ttype">ttype (event_engine.capi.c_topic.TopicPart attribute)</a>
 
         <ul>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopicPart.ttype">(event_engine.native.topic.PyTopicPart property)</a>
@@ -1248,11 +1186,9 @@
         </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic.update_literal">update_literal() (event_engine.capi.c_topic.PyTopic method)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.Topic.update_literal">update_literal() (event_engine.capi.c_topic.Topic method)</a>
 
         <ul>
-          <li><a href="capi_python.html#event_engine.capi.PyTopic.update_literal">(event_engine.capi.PyTopic method)</a>
-</li>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopic.update_literal">(event_engine.native.topic.PyTopic method)</a>
 </li>
         </ul></li>
@@ -1264,11 +1200,9 @@
   <h2>V</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api_reference.html#event_engine.capi.c_topic.PyTopic.value">value (event_engine.capi.c_topic.PyTopic attribute)</a>
+        <li><a href="api_reference.html#event_engine.capi.c_topic.Topic.value">value (event_engine.capi.c_topic.Topic attribute)</a>
 
         <ul>
-          <li><a href="capi_python.html#event_engine.capi.PyTopic.value">(event_engine.capi.PyTopic attribute)</a>
-</li>
           <li><a href="api_reference.html#event_engine.native.topic.PyTopic.value">(event_engine.native.topic.PyTopic property)</a>
 </li>
         </ul></li>
@@ -1308,9 +1242,9 @@
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=6c8d5007"></script>
-    <script src="_static/doctools.js?v=9bcbadda"></script>
-    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+</div><script src="_static/documentation_options.js?v=35f785e4"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>

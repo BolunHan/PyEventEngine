@@ -122,7 +122,7 @@ cdef void c_evt_payload_free(evt_message_payload* payload, int with_lock)
 
 cdef class MessagePayload:
     cdef evt_message_payload* header
-    cdef bint owner
+    cdef readonly bint owner
 
     @staticmethod
     cdef MessagePayload c_from_header(evt_message_payload* header, bint owner=?)
@@ -143,7 +143,7 @@ cdef class EventHook:
     cdef readonly object logger
 
     @staticmethod
-    cdef inline void c_invoke_py_callable(evt_message_payload* payload, void* user_data)
+    cdef inline void c_invoke_py_callable(evt_message_payload* payload, void* user_data) with gil
 
     cdef inline evt_py_callable* c_add_py_callable(self, PyObject* py_callable, PyObject* logger, bint with_topic, bint deduplicate)
 

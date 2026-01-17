@@ -172,7 +172,7 @@ cdef class EventHook:
             c_evt_hook_free(self.header)
 
     @staticmethod
-    cdef inline void c_invoke_py_callable(evt_message_payload* payload, void* user_data):
+    cdef inline void c_invoke_py_callable(evt_message_payload* payload, void* user_data) with gil:
         cdef evt_py_callable* ctx = <evt_py_callable*> user_data
         cdef bint with_topic = ctx.with_topic
         cdef evt_py_payload* py_payload = <evt_py_payload*> payload.args

@@ -5,7 +5,7 @@ from cpython.object cimport PyObject
 from cpython.ref cimport Py_INCREF, Py_XDECREF
 from libc.stdlib cimport free
 
-from .c_event cimport MessagePayload, C_INTERNAL_EMPTY_ARGS
+from .c_event cimport MessagePayload, EMPTY_ARGS, c_evt_payload_new, c_evt_payload_free, evt_py_payload, c_evt_hook_invoke
 from .c_topic cimport c_topic_match_bool, HEAP_ALLOCATOR
 from ..base import LOGGER
 from ..base.c_strmap cimport StrMap
@@ -77,6 +77,7 @@ cdef class EventEngine:
             raise RuntimeError('Not initialized!')
 
         cdef evt_message_payload* msg = NULL
+        cdef evt_py_payload* py_payload = NULL
         cdef message_queue* mq = self.mq
         cdef int ret_code
 
@@ -92,14 +93,7 @@ cdef class EventEngine:
             self.c_trigger(msg)
 
             # Clean up the message payload
-            if msg.args:
-                Py_XDECREF(<PyObject*> msg.args)
-            if msg.kwargs:
-                Py_XDECREF(<PyObject*> msg.kwargs)
-            if msg.allocator:
-                c_heap_free(<void*> msg, NULL)
-            else:
-                free(msg)
+            c_evt_payload_free(msg, 1)
 
     cdef inline evt_message_payload* c_get(self, bint block, size_t max_spin, double timeout):
         cdef evt_message_payload* msg = NULL
@@ -118,21 +112,13 @@ cdef class EventEngine:
             raise ValueError('Topic must be all of exact parts')
 
         # Step 0: Request payload buffer (MUST be done with GIL held - allocator is NOT thread-safe)
-        cdef evt_message_payload* payload = <evt_message_payload*> c_heap_request(self.payload_allocator, sizeof(evt_message_payload), False, NULL)
+        cdef evt_message_payload* payload = c_evt_payload_new(self.payload_allocator, topic, args, kwargs, 1)
 
         # Step 1: Assembling payload (MUST be done with GIL held - touching Python objects)
-        payload.topic = topic.header
-        payload.args = <PyObject*> args
-        payload.kwargs = <PyObject*> kwargs
         payload.seq_id = self.seq_id
-        payload.allocator = self.payload_allocator
-
-        # Step 2: Update reference count BEFORE sending (ensure objects stay alive)
-        Py_INCREF(args)
-        Py_INCREF(kwargs)
         self.seq_id += 1
 
-        # Step 3: Send the payload (can be done without GIL - queue is thread-safe)
+        # Step 2: Send the payload (can be done without GIL - queue is thread-safe)
         cdef int ret_code
         with nogil:
             if block:
@@ -141,15 +127,11 @@ cdef class EventEngine:
                 ret_code = c_mq_put(self.mq, payload)
 
         # Step 4: Handle failure case (undo increfs and free payload)
-        if ret_code:
-            self.seq_id -= 1
-            Py_XDECREF(<PyObject*> args)
-            Py_XDECREF(<PyObject*> kwargs)
-            if payload.allocator:
-                c_heap_free(<void*> payload, NULL)
-            else:
-                free(payload)
+        if not ret_code:
+            return ret_code
 
+        self.seq_id -= 1
+        c_evt_payload_free(payload, 1)
         return ret_code
 
     cdef inline void c_trigger(self, evt_message_payload* msg):
@@ -161,8 +143,7 @@ cdef class EventEngine:
         cdef int ret_code = c_strmap_get(self.exact_topic_hooks, msg_topic.key, msg_topic.key_len, <void**> &hook_ptr)
         if hook_ptr:
             event_hook = <EventHook> hook_ptr
-            event_hook.c_trigger_no_topic(msg)
-            event_hook.c_trigger_with_topic(msg)
+            c_evt_hook_invoke(event_hook.header, msg)
 
         # Step 2: Match generic_topic_hooks
         cdef strmap_entry* entry = self.generic_topic_hooks.first
@@ -174,8 +155,7 @@ cdef class EventEngine:
             event_hook = <EventHook> <PyObject*> hook_ptr
             is_matched = c_topic_match_bool(event_hook.topic.header, msg_topic)
             if is_matched:
-                event_hook.c_trigger_no_topic(msg)
-                event_hook.c_trigger_with_topic(msg)
+                c_evt_hook_invoke(event_hook.header, msg)
             entry = entry.next
 
     cdef inline void c_register_hook(self, EventHook hook):
@@ -334,7 +314,7 @@ cdef class EventEngine:
         cdef evt_message_payload* msg = self.c_get(block, max_spin, timeout)
         if not msg:
             raise Empty()
-        cdef MessagePayload payload = MessagePayload.c_from_header(msg, owner=True, args_owner=True, kwargs_owner=True)
+        cdef MessagePayload payload = MessagePayload.c_from_header(msg, True)
         return payload
 
     def put(self, Topic topic, *args, bint block=True, size_t max_spin=DEFAULT_MQ_SPIN_LIMIT, double timeout=0.0, **kwargs):
@@ -434,7 +414,7 @@ cdef class EventEngineEx(EventEngine):
 
             if sleep_time > 0:
                 sleep(sleep_time)
-            self.c_publish(topic, C_INTERNAL_EMPTY_ARGS, kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
+            self.c_publish(topic, EMPTY_ARGS, kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
 
             while scheduled_time < datetime.now():
                 scheduled_time += timedelta(seconds=interval)
@@ -452,7 +432,7 @@ cdef class EventEngineEx(EventEngine):
             sleep_time = next_time - t
             sleep(sleep_time)
             kwargs['timestamp'] = scheduled_time
-            self.c_publish(topic, C_INTERNAL_EMPTY_ARGS, kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
+            self.c_publish(topic, EMPTY_ARGS, kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
 
     cdef inline void c_second_timer_loop(self, Topic topic):
         from time import time, sleep
@@ -466,7 +446,7 @@ cdef class EventEngineEx(EventEngine):
             sleep_time = next_time - t
             sleep(sleep_time)
             kwargs['timestamp'] = scheduled_time
-            self.c_publish(topic, C_INTERNAL_EMPTY_ARGS, kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
+            self.c_publish(topic, EMPTY_ARGS, kwargs, True, DEFAULT_MQ_SPIN_LIMIT, 0.0)
 
     # --- Python Interfaces ---
 

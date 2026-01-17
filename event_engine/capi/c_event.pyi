@@ -11,20 +11,18 @@ class MessagePayload:
 
     Attributes:
         owner (bool): Indicates whether this instance owns the underlying C payload.
-        ctx_owner (bool): Indicates whether this instance owns the payload context.
-            If ``True``, the ``args`` field in the internal buffer is cleared upon deallocation.
-            Defaults to ``False``.
     """
 
     owner: bool
-    ctx_owner: bool
 
-    def __init__(self, alloc: bool = False) -> None:
+    def __init__(self, topic: Topic, args: tuple, kwargs: dict) -> None:
         """
         Initialize a ``MessagePayload`` instance.
 
         Args:
-            alloc: If ``True``, allocate a new C message payload.
+            topic (Topic): Topic for this payload
+            args (tuple): Positional arguments for this payload
+            kwargs (dict): Keyword arguments for this payload
         """
 
     def __repr__(self) -> str:
@@ -57,6 +55,13 @@ class MessagePayload:
         """
 
 
+class EvtPyCallable(TypedDict):
+    fn: Callable[...]
+    logger: Logger
+    idx: int
+    with_topic: bool
+
+
 class EventHook:
     """
     Event dispatcher for registering and triggering handlers.
@@ -69,22 +74,19 @@ class EventHook:
 
     Attributes:
         topic (Topic): The topic associated with this hook.
-        logger (Logger | None): Optional logger instance.
-        retry_on_unexpected_topic (bool): If ``True``, retries with no-topic calling convention if a with-topic handler raises a ``TypeError`` and the error message indicates an unexpected topic argument.
+        logger (Logger | None): Optional logger instance. If not provided, use module global logger.
     """
 
     topic: Topic
     logger: Logger
-    retry_on_unexpected_topic: bool
 
-    def __init__(self, topic: Topic, logger: Logger = None, retry_on_unexpected_topic: bool = False) -> None:
+    def __init__(self, topic: Topic, logger: Logger = None) -> None:
         """
         Initialize an ``EventHook``.
 
         Args:
             topic: The topic associated with this hook.
             logger: Optional logger instance.
-            retry_on_unexpected_topic: If ``True``, enables retrying on unexpected topic argument errors.
         """
 
     def __call__(self, msg: MessagePayload) -> None:
@@ -146,31 +148,11 @@ class EventHook:
         """
         Trigger all registered handlers with the given message payload.
 
-        Handlers are executed in registration order:
-        1. All **no-topic** handlers (called with ``*args, **kwargs`` only).
-        2. All **with-topic** handlers (called with ``topic, *args, **kwargs``).
-        In each group, handlers are invoked in the order they were added.
-
-        If ``retry_on_unexpected_topic`` flag is on and a with-topic handler raises a ``TypeError`` and the error message indicates an unexpected topic argument,
-        the dispatcher retries the call without the topic.
-        This may result in the same handler being invoked twice if the unexpected topic argument is inside the callback.
-        e.g.:
-
-        >>> def outer_f(*args, **kwargs):
-        ...     print('outer_f called')
-        ...     inner_f(topic='abc')
-        ...
-        ... def inner_f():
-        ...     pass
-
-        In this way some code in outer_f may be executed twice. The ``retry_on_unexpected_topic`` can be disabled to avoid this behavior.
-        By Default ``retry_on_unexpected_topic`` is ``False``.
-
         Args:
             msg: The message payload to dispatch.
         """
 
-    def add_handler(self, handler: Callable, deduplicate: bool = False) -> None:
+    def add_handler(self, handler: Callable, logger: Logger = None, deduplicate: bool = False) -> None:
         """
         Register a new handler.
 
@@ -179,6 +161,7 @@ class EventHook:
 
         Args:
             handler: The callable to register.
+            logger: Optional logger instance for this handler. If not provided, use the hook's logger.
             deduplicate: If ``True``, skip registration if the handler is already present.
         """
 
@@ -202,19 +185,20 @@ class EventHook:
         """
 
     @property
-    def handlers(self) -> list[Callable]:
+    def handlers(self) -> list[EvtPyCallable]:
         """
         List all registered handlers.
 
-        Handlers are ordered as follows:
-        - First, all no-topic handlers (in registration order).
-        - Then, all with-topic handlers (in registration order).
+        Returns:
+            A list of dictionaries, each containing information about a registered handler.
         """
 
 
 class HandlerStats(TypedDict):
-    calls: int
-    total_time: float
+    n_calls: int
+    last_call_start: float
+    last_call_complete: float
+    elapsed_seconds: float
 
 
 class EventHookEx(EventHook):
@@ -222,7 +206,7 @@ class EventHookEx(EventHook):
     Extended ``EventHook`` that tracks per-handler execution statistics.
     """
 
-    def __init__(self, topic: object, logger: object = None, retry_on_unexpected_topic: bool = False) -> None:
+    def __init__(self, topic: object, logger: object = None) -> None:
         """
         Initialize an ``EventHookEx``.
 
@@ -231,22 +215,12 @@ class EventHookEx(EventHook):
             logger: Optional logger instance.
         """
 
-    def get_stats(self, py_callable: Callable) -> HandlerStats | None:
-        """
-        Retrieve execution statistics for a specific handler.
-
-        Args:
-            py_callable: The handler to query.
-        Returns:
-            A dictionary with keys ``'calls'`` (number of invocations) and ``'total_time'`` (cumulative execution time in seconds),
-            or ``None`` if the handler is not registered or the HandlerStats is not registered.
-        """
-
     @property
-    def stats(self) -> Iterator[tuple[Callable, HandlerStats]]:
+    def stats(self) -> HandlerStats:
         """
-        Iterate over all registered handlers and their execution statistics.
+        Get aggregate statistics for this EventHook
 
         Returns:
-            An iterator yielding ``(handler, stats_dict)`` pairs.
+            A dictionary with total calls and total execution time.
         """
+        ...

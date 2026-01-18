@@ -35,14 +35,43 @@ from .c_topic cimport (
 )
 
 from .c_event cimport (
-    MessagePayload, evt_message_payload,
-    EventHandler, HandlerStats,
+    evt_py_payload, evt_message_payload, MessagePayload,
+    c_evt_payload_new,
+    c_evt_payload_free,
 
-    C_INTERNAL_EMPTY_ARGS,
-    C_INTERNAL_EMPTY_KWARGS,
-    TOPIC_FIELD_NAME,
-    TOPIC_UNEXPECTED_ERROR,
-    EventHook, EventHookEx
+    evt_callback_bare,
+    evt_callback_with_args,
+    evt_callback_with_topic,
+    evt_callback_with_userdata,
+    evt_callback_with_args_topic,
+    evt_callback_with_args_userdata,
+    evt_callback_with_topic_userdata,
+    evt_callback_with_args_topic_userdata,
+    evt_callback_with_payload,
+    evt_callback_with_payload_userdata,
+
+    evt_callback_type,
+    evt_callback_variants,
+    evt_callback,
+    evt_py_callable,
+
+    evt_hook_watcher_type,
+    evt_hook_watcher_fn,
+    evt_hook_watcher,
+    evt_hook_stats, c_hook_enter, c_hook_exit,
+
+    evt_hook, EventHook, EventHookEx,
+
+    c_evt_callback_invoke,
+    c_evt_hook_new,
+    c_evt_hook_free,
+    c_evt_hook_add_watcher,
+    c_evt_hook_register_callback,
+    c_evt_hook_pop_callback,
+    c_evt_hook_invoke,
+    evt_hook_ret_code,
+
+    EMPTY_ARGS, TOPIC_FIELD_NAME
 )
 
 from .c_engine cimport (
@@ -101,14 +130,43 @@ __all__ = [
     'get_internal_topic',
     'get_internal_map',
 
-    'MessagePayload', 'evt_message_payload',
-    'EventHandler', 'HandlerStats',
+    'evt_py_payload', 'evt_message_payload', 'MessagePayload',
+    'c_evt_payload_new',
+    'c_evt_payload_free',
 
-    'C_INTERNAL_EMPTY_ARGS',
-    'C_INTERNAL_EMPTY_KWARGS',
-    'TOPIC_FIELD_NAME',
-    'TOPIC_UNEXPECTED_ERROR',
-    'EventHook', 'EventHookEx',
+    'evt_callback_bare',
+    'evt_callback_with_args',
+    'evt_callback_with_topic',
+    'evt_callback_with_userdata',
+    'evt_callback_with_args_topic',
+    'evt_callback_with_args_userdata',
+    'evt_callback_with_topic_userdata',
+    'evt_callback_with_args_topic_userdata',
+    'evt_callback_with_payload',
+    'evt_callback_with_payload_userdata',
+
+    'evt_callback_type',
+    'evt_callback_variants',
+    'evt_callback',
+    'evt_py_callable',
+
+    'evt_hook_watcher_type',
+    'evt_hook_watcher_fn',
+    'evt_hook_watcher',
+    'evt_hook_stats', 'c_hook_enter', 'c_hook_exit',
+
+    'evt_hook', 'EventHook', 'EventHookEx',
+
+    'c_evt_callback_invoke',
+    'c_evt_hook_new',
+    'c_evt_hook_free',
+    'c_evt_hook_add_watcher',
+    'c_evt_hook_register_callback',
+    'c_evt_hook_pop_callback',
+    'c_evt_hook_invoke',
+    'evt_hook_ret_code',
+
+    'EMPTY_ARGS', 'TOPIC_FIELD_NAME',
 
     'DEFAULT_MQ_CAPACITY',
     'DEFAULT_MQ_SPIN_LIMIT',

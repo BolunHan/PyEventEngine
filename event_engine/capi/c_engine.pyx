@@ -243,7 +243,8 @@ cdef class EventEngine:
 
         cdef int ret_code = c_strmap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
         if ret_code == STRMAP_ERR_NOT_FOUND:
-            raise KeyError(f'No EventHook registered for {topic.value}')
+            LOGGER.error(f'No EventHook registered for "{topic.value}"')
+            return
         event_hook = <EventHook> hook_ptr
         event_hook.remove_handler(py_callable)
         if len(event_hook) == 0:

@@ -1,7 +1,7 @@
 import inspect
 import traceback
-
 from cpython.exc cimport PyErr_Clear, PyErr_Fetch
+from cpython.method cimport PyMethod_Check, PyMethod_GET_FUNCTION, PyMethod_GET_SELF
 from cpython.ref cimport Py_XINCREF, Py_XDECREF
 from cpython.time cimport perf_counter
 from libc.stdlib cimport calloc, free
@@ -157,6 +157,21 @@ cdef class MessagePayload:
             self.header.seq_id = seq_id
 
 
+cdef inline bint py_callable_same(PyObject* a, PyObject* b):
+    if a == b:
+        return True
+
+    # Both are bound methods
+    cdef object fn_a = <object> a
+    cdef object fn_b = <object> b
+    if PyMethod_Check(fn_a) and PyMethod_Check(fn_b):
+        return (
+            PyMethod_GET_SELF(fn_a) == PyMethod_GET_SELF(fn_b)
+            and PyMethod_GET_FUNCTION(fn_a) == PyMethod_GET_FUNCTION(fn_b)
+        )
+    return False
+
+
 cdef class EventHook:
     def __cinit__(self, Topic topic, object logger=None):
         self.header = c_evt_hook_new(topic.header)
@@ -210,7 +225,7 @@ cdef class EventHook:
         # Walk list to detect duplicates and position at tail
         cdef evt_py_callable* tail = NULL
         while callable_frame:
-            if callable_frame.fn == py_callable:
+            if py_callable_same(callable_frame.fn, py_callable):
                 if deduplicate:
                     return callable_frame
                 else:
@@ -250,7 +265,7 @@ cdef class EventHook:
         cdef evt_py_callable* prior = NULL
 
         while curr:
-            if curr.fn == py_callable:
+            if py_callable_same(curr.fn, py_callable):
                 Py_XDECREF(curr.fn)
                 Py_XDECREF(curr.logger)
                 if prior:
@@ -272,7 +287,7 @@ cdef class EventHook:
         cdef evt_py_callable* curr = self.callables
 
         while curr:
-            if curr.fn == py_callable:
+            if py_callable_same(curr.fn, py_callable):
                 return True
             curr = curr.next
         return False

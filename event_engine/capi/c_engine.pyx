@@ -2,8 +2,8 @@ from threading import Thread
 
 from cpython.datetime cimport datetime, timedelta
 from cpython.object cimport PyObject
-from cpython.ref cimport Py_INCREF, Py_XDECREF
-from libc.stdlib cimport free
+from cpython.ref cimport Py_INCREF, Py_XINCREF, Py_XDECREF
+from cpython.unicode cimport PyUnicode_FromStringAndSize
 
 from .c_event cimport MessagePayload, EMPTY_ARGS, c_evt_payload_new, c_evt_payload_free, evt_py_payload, c_evt_hook_invoke
 from .c_topic cimport c_topic_match_bool, HEAP_ALLOCATOR
@@ -158,6 +158,24 @@ cdef class EventEngine:
                 c_evt_hook_invoke(event_hook.header, msg)
             entry = entry.next
 
+    cdef inline EventHook c_get_hook(self, Topic topic):
+        cdef evt_topic* topic_ptr = topic.header
+        cdef PyObject* hook_ptr = NULL
+        cdef EventHook event_hook
+        cdef strmap* hook_map
+
+        if topic_ptr.is_exact:
+            hook_map = self.exact_topic_hooks
+        else:
+            hook_map = self.generic_topic_hooks
+
+        cdef int ret_code = c_strmap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
+        if ret_code == STRMAP_ERR_NOT_FOUND:
+            raise KeyError(f'No EventHook registered for {topic.value}')
+        event_hook = <EventHook> hook_ptr
+        Py_XINCREF(hook_ptr)
+        return event_hook
+
     cdef inline void c_register_hook(self, EventHook hook):
         cdef evt_topic* topic_ptr = hook.topic.header
         cdef PyObject* existing_hook_ptr = NULL
@@ -277,6 +295,33 @@ cdef class EventEngine:
     def __repr__(self):
         return f'<{self.__class__.__name__} {"active" if self.active else "idle"}>(capacity={self.capacity})'
 
+    def __getitem__(self, Topic topic) -> list[EventHook]:
+        cdef list out = []
+        cdef evt_topic* topic_ptr = topic.header
+        cdef PyObject* hook_ptr = NULL
+        cdef EventHook event_hook
+        cdef strmap* hook_map
+
+        cdef int ret_code = c_strmap_get(self.exact_topic_hooks, topic.key, topic_ptr.key_len, <void**> &hook_ptr)
+        if hook_ptr:
+            event_hook = <EventHook> hook_ptr
+            Py_XINCREF(hook_ptr)
+            out.append(event_hook)
+
+        cdef strmap_entry* entry = self.generic_topic_hooks.first
+        cdef int is_matched
+        while entry:
+            hook_ptr = <PyObject*> entry.value
+            if not hook_ptr:
+                continue
+            event_hook = <EventHook> hook_ptr
+            is_matched = c_topic_match_bool(event_hook.topic.header, topic_ptr)
+            if is_matched:
+                Py_XINCREF(hook_ptr)
+                out.append(event_hook)
+            entry = entry.next
+        return out
+
     def activate(self):
         self.active = True
 
@@ -326,6 +371,9 @@ cdef class EventEngine:
         cdef int ret_code = self.c_publish(topic, args, kwargs, block, max_spin, timeout)
         if ret_code:
             raise Full()
+
+    def get_hook(self, Topic topic):
+        return self.c_get_hook(topic)
 
     def register_hook(self, EventHook hook):
         self.c_register_hook(hook)
@@ -387,11 +435,31 @@ cdef class EventEngine:
 
     property exact_topic_hook_map:
         def __get__(self):
-            return StrMap.c_from_header(self.exact_topic_hooks, 0)
+            cdef dict out = {}
+            cdef strmap_entry* entry = self.exact_topic_hooks.first
+            cdef str topic_str
+            cdef EventHook event_hook
+            while entry:
+                topic_str = PyUnicode_FromStringAndSize(entry.key, entry.key_length)
+                event_hook = <EventHook> <PyObject*> entry.value
+                entry = entry.next
+                Py_XINCREF(<PyObject*> event_hook)
+                out[Topic(topic_str)] = event_hook
+            return out
 
     property generic_topic_hook_map:
         def __get__(self):
-            return StrMap.c_from_header(self.generic_topic_hooks, 0)
+            cdef dict out = {}
+            cdef strmap_entry* entry = self.generic_topic_hooks.first
+            cdef str topic_str
+            cdef EventHook event_hook
+            while entry:
+                topic_str = PyUnicode_FromStringAndSize(entry.key, entry.key_length)
+                event_hook = <EventHook> <PyObject*> entry.value
+                entry = entry.next
+                Py_XINCREF(<PyObject*> event_hook)
+                out[Topic(topic_str)] = event_hook
+            return out
 
 
 cdef class EventEngineEx(EventEngine):

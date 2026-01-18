@@ -108,6 +108,8 @@ cdef class EventEngine:
 
     cdef inline void c_trigger(self, evt_message_payload* msg)
 
+    cdef inline EventHook c_get_hook(self, Topic topic)
+
     cdef inline void c_register_hook(self, EventHook hook)
 
     cdef inline EventHook c_unregister_hook(self, Topic topic)

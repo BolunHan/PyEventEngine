@@ -79,11 +79,28 @@ class EventEngine:
         Raises:
             MemoryError: If internal C structures fail to allocate.
         """
+        ...
 
     def __len__(self) -> int:
         """
         Return the total number of registered topics (both exact and generic).
         """
+        ...
+
+    def __getitem__(self, topic: Topic) -> list[EventHook]:
+        """
+        Retrieve the list of ``EventHook`` instances that can be triggered with the given topic.
+
+        Args:
+            topic: The topic to look up (exact or generic).
+
+        Returns:
+            A list of ``EventHook`` instances registered for the topic.
+
+        Raises:
+            KeyError: If no hooks are registered for the given topic.
+        """
+        ...
 
     def activate(self):
         """
@@ -92,6 +109,7 @@ class EventEngine:
         This method is called automatically when ``start`` is invoked.
         It can also be called manually to prepare the engine for operation.
         """
+        ...
 
     def deactivate(self) -> None:
         """
@@ -100,11 +118,13 @@ class EventEngine:
         This method is called automatically when ``stop`` is invoked.
         It can also be called manually to halt the engine's operation.
         """
+        ...
 
     def run(self) -> None:
         """
         Run the event loop in the current thread (blocking).
         """
+        ...
 
     def start(self) -> None:
         """
@@ -112,6 +132,7 @@ class EventEngine:
 
         If the engine is already running, this method has no effect.
         """
+        ...
 
     def stop(self) -> None:
         """
@@ -119,6 +140,7 @@ class EventEngine:
 
         If the engine is already stopped, this method has no effect.
         """
+        ...
 
     def clear(self) -> None:
         """
@@ -128,6 +150,7 @@ class EventEngine:
             This method only works when the engine is stopped. If called while running,
             an error is logged and no action is taken.
         """
+        ...
 
     def get(self, block: bool = True, max_spin: int = ..., timeout: float = 0.0) -> MessagePayload:
         """
@@ -144,6 +167,7 @@ class EventEngine:
         Raises:
             Empty: If ``block=False`` and the queue is empty.
         """
+        ...
 
     def put(self, topic: Topic, *args, block: bool = True, max_spin: int = ..., timeout: float = 0.0, **kwargs) -> None:
         """
@@ -161,6 +185,7 @@ class EventEngine:
             Full: If ``block=False`` and the queue is full.
             ValueError: If ``topic`` is not an exact topic.
         """
+        ...
 
     def publish(self, topic: Topic, args: tuple, kwargs: dict, block: bool = True, timeout: float = 0.0) -> None:
         """
@@ -177,6 +202,22 @@ class EventEngine:
             Full: If ``block=False`` and the queue is full.
             ValueError: If ``topic`` is not an exact topic.
         """
+        ...
+
+    def get_hook(self, topic: Topic) -> EventHook:
+        """
+        Retrieve the ``EventHook`` associated with a topic.
+
+        Args:
+            topic: The topic to look up (exact or generic).
+
+        Returns:
+            The ``EventHook`` registered for the topic.
+
+        Raises:
+            KeyError: If no hook is registered for the given topic.
+        """
+        ...
 
     def register_hook(self, hook: EventHook) -> None:
         """
@@ -188,6 +229,7 @@ class EventEngine:
         Raises:
             KeyError: If a hook is already registered for the same topic (exact or generic).
         """
+        ...
 
     def unregister_hook(self, topic: Topic) -> EventHook:
         """
@@ -202,6 +244,7 @@ class EventEngine:
         Raises:
             KeyError: If no hook is registered for the given topic.
         """
+        ...
 
     def register_handler(self, topic: Topic, handler: Callable[..., Any], deduplicate: bool = False) -> None:
         """
@@ -212,6 +255,7 @@ class EventEngine:
             handler: The callable to register.
             deduplicate: If ``True``, skip registration if the handler is already present in the target ``EventHook``.
         """
+        ...
 
     def unregister_handler(self, topic: Topic, handler: Callable[..., Any]) -> None:
         """
@@ -228,6 +272,7 @@ class EventEngine:
             - If the ``EventHook`` exists but the handler is not found, no exception is raised.
             - If the handler removal leaves the ``EventHook`` empty, the hook itself is automatically unregistered.
         """
+        ...
 
     def event_hooks(self) -> Iterator[EventHook]:
         """
@@ -236,6 +281,7 @@ class EventEngine:
         Returns:
             An iterator of ``EventHook`` objects.
         """
+        ...
 
     def topics(self) -> Iterator[Topic]:
         """
@@ -244,6 +290,7 @@ class EventEngine:
         Returns:
             An iterator of ``Topic`` instances.
         """
+        ...
 
     def items(self) -> Iterator[tuple[Topic, EventHook]]:
         """
@@ -252,30 +299,34 @@ class EventEngine:
         Returns:
             An iterator of ``(Topic, EventHook)`` tuples.
         """
+        ...
 
     @property
     def capacity(self) -> int:
         """
         Capacity (maximum number of ``MessagePayload`` instances) of the internal message queue.
         """
+        ...
 
     @property
     def occupied(self) -> int:
         """
         Current number of pending messages in the internal queue.
         """
+        ...
 
     @property
-    def exact_topic_hook_map(self) -> ByteMap:
+    def exact_topic_hook_map(self) -> dict[Topic, EventHook]:
         """
         ByteMap of exact topic to ``EventHook`` mappings.
         """
 
     @property
-    def generic_topic_hook_map(self) -> ByteMap:
+    def generic_topic_hook_map(self) -> dict[Topic, EventHook]:
         """
         ByteMap of generic topic to ``EventHook`` mappings.
         """
+        ...
 
 
 class EventEngineEx(EventEngine):
@@ -301,6 +352,7 @@ class EventEngineEx(EventEngine):
         Raises:
             MemoryError: If internal C structures fail to allocate.
         """
+        ...
 
     def run_timer(self, interval: float, topic: Topic, activate_time: datetime | None = None) -> None:
         """
@@ -314,6 +366,7 @@ class EventEngineEx(EventEngine):
         Raises:
             RuntimeError: If engine is not activated.
         """
+        ...
 
     def minute_timer(self, topic: Topic) -> None:
         """
@@ -325,6 +378,7 @@ class EventEngineEx(EventEngine):
         Raises:
             RuntimeError: If engine is not activated.
         """
+        ...
 
     def second_timer(self, topic: Topic) -> None:
         """
@@ -336,6 +390,7 @@ class EventEngineEx(EventEngine):
         Raises:
             RuntimeError: If engine is not activated.
         """
+        ...
 
     def get_timer(self, interval: float, activate_time: datetime | None = None) -> Topic:
         """
@@ -354,13 +409,16 @@ class EventEngineEx(EventEngine):
         Raises:
             RuntimeError: If engine is not activated.
         """
+        ...
 
     def stop(self) -> None:
         """
         Stop the event engine and all associated timer threads.
         """
+        ...
 
     def clear(self) -> None:
         """
         Unregister all event hooks and stop all active timer threads.
         """
+        ...

@@ -629,6 +629,70 @@ class TestEventEngineThreadSafety(unittest.TestCase):
         self.assertEqual(set(results), set(range(20)))
 
 
+class TestEventEngineRemoval(unittest.TestCase):
+    def test_remove_handler_safe(self):
+        engine = EventEngine(capacity=10)
+        topic = Topic('test.topic')  # type: ignore[arg-type]
+
+        called = []
+
+        def handler_1(a):
+            called.append(a)
+
+        def handler_2(a):
+            called.append(a * 10)
+
+        def handler_3(a):
+            called.append(a * 100)
+
+        class A:
+            @classmethod
+            def cls_handler(cls, a):
+                called.append(a * 1000)
+
+            @staticmethod
+            def static_handler(a):
+                called.append(a * 10000)
+
+            def bound_handler(self, a):
+                called.append(a * 100000)
+
+        a_1 = A()
+        a_2 = A()
+        engine.register_handler(topic, handler_1)
+        engine.register_handler(topic, handler_2)
+        engine.register_handler(topic, handler_3)
+        engine.register_handler(topic, A.cls_handler)
+        engine.register_handler(topic, A.static_handler)
+        engine.register_handler(topic, a_1.bound_handler)
+        engine.register_handler(topic, a_2.bound_handler)
+
+        engine.start()
+        time.sleep(0.1)
+        engine.put(topic, 1)
+        time.sleep(0.2)
+        engine.put(topic, 2)
+        time.sleep(0.2)
+        engine.stop()
+
+        # Now remove handler_2 safely
+        engine.unregister_handler(topic, handler_2)
+        hook = engine.get_hook(topic)
+        self.assertIsNotNone(hook)
+        self.assertEqual(len(hook), 6)
+
+        # Now continue to remove all the handler
+        engine.unregister_handler(topic, handler_1)
+        self.assertEqual(len(hook), 5)
+        engine.unregister_handler(topic, handler_3)
+        engine.unregister_handler(topic, A.cls_handler)
+        engine.unregister_handler(topic, A.static_handler)
+        engine.unregister_handler(topic, a_1.bound_handler)
+        engine.unregister_handler(topic, a_2.bound_handler)
+        with self.assertRaises(KeyError):
+            _ = engine.get_hook(topic)
+
+
 def suite():
     test_suite = unittest.TestSuite()
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestEventEngineBasics))
@@ -637,6 +701,7 @@ def suite():
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestEventEngineEx))
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestEventEngineWithPayloads))
     test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestEventEngineThreadSafety))
+    test_suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestEventEngineRemoval))
     return test_suite
 
 

@@ -10,7 +10,7 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from event_engine.capi import EventEngine, PyTopic  # type: ignore
+from event_engine.capi import EventEngine, Topic  # type: ignore
 from event_engine.capi.fallback_engine import EventEngine as FallbackEventEngine  # type: ignore
 
 
@@ -92,7 +92,7 @@ class TestEventEnginePerformance(unittest.TestCase):
         capacity = int(os.environ.get("PEE_PERF_CAP", "8192"))
 
         engine = EventEngine(capacity=capacity)
-        topic = PyTopic("perf.topic")  # type: ignore[arg-type]
+        topic = Topic("perf.topic")  # type: ignore[arg-type]
 
         metrics = PerfMetrics()
         processed_all = threading.Event()
@@ -157,7 +157,7 @@ class TestEventEnginePerformance(unittest.TestCase):
         capacity = int(os.environ.get("PEE_PERF_CAP", "8192"))
 
         engine = FallbackEventEngine(capacity=capacity)
-        topic = PyTopic("perf.fallback.topic")  # type: ignore[arg-type]
+        topic = Topic("perf.fallback.topic")  # type: ignore[arg-type]
 
         metrics = PerfMetrics()
         processed_all = threading.Event()

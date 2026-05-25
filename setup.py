@@ -124,7 +124,7 @@ else:  # gcc / clang / apple clang
             flags = []
         case _:
             flags = ["-O3"]
-    flags.append("-std=c23")
+    flags.append("-std=c2x")
 
 cython_extension.extend([
     Extension(

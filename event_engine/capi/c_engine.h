@@ -2,8 +2,13 @@
 #define C_ENGINE_H
 
 #include <errno.h>
+#ifdef _WIN32
+#include "pthread_nt_compat.h"
+#include "time_sched_nt_compat.h"
+#else
 #include <pthread.h>
 #include <sched.h>
+#endif
 #include <stdatomic.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -46,7 +51,11 @@ typedef struct message_queue {
     pthread_cond_t not_empty;
     pthread_cond_t not_full;
 
-    evt_message_payload* buf[]; // flexible array member: pointers to evt_message_payload
+#ifdef _WIN32
+    evt_message_payload* buf[1]; // MSVC-compatible trailing storage
+#else
+    evt_message_payload* buf[]; // flexible array member
+#endif
 } message_queue;
 
 /* ----------------------------------------------------------------------
@@ -174,7 +183,11 @@ static inline void timespec_add_seconds(struct timespec* ts, double seconds) {
 static inline message_queue* c_mq_new(size_t capacity, evt_topic* topic, heap_allocator* allocator) {
     if (capacity == 0) return NULL;
 
+#ifdef _WIN32
+    size_t total_bytes = sizeof(message_queue) + (capacity - 1) * sizeof(evt_message_payload*);
+#else
     size_t total_bytes = sizeof(message_queue) + capacity * sizeof(evt_message_payload*);
+#endif
     message_queue* mq;
 
     if (allocator) {

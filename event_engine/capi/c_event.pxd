@@ -4,11 +4,6 @@ from libc.stdint cimport uint64_t
 from .c_topic cimport evt_topic, Topic
 
 
-cdef extern from "pthread.h":
-    ctypedef struct pthread_mutex_t:
-        pass
-
-
 cdef extern from "Python.h":
     PyObject* PyDict_Copy(PyObject* p)
     PyObject* PyDict_SetDefault(PyObject* p, PyObject* key, PyObject* defaultobj)
@@ -18,6 +13,9 @@ cdef extern from "Python.h":
 
 
 cdef extern from "c_heap_allocator.h":
+    ctypedef struct pthread_mutex_t:
+        pass
+
     ctypedef struct heap_allocator:
         pthread_mutex_t lock
 

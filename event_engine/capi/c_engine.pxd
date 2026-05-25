@@ -5,15 +5,13 @@ from .c_event cimport evt_message_payload, EventHook
 from .c_topic cimport evt_topic, Topic
 
 
-cdef extern from "<pthread.h>":
+cdef extern from "c_heap_allocator.h":
     ctypedef struct pthread_mutex_t:
         pass
 
     ctypedef struct pthread_cond_t:
         pass
 
-
-cdef extern from "c_heap_allocator.h":
     ctypedef struct heap_allocator:
         pass
 

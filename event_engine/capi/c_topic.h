@@ -5,7 +5,11 @@
 #include <string.h>
 #include <stddef.h>
 #include <stdint.h>
+#ifdef _WIN32
+#include "regex_nt_compat.h"
+#else
 #include <regex.h>
+#endif
 
 #include "c_heap_allocator.h"
 #include "c_strmap.h"

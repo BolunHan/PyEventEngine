@@ -2,7 +2,11 @@
 #define C_HEAP_ALLOCATOR_H
 
 #include <errno.h>
+#ifdef _WIN32
+#include "pthread_nt_compat.h"
+#else
 #include <pthread.h>
+#endif
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>

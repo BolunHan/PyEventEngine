@@ -121,15 +121,18 @@ class TestEventEngineBasics(unittest.TestCase):
         engine.unregister_handler(topic, handler)
         self.assertEqual(len(engine), 0)
 
-    def test_unregister_handler_nonexistent_topic_raises_keyerror(self):
+    def test_unregister_handler_nonexistent_topic_logs_error(self):
         engine = EventEngine()
         topic = Topic('test.topic')  # type: ignore[arg-type]
 
         def handler(a):
             pass
 
-        with self.assertRaises(KeyError):
+        with self.assertLogs('EventEngine.Engine', level='ERROR') as cm:
             engine.unregister_handler(topic, handler)
+
+        self.assertTrue(any('No EventHook registered for "test.topic"' in message for message in cm.output))
+        self.assertEqual(len(engine), 0)
 
     def test_event_hooks_iterator(self):
         engine = EventEngine()

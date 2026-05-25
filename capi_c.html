@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Cython API Reference" href="capi_cython.html"><link rel="prev" title="Examples" href="examples.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>C API Reference - PyEventEngine v0.4.6.post1</title>
+        <title>C API Reference - PyEventEngine v0.5.0.post2</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -161,7 +161,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">PyEventEngine v0.4.6.post1</div></a>
+      <a href="index.html"><div class="brand">PyEventEngine v0.5.0.post2</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -182,7 +182,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
-  <span class="sidebar-brand-text">PyEventEngine v0.4.6.post1</span>
+  <span class="sidebar-brand-text">PyEventEngine v0.5.0.post2</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -390,10 +390,10 @@
 <section id="allocator-usage">
 <h3>Allocator Usage<a class="headerlink" href="#allocator-usage" title="Link to this heading">¶</a></h3>
 <p>Example from <code class="docutils literal notranslate"><span class="pre">c_engine.pyx</span></code>:</p>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">MemoryAllocator</span>* <span class="nf">allocator</span><span class="w"> </span><span class="o">=</span> <span class="n">c_allocator_new</span><span class="p">(</span><span class="mf">4096</span><span class="p">,</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">MessagePayload</span><span class="p">))</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">MemoryAllocator</span>* <span class="nv">allocator</span><span class="w"> </span><span class="o">=</span> <span class="n">c_allocator_new</span><span class="p">(</span><span class="mf">4096</span><span class="p">,</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">MessagePayload</span><span class="p">))</span>
 
 <span class="c"># Allocate a payload</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">MessagePayload</span>* <span class="nf">payload</span><span class="w"> </span><span class="o">=</span> <span class="o">&lt;</span><span class="n">MessagePayload</span><span class="o">*&gt;</span><span class="n">c_heap_alloc</span><span class="p">(</span><span class="n">allocator</span><span class="p">,</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">MessagePayload</span><span class="p">))</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">MessagePayload</span>* <span class="nv">payload</span><span class="w"> </span><span class="o">=</span> <span class="o">&lt;</span><span class="n">MessagePayload</span><span class="o">*&gt;</span><span class="n">c_heap_alloc</span><span class="p">(</span><span class="n">allocator</span><span class="p">,</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">MessagePayload</span><span class="p">))</span>
 <span class="n">payload</span><span class="o">.</span><span class="n">topic</span> <span class="o">=</span> <span class="n">some_topic</span>
 <span class="n">payload</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">void</span><span class="o">*&gt;</span><span class="n">args_tuple</span>
 <span class="n">Py_INCREF</span><span class="p">(</span><span class="n">args_tuple</span><span class="p">)</span>
@@ -431,7 +431,7 @@
 <div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="c"># my_extension.pyx</span>
 <span class="k">from</span><span class="w"> </span><span class="nn">event_engine.capi.c_topic</span><span class="w"> </span><span class="k">cimport</span> <span class="n">Topic</span><span class="p">,</span> <span class="n">topic_parse</span><span class="p">,</span> <span class="n">topic_free</span>
 
-<span class="k">cdef</span><span class="w"> </span><span class="kt">Topic</span>* <span class="nf">t</span><span class="w"> </span><span class="o">=</span> <span class="n">topic_parse</span><span class="p">(</span><span class="n">b</span><span class="s">&quot;My.Topic.String&quot;</span><span class="p">,</span> <span class="mf">15</span><span class="p">)</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">Topic</span>* <span class="nv">t</span><span class="w"> </span><span class="o">=</span> <span class="n">topic_parse</span><span class="p">(</span><span class="n">b</span><span class="s">&quot;My.Topic.String&quot;</span><span class="p">,</span> <span class="mf">15</span><span class="p">)</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">&quot;Parsed topic with hash: {t.hash}&quot;</span><span class="p">)</span>
 <span class="k">finally</span><span class="p">:</span>
@@ -575,7 +575,7 @@ gdb<span class="w"> </span>--args<span class="w"> </span>python<span class="w"> 
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=89797f72"></script>
+</div><script src="_static/documentation_options.js?v=206938c8"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

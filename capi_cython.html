@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Python API Reference (CAPI)" href="capi_python.html"><link rel="prev" title="C API Reference" href="capi_c.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Cython API Reference - PyEventEngine v0.4.6.post1</title>
+        <title>Cython API Reference - PyEventEngine v0.5.0.post2</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -161,7 +161,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">PyEventEngine v0.4.6.post1</div></a>
+      <a href="index.html"><div class="brand">PyEventEngine v0.5.0.post2</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -182,7 +182,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
-  <span class="sidebar-brand-text">PyEventEngine v0.4.6.post1</span>
+  <span class="sidebar-brand-text">PyEventEngine v0.5.0.post2</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -332,15 +332,15 @@
 <span class="k">from</span><span class="w"> </span><span class="nn">event_engine.capi.c_topic</span><span class="w"> </span><span class="k">cimport</span> <span class="n">PyTopic</span>
 <span class="k">from</span><span class="w"> </span><span class="nn">event_engine.capi.c_event</span><span class="w"> </span><span class="k">cimport</span> <span class="n">PyMessagePayload</span>
 
-<span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">MyEventHandler</span><span class="p">:</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">EventEngine</span> <span class="nf">engine</span>
+<span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyEventHandler</span><span class="p">:</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">EventEngine</span> <span class="nv">engine</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">int</span> <span class="n">capacity</span><span class="o">=</span><span class="mf">8192</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">EventEngine</span><span class="p">(</span><span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">)</span>
 
     <span class="k">cpdef</span><span class="w"> </span><span class="kt">void</span> <span class="nf">process_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">str</span> <span class="n">topic_str</span><span class="p">,</span> <span class="nb">object</span> <span class="n">data</span><span class="p">):</span>
-        <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nf">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="n">topic_str</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="n">topic_str</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -359,7 +359,7 @@
 <h2>Topic Classes (c_topic.pyx)<a class="headerlink" href="#topic-classes-c-topic-pyx" title="Link to this heading">¶</a></h2>
 <section id="pytopictype">
 <h3>PyTopicType<a class="headerlink" href="#pytopictype" title="Link to this heading">¶</a></h3>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cpdef</span><span class="w"> </span><span class="k">enum</span> <span class="nf">PyTopicType</span><span class="p">:</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cpdef</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="nc">PyTopicType</span><span class="p">:</span>
     <span class="n">TOPIC_PART_EXACT</span> <span class="o">=</span> <span class="mf">0</span>
     <span class="n">TOPIC_PART_ANY</span> <span class="o">=</span> <span class="mf">1</span>
     <span class="n">TOPIC_PART_RANGE</span> <span class="o">=</span> <span class="mf">2</span>
@@ -370,9 +370,9 @@
 <section id="pytopicpart">
 <h3>PyTopicPart<a class="headerlink" href="#pytopicpart" title="Link to this heading">¶</a></h3>
 <p>Base class for topic parts:</p>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">PyTopicPart</span><span class="p">:</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">TopicPart</span>* <span class="nf">header</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">bint</span> <span class="nf">owner</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PyTopicPart</span><span class="p">:</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">TopicPart</span>* <span class="nv">header</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">bint</span> <span class="nv">owner</span>
 
     <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopicPart</span> <span class="nf">c_next</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
     <span class="k">cpdef</span><span class="w"> </span><span class="kt">PyTopicType</span> <span class="nf">ttype</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -382,7 +382,7 @@
 </section>
 <section id="pytopicpartexact">
 <h3>PyTopicPartExact<a class="headerlink" href="#pytopicpartexact" title="Link to this heading">¶</a></h3>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">PyTopicPartExact</span><span class="p">(</span><span class="n">PyTopicPart</span><span class="p">):</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PyTopicPartExact</span><span class="p">(</span><span class="n">PyTopicPart</span><span class="p">):</span>
     <span class="nd">@staticmethod</span>
     <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopicPartExact</span> <span class="nf">c_from_header</span><span class="p">(</span><span class="n">TopicPart</span><span class="o">*</span> <span class="n">header</span><span class="p">,</span> <span class="nb">bint</span> <span class="n">owner</span><span class="o">=*</span><span class="p">)</span>
 
@@ -392,21 +392,21 @@
 </section>
 <section id="pytopicpartany">
 <h3>PyTopicPartAny<a class="headerlink" href="#pytopicpartany" title="Link to this heading">¶</a></h3>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">PyTopicPartAny</span><span class="p">(</span><span class="n">PyTopicPart</span><span class="p">):</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PyTopicPartAny</span><span class="p">(</span><span class="n">PyTopicPart</span><span class="p">):</span>
     <span class="k">cpdef</span><span class="w"> </span><span class="kt">str</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>  <span class="c"># Get the wildcard name</span>
 </pre></div>
 </div>
 </section>
 <section id="pytopicpartrange">
 <h3>PyTopicPartRange<a class="headerlink" href="#pytopicpartrange" title="Link to this heading">¶</a></h3>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">PyTopicPartRange</span><span class="p">(</span><span class="n">PyTopicPart</span><span class="p">):</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PyTopicPartRange</span><span class="p">(</span><span class="n">PyTopicPart</span><span class="p">):</span>
     <span class="k">cpdef</span><span class="w"> </span><span class="nf">options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>  <span class="c"># Iterator over option strings</span>
 </pre></div>
 </div>
 </section>
 <section id="pytopicpartpattern">
 <h3>PyTopicPartPattern<a class="headerlink" href="#pytopicpartpattern" title="Link to this heading">¶</a></h3>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">PyTopicPartPattern</span><span class="p">(</span><span class="n">PyTopicPart</span><span class="p">):</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PyTopicPartPattern</span><span class="p">(</span><span class="n">PyTopicPart</span><span class="p">):</span>
     <span class="k">cpdef</span><span class="w"> </span><span class="kt">str</span> <span class="nf">pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
     <span class="k">cpdef</span><span class="w"> </span><span class="kt">object</span> <span class="nf">regex</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>  <span class="c"># Returns re.Pattern</span>
 </pre></div>
@@ -415,9 +415,9 @@
 <section id="pytopic">
 <h3>PyTopic<a class="headerlink" href="#pytopic" title="Link to this heading">¶</a></h3>
 <p>Main topic class:</p>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">PyTopic</span><span class="p">:</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">Topic</span>* <span class="nf">header</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">bint</span> <span class="nf">owner</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PyTopic</span><span class="p">:</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">Topic</span>* <span class="nv">header</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">bint</span> <span class="nv">owner</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nf">c_from_header</span><span class="p">(</span><span class="n">Topic</span><span class="o">*</span> <span class="n">header</span><span class="p">,</span> <span class="nb">bint</span> <span class="n">owner</span><span class="o">=*</span><span class="p">)</span>
@@ -435,12 +435,12 @@
 </pre></div>
 </div>
 <p>Example usage:</p>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nf">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Market.Data.AAPL&quot;</span><span class="p">)</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">uint64_t</span> <span class="nf">topic_hash</span><span class="w"> </span><span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">hash_value</span><span class="p">()</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Market.Data.AAPL&quot;</span><span class="p">)</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">uint64_t</span> <span class="nv">topic_hash</span><span class="w"> </span><span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">hash_value</span><span class="p">()</span>
 
 <span class="c"># Access parts</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">int</span> <span class="nf">n_parts</span><span class="w"> </span><span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">length</span><span class="p">()</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopicPart</span> <span class="nf">part0</span><span class="w"> </span><span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">get_part</span><span class="p">(</span><span class="mf">0</span><span class="p">)</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">int</span> <span class="nv">n_parts</span><span class="w"> </span><span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">length</span><span class="p">()</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopicPart</span> <span class="nv">part0</span><span class="w"> </span><span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">get_part</span><span class="p">(</span><span class="mf">0</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -449,11 +449,11 @@
 <h2>Event Classes (c_event.pyx)<a class="headerlink" href="#event-classes-c-event-pyx" title="Link to this heading">¶</a></h2>
 <section id="pymessagepayload">
 <h3>PyMessagePayload<a class="headerlink" href="#pymessagepayload" title="Link to this heading">¶</a></h3>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">PyMessagePayload</span><span class="p">:</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">MessagePayload</span>* <span class="nf">header</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">bint</span> <span class="nf">owner</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">bint</span> <span class="nf">args_owner</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">bint</span> <span class="nf">kwargs_owner</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PyMessagePayload</span><span class="p">:</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">MessagePayload</span>* <span class="nv">header</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">bint</span> <span class="nv">owner</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">bint</span> <span class="nv">args_owner</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">bint</span> <span class="nv">kwargs_owner</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">cdef</span><span class="w"> </span><span class="kt">PyMessagePayload</span> <span class="nf">c_from_header</span><span class="p">(</span><span class="n">MessagePayload</span><span class="o">*</span> <span class="n">header</span><span class="p">,</span>
@@ -470,12 +470,12 @@
 </section>
 <section id="eventhook">
 <h3>EventHook<a class="headerlink" href="#eventhook" title="Link to this heading">¶</a></h3>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">EventHook</span><span class="p">:</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">EventHandler</span>* <span class="nf">handlers_no_topic</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">EventHandler</span>* <span class="nf">handlers_with_topic</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">PyTopic</span> <span class="nf">topic</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">object</span> <span class="nf">logger</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">bint</span> <span class="nf">retry_on_unexpected_topic</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">EventHook</span><span class="p">:</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">EventHandler</span>* <span class="nv">handlers_no_topic</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">EventHandler</span>* <span class="nv">handlers_with_topic</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">PyTopic</span> <span class="nv">topic</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">object</span> <span class="nv">logger</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">bint</span> <span class="nv">retry_on_unexpected_topic</span>
 
     <span class="k">cdef</span><span class="w"> </span><span class="kt">void</span> <span class="nf">c_safe_call_no_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">EventHandler</span><span class="o">*</span> <span class="n">handler</span><span class="p">,</span> <span class="nb">tuple</span> <span class="n">args</span><span class="p">,</span> <span class="nb">dict</span> <span class="n">kwargs</span><span class="p">)</span>
     <span class="k">cdef</span><span class="w"> </span><span class="kt">void</span> <span class="nf">c_safe_call_with_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">EventHandler</span><span class="o">*</span> <span class="n">handler</span><span class="p">,</span> <span class="nb">tuple</span> <span class="n">args</span><span class="p">,</span> <span class="nb">dict</span> <span class="n">kwargs</span><span class="p">)</span>
@@ -494,8 +494,8 @@
 <section id="eventhookex">
 <h3>EventHookEx<a class="headerlink" href="#eventhookex" title="Link to this heading">¶</a></h3>
 <p>Extended hook with statistics:</p>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">EventHookEx</span><span class="p">(</span><span class="n">EventHook</span><span class="p">):</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">ByteMap</span>* <span class="nf">stats_map</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">EventHookEx</span><span class="p">(</span><span class="n">EventHook</span><span class="p">):</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">ByteMap</span>* <span class="nv">stats_map</span>
 
     <span class="k">cpdef</span><span class="w"> </span><span class="kt">void</span> <span class="nf">trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">PyMessagePayload</span> <span class="n">msg</span><span class="p">)</span>
     <span class="k">cpdef</span><span class="w"> </span><span class="kt">dict</span> <span class="nf">get_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">object</span> <span class="n">py_callable</span><span class="p">)</span>
@@ -508,20 +508,20 @@
 <h2>Engine Classes (c_engine.pyx)<a class="headerlink" href="#engine-classes-c-engine-pyx" title="Link to this heading">¶</a></h2>
 <section id="eventengine">
 <h3>EventEngine<a class="headerlink" href="#eventengine" title="Link to this heading">¶</a></h3>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span> <span class="nf">EventEngine</span><span class="p">:</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">MessageQueue</span>* <span class="nf">queue</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">ByteMap</span>* <span class="nf">exact_topic_hooks</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">ByteMap</span>* <span class="nf">generic_topic_hooks</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">MemoryAllocator</span>* <span class="nf">allocator</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">object</span> <span class="nf">logger</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">bint</span> <span class="nf">active</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">object</span> <span class="nf">engine</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">int</span> <span class="nf">capacity</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">uint64_t</span> <span class="nf">seq_id</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">EventEngine</span><span class="p">:</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">MessageQueue</span>* <span class="nv">queue</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">ByteMap</span>* <span class="nv">exact_topic_hooks</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">ByteMap</span>* <span class="nv">generic_topic_hooks</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">MemoryAllocator</span>* <span class="nv">allocator</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">object</span> <span class="nv">logger</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">bint</span> <span class="nv">active</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kr">public</span> <span class="kt">object</span> <span class="nv">engine</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">int</span> <span class="nv">capacity</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">uint64_t</span> <span class="nv">seq_id</span>
 
     <span class="k">cdef</span><span class="w"> </span><span class="kt">int</span> <span class="nf">c_publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">PyTopic</span> <span class="n">topic</span><span class="p">,</span> <span class="nb">tuple</span> <span class="n">args</span><span class="p">,</span> <span class="nb">dict</span> <span class="n">kwargs</span><span class="p">,</span>
-                      <span class="nb">bint</span> <span class="n">block</span><span class="p">,</span> <span class="nb">int</span> <span class="n">max_spin</span><span class="p">,</span> <span class="n">double</span> <span class="n">timeout</span><span class="p">)</span> <span class="k">nogil</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">PyMessagePayload</span> <span class="nf">c_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bint</span> <span class="n">block</span><span class="p">,</span> <span class="nb">int</span> <span class="n">max_spin</span><span class="p">,</span> <span class="n">double</span> <span class="n">timeout</span><span class="p">)</span> <span class="k">nogil</span>
+                      <span class="nb">bint</span> <span class="n">block</span><span class="p">,</span> <span class="nb">int</span> <span class="n">max_spin</span><span class="p">,</span> <span class="nb">double</span> <span class="n">timeout</span><span class="p">)</span> <span class="k">nogil</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">PyMessagePayload</span> <span class="nf">c_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bint</span> <span class="n">block</span><span class="p">,</span> <span class="nb">int</span> <span class="n">max_spin</span><span class="p">,</span> <span class="nb">double</span> <span class="n">timeout</span><span class="p">)</span> <span class="k">nogil</span>
     <span class="k">cdef</span><span class="w"> </span><span class="kt">void</span> <span class="nf">c_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">PyMessagePayload</span> <span class="n">msg</span><span class="p">)</span>
     <span class="k">cdef</span><span class="w"> </span><span class="kt">void</span> <span class="nf">c_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
@@ -553,20 +553,20 @@
 <span class="n">value</span> <span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">value</span>  <span class="c"># Calls Python __get__</span>
 
 <span class="c"># Faster (Cython)</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nf">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Market.Data.AAPL&quot;</span><span class="p">)</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">str</span> <span class="nf">value</span><span class="w"> </span><span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>  <span class="c"># Direct C call</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Market.Data.AAPL&quot;</span><span class="p">)</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">str</span> <span class="nv">value</span><span class="w"> </span><span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>  <span class="c"># Direct C call</span>
 </pre></div>
 </div>
 </section>
 <section id="type-declarations">
 <h3>Type Declarations<a class="headerlink" href="#type-declarations" title="Link to this heading">¶</a></h3>
 <p>Declare types for best performance:</p>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">EventEngine</span> <span class="nf">engine</span><span class="w"> </span><span class="o">=</span> <span class="n">EventEngine</span><span class="p">(</span><span class="n">capacity</span><span class="o">=</span><span class="mf">8192</span><span class="p">)</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nf">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Test.Topic&quot;</span><span class="p">)</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">PyMessagePayload</span> <span class="nf">msg</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">EventEngine</span> <span class="nv">engine</span><span class="w"> </span><span class="o">=</span> <span class="n">EventEngine</span><span class="p">(</span><span class="n">capacity</span><span class="o">=</span><span class="mf">8192</span><span class="p">)</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Test.Topic&quot;</span><span class="p">)</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">PyMessagePayload</span> <span class="nv">msg</span>
 
 <span class="c"># Fast loop</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">int</span> <span class="nf">i</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">int</span> <span class="nv">i</span>
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mf">10000</span><span class="p">):</span>
     <span class="n">engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>  <span class="c"># Minimal overhead</span>
 </pre></div>
@@ -575,8 +575,8 @@
 <section id="using-static-methods">
 <h3>Using Static Methods<a class="headerlink" href="#using-static-methods" title="Link to this heading">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">c_from_header</span></code> static methods create Python wrappers around existing C structures efficiently:</p>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">Topic</span>* <span class="nf">c_topic</span><span class="w"> </span><span class="o">=</span> <span class="n">topic_parse</span><span class="p">(</span><span class="n">b</span><span class="s">&quot;My.Topic&quot;</span><span class="p">,</span> <span class="mf">8</span><span class="p">)</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nf">py_topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="o">.</span><span class="n">c_from_header</span><span class="p">(</span><span class="n">c_topic</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">Topic</span>* <span class="nv">c_topic</span><span class="w"> </span><span class="o">=</span> <span class="n">topic_parse</span><span class="p">(</span><span class="n">b</span><span class="s">&quot;My.Topic&quot;</span><span class="p">,</span> <span class="mf">8</span><span class="p">)</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">py_topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="o">.</span><span class="n">c_from_header</span><span class="p">(</span><span class="n">c_topic</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -590,10 +590,10 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">owner=True</span></code>: Python object owns C memory, will free on <code class="docutils literal notranslate"><span class="pre">__dealloc__</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">owner=False</span></code>: Python object is a view, C memory managed elsewhere</p></li>
 </ul>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nf">owned</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Test&quot;</span><span class="p">)</span>  <span class="c"># owner=True</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">owned</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Test&quot;</span><span class="p">)</span>  <span class="c"># owner=True</span>
 <span class="c"># Will call topic_free() in __dealloc__</span>
 
-<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nf">view</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="o">.</span><span class="n">c_from_header</span><span class="p">(</span><span class="n">some_topic</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">view</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="o">.</span><span class="n">c_from_header</span><span class="p">(</span><span class="n">some_topic</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="c"># Will NOT free some_topic</span>
 </pre></div>
 </div>
@@ -608,7 +608,7 @@
 <span class="c"># When clearing/deallocating</span>
 <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
     <span class="n">Py_XDECREF</span><span class="p">(&lt;</span><span class="kt">object</span><span class="p">&gt;</span><span class="n">payload</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
-    <span class="n">payload</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="bp">NULL</span>
+    <span class="n">payload</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="kc">NULL</span>
 </pre></div>
 </div>
 <p>The Cython classes handle this automatically in their <code class="docutils literal notranslate"><span class="pre">__init__</span></code>/<code class="docutils literal notranslate"><span class="pre">__dealloc__</span></code> methods.</p>
@@ -617,7 +617,7 @@
 <section id="exception-handling">
 <h2>Exception Handling<a class="headerlink" href="#exception-handling" title="Link to this heading">¶</a></h2>
 <p>Cython methods can raise Python exceptions:</p>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nf">topic</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="n">topic</span> <span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Invalid..{&quot;</span><span class="p">)</span>  <span class="c"># May raise ValueError</span>
 <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -625,9 +625,9 @@
 </pre></div>
 </div>
 <p>For <code class="docutils literal notranslate"><span class="pre">nogil</span></code> functions, exceptions are deferred:</p>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">int</span> <span class="nf">result</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">int</span> <span class="nv">result</span>
 <span class="k">with</span> <span class="k">nogil</span><span class="p">:</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">c_publish</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span> <span class="mf">1000</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">c_publish</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="mf">1000</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
 
 <span class="k">if</span> <span class="n">result</span> <span class="o">!=</span> <span class="mf">0</span><span class="p">:</span>
     <span class="k">raise</span> <span class="n">Full</span><span class="p">(</span><span class="s">&quot;Queue is full&quot;</span><span class="p">)</span>
@@ -662,11 +662,11 @@
 <span class="k">from</span><span class="w"> </span><span class="nn">event_engine.capi.c_engine</span><span class="w"> </span><span class="k">cimport</span> <span class="n">EventEngine</span>
 
 <span class="k">cpdef</span><span class="w"> </span><span class="kt">void</span> <span class="nf">my_function</span><span class="p">():</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">EventEngine</span> <span class="nf">engine</span><span class="w"> </span><span class="o">=</span> <span class="n">EventEngine</span><span class="p">(</span><span class="n">capacity</span><span class="o">=</span><span class="mf">1024</span><span class="p">)</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nf">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Test.Topic&quot;</span><span class="p">)</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">EventEngine</span> <span class="nv">engine</span><span class="w"> </span><span class="o">=</span> <span class="n">EventEngine</span><span class="p">(</span><span class="n">capacity</span><span class="o">=</span><span class="mf">1024</span><span class="p">)</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Test.Topic&quot;</span><span class="p">)</span>
 
     <span class="n">engine</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-    <span class="n">engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="mf">123</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="mf">123</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">engine</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -791,7 +791,7 @@
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=89797f72"></script>
+</div><script src="_static/documentation_options.js?v=206938c8"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

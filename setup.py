@@ -1,10 +1,77 @@
 import codecs
 import os
+import shutil
+import sys
+from contextlib import suppress
+from pathlib import Path
 
 import setuptools
 from Cython.Build import cythonize
 from setuptools.command.build_ext import build_ext
 from setuptools.extension import Extension
+
+
+class BuildExtWithConfig(build_ext):
+    def run(self):
+        self.pre_compile()
+
+        super().run()
+
+        self.post_compile()
+
+    def build_extensions(self):
+        macros = []
+        for macro in ["DEBUG"]:
+            val = os.environ.get(macro)
+            if val:
+                print(f'Compile-time variable {macro} overridden with value {val}')
+                macros.append((macro, val))
+        for ext in self.extensions:
+            ext.define_macros = macros
+        build_ext.build_extensions(self)
+
+    def pre_compile(self):
+        self.remove_pxd(
+            [
+                "event_engine.capi",
+            ]
+        )
+
+    def post_compile(self):
+        # Monkey hack the "__init__.pxd" issue:
+        self.inject_pxd(
+            [
+                "event_engine.capi",
+            ]
+        )
+
+    def remove_pxd(self, modules: list[str]) -> None:
+        project_root = Path(__file__).resolve().parent
+
+        for module in modules:
+            src_dir = project_root.joinpath(*module.split("."))
+            init_pxd = src_dir / "__init__.pxd"
+
+            if init_pxd.exists():
+                print(f"[pre_compile] Removing {init_pxd}")
+                with suppress(FileNotFoundError):
+                    init_pxd.unlink()
+
+    def inject_pxd(self, modules: list[str]) -> None:
+        for module in modules:
+            project_root = Path(__file__).resolve().parent
+            src_dir = project_root.joinpath(*module.split("."))
+            pkg_dir = Path(self.build_lib, *module.split("."))
+
+            infra_pxd = src_dir / "__infra__.pxd"
+            if not infra_pxd.exists():
+                continue
+
+            pkg_dir.mkdir(parents=True, exist_ok=True)
+            init_pxd = pkg_dir / "__init__.pxd"
+
+            print(f"[build_py] Injecting {infra_pxd} -> {init_pxd}")
+            shutil.copyfile(infra_pxd, init_pxd)
 
 
 def read(rel_path):
@@ -85,21 +152,7 @@ cython_extension.extend([
     ),
 ])
 
-
-class BuildExtWithConfig(build_ext):
-    def build_extensions(self):
-        macros = []
-        for macro in ["DEBUG"]:
-            val = os.environ.get(macro)
-            if val:
-                print(f'Compile-time variable {macro} overridden with value {val}')
-                macros.append((macro, val))
-        for ext in self.extensions:
-            ext.define_macros = macros
-        build_ext.build_extensions(self)
-
-
-ext_modules.extend(cythonize(cython_extension, annotate=with_annotation, compiler_directives={"language_level": "3"}))
+ext_modules.extend(cythonize(cython_extension, annotate=with_annotation, compiler_directives={"language_level": "3"}, force="--force" in sys.argv))
 
 setuptools.setup(
     name="PyEventEngine",

@@ -15,8 +15,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "c_heap_allocator.h"
 #include "c_event.h"
+#include "c_heap_allocator.h"
 #include "c_topic.h"
 
 /* Default capacity if not provided elsewhere */
@@ -40,7 +40,7 @@
  * can be allocated in one block for better locality and simpler allocation.
  */
 typedef struct message_queue {
-    heap_allocator* allocator; // allocator for internal allocations
+    heap_allocator* allocator;  // allocator for internal allocations
     size_t capacity;            // max number of entries
     size_t head;                // index to pop
     size_t tail;                // index to push
@@ -52,9 +52,9 @@ typedef struct message_queue {
     pthread_cond_t not_full;
 
 #ifdef _WIN32
-    evt_message_payload* buf[1]; // MSVC-compatible trailing storage
+    evt_message_payload* buf[1];  // MSVC-compatible trailing storage
 #else
-    evt_message_payload* buf[]; // flexible array member
+    evt_message_payload* buf[];  // flexible array member
 #endif
 } message_queue;
 
@@ -163,7 +163,7 @@ static inline size_t c_mq_occupied(message_queue* mq);
  * Implementations
  * --------------------------------------------------------------------*/
 
- /* Helper: add seconds (fractional allowed) to timespec */
+/* Helper: add seconds (fractional allowed) to timespec */
 static inline void timespec_add_seconds(struct timespec* ts, double seconds) {
     time_t sec = (time_t) seconds;
     long nsec = (long) ((seconds - (double) sec) * 1e9);

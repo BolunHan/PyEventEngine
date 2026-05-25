@@ -1,10 +1,10 @@
 #ifndef C_TOPIC_H
 #define C_TOPIC_H
 
-#include <stdlib.h>
-#include <string.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #ifdef _WIN32
 #include "regex_nt_compat.h"
 #else
@@ -67,7 +67,7 @@ typedef struct evt_topic_exact {
 // Optional name for binding (e.g., "+user_id")
 typedef struct evt_topic_any {
     evt_topic_part header;
-    char* name;      // may be NULL
+    char* name;  // may be NULL
     size_t name_len;
 } evt_topic_any;
 
@@ -101,152 +101,152 @@ typedef union evt_topic_part_variant {
 
 // Full topic = sequence of parts + metadata
 typedef struct evt_topic {
-    evt_topic_part_variant* parts;        // head of linked list
-    size_t n;                // number of parts
-    uint64_t hash;           // cached hash (for fast compare)
-    char* key;               // interned key string, e.g., "a.b.c"
+    evt_topic_part_variant* parts;  // head of linked list
+    size_t n;                       // number of parts
+    uint64_t hash;                  // cached hash (for fast compare)
+    char* key;                      // interned key string, e.g., "a.b.c"
     size_t key_len;
     int is_exact;
     heap_allocator* allocator;  // allocator used for all internal allocations
 } evt_topic;
 
 typedef struct evt_topic_match {
-    int matched;                        // 1 if matched, for this part alone, 0 otherwise
-    evt_topic_part_variant* part_a;                  // matched part from topic_a
-    evt_topic_part_variant* part_b;                  // matched part from topic_b
-    char* literal;                      // matched literal string, which is a borrowed pointer from part_a or part_b, if there is any.
-    size_t literal_len;                 // length of matched literal
-    struct evt_topic_match* next;  // next match result in linked list
-    heap_allocator* allocator;         // allocator used for this result
+    int matched;                     // 1 if matched, for this part alone, 0 otherwise
+    evt_topic_part_variant* part_a;  // matched part from topic_a
+    evt_topic_part_variant* part_b;  // matched part from topic_b
+    char* literal;                   // matched literal string, which is a borrowed pointer from part_a or part_b, if there is any.
+    size_t literal_len;              // length of matched literal
+    struct evt_topic_match* next;    // next match result in linked list
+    heap_allocator* allocator;       // allocator used for this result
 } evt_topic_match;
 
 // --- Function Declarations ---
 
 /*
-* @brief Get the global internal map for topic key deduplication.
-*
-* @param allocator The heap_allocator to use if the map needs to be created.
-* @param with_lock Whether to use mutex.
-* @return The global ByteMapHeader for internalized topics.
-*/
+ * @brief Get the global internal map for topic key deduplication.
+ *
+ * @param allocator The heap_allocator to use if the map needs to be created.
+ * @param with_lock Whether to use mutex.
+ * @return The global ByteMapHeader for internalized topics.
+ */
 static inline strmap* c_get_global_internal_map(heap_allocator* allocator, int with_lock);
 
 /*
-* @brief Create a new evt_topic from a key string using the given allocator.
-*
-* @param key The topic key string.
-* @param key_len The length of the key string. If 0, the length is determined using strlen.
-* @param allocator The heap_allocator to use for internal allocations. If NULL, standard malloc/free are used.
-* @param with_lock Whether to use mutex.
-* @return Pointer to a new evt_topic on success; NULL on failure.
-*/
+ * @brief Create a new evt_topic from a key string using the given allocator.
+ *
+ * @param key The topic key string.
+ * @param key_len The length of the key string. If 0, the length is determined using strlen.
+ * @param allocator The heap_allocator to use for internal allocations. If NULL, standard malloc/free are used.
+ * @param with_lock Whether to use mutex.
+ * @return Pointer to a new evt_topic on success; NULL on failure.
+ */
 static inline evt_topic* c_topic_new(const char* key, size_t key_len, heap_allocator* allocator, int with_lock);
 
 /*
-* @brief Free a evt_topic and all its parts
-*
-* @param topic The evt_topic to free.
-* @param free_self Whether to free the evt_topic structure itself (1) or just its parts
-* @param with_lock Whether to use mutex.
-* @return 0 on success, -1 on failure.
-*/
+ * @brief Free a evt_topic and all its parts
+ *
+ * @param topic The evt_topic to free.
+ * @param free_self Whether to free the evt_topic structure itself (1) or just its parts
+ * @param with_lock Whether to use mutex.
+ * @return 0 on success, -1 on failure.
+ */
 static inline int c_topic_free(evt_topic* topic, int free_self, int with_lock);
 
 /*
-* @brief Internalize the topic key string into a global map for deduplication.
-*
-* @param topic The evt_topic to internalize.
-* @param key The topic key string.
-* @param key_len The length of the key string.
-* @param with_lock Whether to use mutex.
-* @return 0 on success, -1 on failure.
-*/
+ * @brief Internalize the topic key string into a global map for deduplication.
+ *
+ * @param topic The evt_topic to internalize.
+ * @param key The topic key string.
+ * @param key_len The length of the key string.
+ * @param with_lock Whether to use mutex.
+ * @return 0 on success, -1 on failure.
+ */
 static inline int c_topic_internalize(evt_topic* topic, const char* key, size_t key_len, int with_lock);
 
 /*
-* @brief Append a part to the evt_topic.
-* For a manual control of initializing evt_topic parts.
-* Note that in this way, the evt_topic is not internalized automatically and key literal is not updated.
-*
-* @param topic The evt_topic to append to.
-* @param s The part string.
-* @param len The length of the part string. If 0, the length is determined using strlen.
-* @param ttype The evt_topic_type of the part.
-* @return 0 on success, -1 on failure.
-*/
+ * @brief Append a part to the evt_topic.
+ * For a manual control of initializing evt_topic parts.
+ * Note that in this way, the evt_topic is not internalized automatically and key literal is not updated.
+ *
+ * @param topic The evt_topic to append to.
+ * @param s The part string.
+ * @param len The length of the part string. If 0, the length is determined using strlen.
+ * @param ttype The evt_topic_type of the part.
+ * @return 0 on success, -1 on failure.
+ */
 static inline int c_topic_append(evt_topic* topic, const char* s, size_t len, evt_topic_type ttype, int with_lock);
 
 /*
-* @brief Parse a topic key string into its constituent parts and populate the evt_topic structure.
-*
-* @note for a Range topic part, the option[] array does not owns the memory, but the literal field does.
-*
-* @param topic The evt_topic to populate.
-* @param key The topic key string.
-* @param key_len The length of the key string. If 0, the length is determined using strlen.
-* @param with_lock Whether to use mutex.
-* @return 0 on success, -1 on failure.
-*/
+ * @brief Parse a topic key string into its constituent parts and populate the evt_topic structure.
+ *
+ * @note for a Range topic part, the option[] array does not owns the memory, but the literal field does.
+ *
+ * @param topic The evt_topic to populate.
+ * @param key The topic key string.
+ * @param key_len The length of the key string. If 0, the length is determined using strlen.
+ * @param with_lock Whether to use mutex.
+ * @return 0 on success, -1 on failure.
+ */
 static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_len, int with_lock);
 
 /*
-* @brief Assign a new key to an existing evt_topic, re-parsing and internalizing it.
-* Suitable for lazy initialization or reassignment.
-*
-* @param topic The evt_topic to assign to.
-* @param key The new topic key string.
-* @param key_len The length of the key string. If 0, the length is determined using strlen.
-* @param with_lock Whether to use mutex.
-* @return 0 on success, -1 on failure.
-*/
+ * @brief Assign a new key to an existing evt_topic, re-parsing and internalizing it.
+ * Suitable for lazy initialization or reassignment.
+ *
+ * @param topic The evt_topic to assign to.
+ * @param key The new topic key string.
+ * @param key_len The length of the key string. If 0, the length is determined using strlen.
+ * @param with_lock Whether to use mutex.
+ * @return 0 on success, -1 on failure.
+ */
 static inline int c_topic_assign(evt_topic* topic, const char* key, size_t key_len, int with_lock);
 
 /*
-* @brief Update the internalized key literal of the evt_topic based on its parts.
-* Useful after manual modifications to the parts.
-*
-* @param topic The evt_topic to update.
-* @param with_lock Whether to use mutex.
-* @return 0 on success, -1 on failure.
-*/
+ * @brief Update the internalized key literal of the evt_topic based on its parts.
+ * Useful after manual modifications to the parts.
+ *
+ * @param topic The evt_topic to update.
+ * @param with_lock Whether to use mutex.
+ * @return 0 on success, -1 on failure.
+ */
 static inline int c_topic_update_literal(evt_topic* topic, int with_lock);
 
 /*
-* @brief Match two evt_topics and produce a linked list of evt_topic_match.
-*
-* @param topic_a The first evt_topic to match.
-* @param topic_b The second evt_topic to match.
-* @param out Pointer to store the head of the resulting evt_topic_match linked list. If NULL, a new list is created, with the allocator from topic_a.
-* @param with_lock Whether to use mutex.
-*/
+ * @brief Match two evt_topics and produce a linked list of evt_topic_match.
+ *
+ * @param topic_a The first evt_topic to match.
+ * @param topic_b The second evt_topic to match.
+ * @param out Pointer to store the head of the resulting evt_topic_match linked list. If NULL, a new list is created, with the allocator from topic_a.
+ * @param with_lock Whether to use mutex.
+ */
 static inline evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topic_b, evt_topic_match* out, int with_lock);
 
 /*
-* @brief New a evt_topic_match and link to the previous node, if provided.
-*
-* @param prev The previous node, can be NULL if there is not any.
-* @param allocator The allocator used for this
-* @param with_lock Whether to use mutex.
-*/
+ * @brief New a evt_topic_match and link to the previous node, if provided.
+ *
+ * @param prev The previous node, can be NULL if there is not any.
+ * @param allocator The allocator used for this
+ * @param with_lock Whether to use mutex.
+ */
 static inline evt_topic_match* c_topic_match_new(evt_topic_match* prev, heap_allocator* allocator, int with_lock);
 
 /*
-* @brief Free a linked list of evt_topic_match.
-*
-* @param res The head of the evt_topic_match linked list to free.
-* @param with_lock Whether to use mutex.
-*/
+ * @brief Free a linked list of evt_topic_match.
+ *
+ * @param res The head of the evt_topic_match linked list to free.
+ * @param with_lock Whether to use mutex.
+ */
 static inline void c_topic_match_free(evt_topic_match* res, int with_lock);
 
 /*
-* @brief Efficiently match two evt_topics and return 1 if they match, 0 otherwise.
-* This function does not allocate or fill match result structures.
-*
-* @param topic_a The first evt_topic to match.
-* @param topic_b The second evt_topic to match.
-* @return 1 if matched, 0 otherwise.
-* @param with_lock Whether to use mutex.
-*/
+ * @brief Efficiently match two evt_topics and return 1 if they match, 0 otherwise.
+ * This function does not allocate or fill match result structures.
+ *
+ * @param topic_a The first evt_topic to match.
+ * @param topic_b The second evt_topic to match.
+ * @return 1 if matched, 0 otherwise.
+ * @param with_lock Whether to use mutex.
+ */
 static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b);
 
 // --- Implementations ---
@@ -301,7 +301,7 @@ static inline evt_topic* c_topic_new(const char* key, size_t key_len, heap_alloc
     topic->hash = 0;
     topic->key = NULL;
     topic->key_len = 0;
-    topic->is_exact = 1; // Always initialize as exact
+    topic->is_exact = 1;  // Always initialize as exact
     topic->allocator = allocator;
 
     // If no key provided, return empty topic and not internalized
@@ -337,8 +337,7 @@ static inline int c_topic_free(evt_topic* topic, int free_self, int with_lock) {
         evt_topic_part_variant* next = curr->header.next;
 
         switch (curr->header.ttype) {
-            case TOPIC_PART_EXACT:
-            {
+            case TOPIC_PART_EXACT: {
                 if (allocator) {
                     c_heap_free(curr->exact.part, NULL);
                     c_heap_free(curr, NULL);
@@ -349,8 +348,7 @@ static inline int c_topic_free(evt_topic* topic, int free_self, int with_lock) {
                 }
                 break;
             }
-            case TOPIC_PART_ANY:
-            {
+            case TOPIC_PART_ANY: {
                 if (allocator) {
                     c_heap_free(curr->any.name, NULL);
                     c_heap_free(curr, NULL);
@@ -361,8 +359,7 @@ static inline int c_topic_free(evt_topic* topic, int free_self, int with_lock) {
                 }
                 break;
             }
-            case TOPIC_PART_RANGE:
-            {
+            case TOPIC_PART_RANGE: {
                 if (allocator) {
                     c_heap_free(curr->range.options, NULL);
                     c_heap_free(curr->range.literal, NULL);
@@ -375,8 +372,7 @@ static inline int c_topic_free(evt_topic* topic, int free_self, int with_lock) {
                 }
                 break;
             }
-            case TOPIC_PART_PATTERN:
-            {
+            case TOPIC_PART_PATTERN: {
                 if (allocator) {
                     c_heap_free(curr->pattern.pattern, NULL);
                     c_heap_free(curr, NULL);
@@ -413,7 +409,7 @@ static inline int c_topic_free(evt_topic* topic, int free_self, int with_lock) {
     topic->parts = NULL;
     topic->n = 0;
     topic->hash = 0;
-    topic->is_exact = 1; // Always reset to exact
+    topic->is_exact = 1;  // Always reset to exact
 
     if (free_self) {
         if (allocator) {
@@ -515,24 +511,21 @@ static inline int c_topic_append(evt_topic* topic, const char* s, size_t len, ev
     }
 
     switch (ttype) {
-        case TOPIC_PART_EXACT:
-        {
+        case TOPIC_PART_EXACT: {
             tp->header.ttype = TOPIC_PART_EXACT;
             tp->header.next = NULL;
             tp->exact.part = internal;
             tp->exact.part_len = len;
             break;
         }
-        case TOPIC_PART_ANY:
-        {
+        case TOPIC_PART_ANY: {
             tp->header.ttype = TOPIC_PART_ANY;
             tp->header.next = NULL;
             tp->any.name = internal;
             tp->any.name_len = len;
             break;
         }
-        case TOPIC_PART_RANGE:
-        {
+        case TOPIC_PART_RANGE: {
             // Note: Options are expected to be separated by DEFAULT_OPTION_SEP = '|' or '\0' if reconstructed from internal string.
             // The Options array are allocated with a quick count of DEFAULT_OPTION_SEP or NUL, the allocated buffer might be larger than needed
             size_t option_count = 1;
@@ -566,7 +559,7 @@ static inline int c_topic_append(evt_topic* topic, const char* s, size_t len, ev
             size_t* option_length = (size_t*) ((char*) options + option_count * sizeof(char*));
             size_t opt_idx = 0;
             char* start = internal;
-            option_count = 0; // Reset counting
+            option_count = 0;  // Reset counting
             for (size_t i = 0; i <= len; i++) {
                 if (i == len || internal[i] == DEFAULT_OPTION_SEP || internal[i] == '\0') {
                     size_t opt_len = &internal[i] - start;
@@ -599,16 +592,14 @@ static inline int c_topic_append(evt_topic* topic, const char* s, size_t len, ev
             tp->range.literal_len = len;
             break;
         }
-        case TOPIC_PART_PATTERN:
-        {
+        case TOPIC_PART_PATTERN: {
             tp->header.ttype = TOPIC_PART_PATTERN;
             tp->header.next = NULL;
             tp->pattern.pattern = internal;
             tp->pattern.pattern_len = len;
             break;
         }
-        default:
-        {
+        default: {
             // Unknown type
             if (allocator) {
                 c_heap_free(internal, 0);
@@ -712,16 +703,12 @@ static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_le
                     goto unlock_and_exit;
                 }
             }
-            else if (token_len >= 3 &&
-                tok[0] == DEFAULT_WILDCARD_BRACKETS[0] &&
-                tok[token_len - 1] == DEFAULT_WILDCARD_BRACKETS[1]) {
+            else if (token_len >= 3 && tok[0] == DEFAULT_WILDCARD_BRACKETS[0] && tok[token_len - 1] == DEFAULT_WILDCARD_BRACKETS[1]) {
                 if (c_topic_append(topic, tok + 1, token_len - 2, TOPIC_PART_ANY, with_lock) != 0) {
                     goto unlock_and_exit;
                 }
             }
-            else if (token_len >= 3 &&
-                tok[0] == DEFAULT_RANGE_BRACKETS[0] &&
-                tok[token_len - 1] == DEFAULT_RANGE_BRACKETS[1]) {
+            else if (token_len >= 3 && tok[0] == DEFAULT_RANGE_BRACKETS[0] && tok[token_len - 1] == DEFAULT_RANGE_BRACKETS[1]) {
                 if (c_topic_append(topic, tok + 1, token_len - 2, TOPIC_PART_RANGE, with_lock) != 0) {
                     goto unlock_and_exit;
                 }
@@ -799,19 +786,19 @@ static inline int c_topic_update_literal(evt_topic* topic, int with_lock) {
                 //     total_len += 1 + curr->any.name_len; // + for wildcard marker
                 //     break;
             case TOPIC_PART_ANY:
-                total_len += 2 + curr->any.name_len; // + for wildcard marker
+                total_len += 2 + curr->any.name_len;  // + for wildcard marker
                 break;
             case TOPIC_PART_RANGE:
-                total_len += 2 + curr->range.literal_len; // +2 for brackets
+                total_len += 2 + curr->range.literal_len;  // +2 for brackets
                 break;
             case TOPIC_PART_PATTERN:
-                total_len += 2 + curr->pattern.pattern_len; // +2 for delimiters
+                total_len += 2 + curr->pattern.pattern_len;  // +2 for delimiters
                 break;
             default:
                 goto unlock_and_exit;
         }
         if (curr->header.next) {
-            total_len += 1; // for separator
+            total_len += 1;  // for separator
         }
         curr = curr->header.next;
     }
@@ -988,8 +975,7 @@ static inline evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topi
 
         // Step 2: Match exact part against other part
         switch (part_other->header.ttype) {
-            case TOPIC_PART_EXACT:
-            {
+            case TOPIC_PART_EXACT: {
                 if (part_exact->exact.part_len == part_other->exact.part_len &&
                     memcmp(part_exact->exact.part, part_other->exact.part, part_exact->exact.part_len) == 0) {
                     res->matched = 1;
@@ -1002,15 +988,13 @@ static inline evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topi
                 }
                 break;
             }
-            case TOPIC_PART_ANY:
-            {
+            case TOPIC_PART_ANY: {
                 res->matched = 1;
                 res->literal = part_exact->exact.part;
                 res->literal_len = part_exact->exact.part_len;
                 break;
             }
-            case TOPIC_PART_RANGE:
-            {
+            case TOPIC_PART_RANGE: {
                 int found = 0;
                 for (size_t i = 0; i < part_other->range.num_options; i++) {
                     if (part_other->range.option_length[i] == part_exact->exact.part_len && memcmp(part_other->range.options[i], part_exact->exact.part, part_exact->exact.part_len) == 0) {
@@ -1027,8 +1011,7 @@ static inline evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topi
                 }
                 break;
             }
-            case TOPIC_PART_PATTERN:
-            {
+            case TOPIC_PART_PATTERN: {
                 regex_t regex;
                 int compile_ret = regcomp(&regex, part_other->pattern.pattern, REG_EXTENDED);
                 if (compile_ret) {
@@ -1047,8 +1030,7 @@ static inline evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topi
                 }
                 break;
             }
-            default:
-            {
+            default: {
                 res->matched = 0;
                 goto unlock_and_return;
             }
@@ -1168,8 +1150,7 @@ static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) {
             case TOPIC_PART_ANY:
                 // always matches
                 break;
-            case TOPIC_PART_RANGE:
-            {
+            case TOPIC_PART_RANGE: {
                 int found = 0;
                 for (size_t i = 0; i < part_other->range.num_options; i++) {
                     if (part_other->range.option_length[i] == part_exact->exact.part_len && memcmp(part_other->range.options[i], part_exact->exact.part, part_exact->exact.part_len) == 0) {
@@ -1182,8 +1163,7 @@ static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) {
                 }
                 break;
             }
-            case TOPIC_PART_PATTERN:
-            {
+            case TOPIC_PART_PATTERN: {
                 regex_t regex;
                 int compile_ret = regcomp(&regex, part_other->pattern.pattern, REG_EXTENDED);
                 if (compile_ret) {
@@ -1209,4 +1189,4 @@ static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) {
     return 1;
 }
 
-#endif // C_TOPIC_H
+#endif  // C_TOPIC_H

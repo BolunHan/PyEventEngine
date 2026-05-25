@@ -13,10 +13,10 @@
  * and a sequence identifier.
  */
 typedef struct evt_message_payload {
-    void* args;                     // optional user data pointer
-    evt_topic* topic;               // optional Topic borrowed pointer
-    uint64_t seq_id;                // optional sequence id (0 if unused)
-    heap_allocator* allocator;      // allocator for payload data (may be NULL)
+    void* args;                 // optional user data pointer
+    evt_topic* topic;           // optional Topic borrowed pointer
+    uint64_t seq_id;            // optional sequence id (0 if unused)
+    heap_allocator* allocator;  // allocator for payload data (may be NULL)
 } evt_message_payload;
 
 typedef void (*evt_callback_bare)(void);
@@ -38,6 +38,8 @@ typedef void (*evt_callback_with_args_topic_userdata)(void* args, evt_topic* top
 typedef void (*evt_callback_with_payload)(evt_message_payload* payload);
 
 typedef void (*evt_callback_with_payload_userdata)(evt_message_payload* payload, void* user_data);
+
+// clang-format off
 
 typedef enum evt_callback_type {
     EVT_CALLBACK_BARE                       = 0,
@@ -64,6 +66,8 @@ typedef union evt_callback_variants {
     evt_callback_with_payload               with_payload;
     evt_callback_with_payload_userdata      with_payload_userdata;
 } evt_callback_variants;
+
+// clang-format on
 
 typedef struct evt_callback {
     evt_callback_type type;
@@ -178,7 +182,8 @@ static inline int c_evt_hook_add_watcher(evt_hook* hook, evt_hook_watcher_fn fn,
         hook->pre_watchers[hook->n_pre_watchers].user_data = user_data;
         hook->n_pre_watchers = new_count;
         return EVT_HOOK_OK;
-    } else if (type == EVT_HOOK_WATCHER_POST_INVOKED) {
+    }
+    else if (type == EVT_HOOK_WATCHER_POST_INVOKED) {
         const size_t new_count = hook->n_post_watchers + 1;
         evt_hook_watcher* grown = (evt_hook_watcher*) realloc(hook->post_watchers, new_count * sizeof(evt_hook_watcher));
         if (!grown) return EVT_HOOK_ERR_OOM;
@@ -201,17 +206,38 @@ static inline int c_evt_hook_register_callback(evt_hook* hook, const void* fn, e
             if (callback->type != ftype) continue;
             const void* existing = NULL;
             switch (callback->type) {
-                case EVT_CALLBACK_WITH_TOPIC:               existing = (const void*) callback->fn.with_topic; break;
-                case EVT_CALLBACK_WITH_ARGS:                existing = (const void*) callback->fn.with_args; break;
-                case EVT_CALLBACK_WITH_USERDATA:            existing = (const void*) callback->fn.with_userdata; break;
-                case EVT_CALLBACK_WITH_ARGS_TOPIC:          existing = (const void*) callback->fn.with_args_topic; break;
-                case EVT_CALLBACK_WITH_ARGS_USERDATA:       existing = (const void*) callback->fn.with_args_userdata; break;
-                case EVT_CALLBACK_WITH_TOPIC_USERDATA:      existing = (const void*) callback->fn.with_topic_userdata; break;
-                case EVT_CALLBACK_WITH_ARGS_TOPIC_USERDATA: existing = (const void*) callback->fn.with_args_topic_userdata; break;
-                case EVT_CALLBACK_WITH_PAYLOAD:             existing = (const void*) callback->fn.with_payload; break;
-                case EVT_CALLBACK_WITH_PAYLOAD_USERDATA:    existing = (const void*) callback->fn.with_payload_userdata; break;
-                case EVT_CALLBACK_BARE:                     existing = (const void*) callback->fn.bare; break;
-                default: break;
+                case EVT_CALLBACK_WITH_TOPIC:
+                    existing = (const void*) callback->fn.with_topic;
+                    break;
+                case EVT_CALLBACK_WITH_ARGS:
+                    existing = (const void*) callback->fn.with_args;
+                    break;
+                case EVT_CALLBACK_WITH_USERDATA:
+                    existing = (const void*) callback->fn.with_userdata;
+                    break;
+                case EVT_CALLBACK_WITH_ARGS_TOPIC:
+                    existing = (const void*) callback->fn.with_args_topic;
+                    break;
+                case EVT_CALLBACK_WITH_ARGS_USERDATA:
+                    existing = (const void*) callback->fn.with_args_userdata;
+                    break;
+                case EVT_CALLBACK_WITH_TOPIC_USERDATA:
+                    existing = (const void*) callback->fn.with_topic_userdata;
+                    break;
+                case EVT_CALLBACK_WITH_ARGS_TOPIC_USERDATA:
+                    existing = (const void*) callback->fn.with_args_topic_userdata;
+                    break;
+                case EVT_CALLBACK_WITH_PAYLOAD:
+                    existing = (const void*) callback->fn.with_payload;
+                    break;
+                case EVT_CALLBACK_WITH_PAYLOAD_USERDATA:
+                    existing = (const void*) callback->fn.with_payload_userdata;
+                    break;
+                case EVT_CALLBACK_BARE:
+                    existing = (const void*) callback->fn.bare;
+                    break;
+                default:
+                    break;
             }
             if (existing == fn && callback->user_data == user_data) {
                 return EVT_HOOK_ERR_DUPLICATE; /* duplicate ignored */
@@ -231,17 +257,39 @@ static inline int c_evt_hook_register_callback(evt_hook* hook, const void* fn, e
     cb->user_data = user_data;
 
     switch (ftype) {
-        case EVT_CALLBACK_WITH_TOPIC:               cb->fn.with_topic = (evt_callback_with_topic) fn; break;
-        case EVT_CALLBACK_WITH_ARGS:                cb->fn.with_args = (evt_callback_with_args) fn; break;
-        case EVT_CALLBACK_WITH_USERDATA:            cb->fn.with_userdata = (evt_callback_with_userdata) fn; break;
-        case EVT_CALLBACK_WITH_ARGS_TOPIC:          cb->fn.with_args_topic = (evt_callback_with_args_topic) fn; break;
-        case EVT_CALLBACK_WITH_ARGS_USERDATA:       cb->fn.with_args_userdata = (evt_callback_with_args_userdata) fn; break;
-        case EVT_CALLBACK_WITH_TOPIC_USERDATA:      cb->fn.with_topic_userdata = (evt_callback_with_topic_userdata) fn; break;
-        case EVT_CALLBACK_WITH_ARGS_TOPIC_USERDATA: cb->fn.with_args_topic_userdata = (evt_callback_with_args_topic_userdata) fn; break;
-        case EVT_CALLBACK_WITH_PAYLOAD:             cb->fn.with_payload = (evt_callback_with_payload) fn; break;
-        case EVT_CALLBACK_WITH_PAYLOAD_USERDATA:    cb->fn.with_payload_userdata = (evt_callback_with_payload_userdata) fn; break;
-        case EVT_CALLBACK_BARE:                     cb->fn.bare = (evt_callback_bare) fn; break;
-        default:                           cb->fn.bare = NULL; break;
+        case EVT_CALLBACK_WITH_TOPIC:
+            cb->fn.with_topic = (evt_callback_with_topic) fn;
+            break;
+        case EVT_CALLBACK_WITH_ARGS:
+            cb->fn.with_args = (evt_callback_with_args) fn;
+            break;
+        case EVT_CALLBACK_WITH_USERDATA:
+            cb->fn.with_userdata = (evt_callback_with_userdata) fn;
+            break;
+        case EVT_CALLBACK_WITH_ARGS_TOPIC:
+            cb->fn.with_args_topic = (evt_callback_with_args_topic) fn;
+            break;
+        case EVT_CALLBACK_WITH_ARGS_USERDATA:
+            cb->fn.with_args_userdata = (evt_callback_with_args_userdata) fn;
+            break;
+        case EVT_CALLBACK_WITH_TOPIC_USERDATA:
+            cb->fn.with_topic_userdata = (evt_callback_with_topic_userdata) fn;
+            break;
+        case EVT_CALLBACK_WITH_ARGS_TOPIC_USERDATA:
+            cb->fn.with_args_topic_userdata = (evt_callback_with_args_topic_userdata) fn;
+            break;
+        case EVT_CALLBACK_WITH_PAYLOAD:
+            cb->fn.with_payload = (evt_callback_with_payload) fn;
+            break;
+        case EVT_CALLBACK_WITH_PAYLOAD_USERDATA:
+            cb->fn.with_payload_userdata = (evt_callback_with_payload_userdata) fn;
+            break;
+        case EVT_CALLBACK_BARE:
+            cb->fn.bare = (evt_callback_bare) fn;
+            break;
+        default:
+            cb->fn.bare = NULL;
+            break;
     }
 
     hook->n_callbacks = new_count;
@@ -262,7 +310,8 @@ static inline int c_evt_hook_pop_callback(evt_hook* hook, size_t idx) {
     if (hook->n_callbacks == 0) {
         free(hook->callbacks);
         hook->callbacks = NULL;
-    } else {
+    }
+    else {
         /* optional shrink; ignore failure to avoid losing callbacks */
         evt_callback* shrunk = (evt_callback*) realloc(hook->callbacks, hook->n_callbacks * sizeof(evt_callback));
         if (shrunk) hook->callbacks = shrunk;

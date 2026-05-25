@@ -1,14 +1,14 @@
 #ifndef C_STRMAP_H
 #define C_STRMAP_H
 
-#include <string.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
-#include "xxh3.h"
 #include "c_heap_allocator.h"
+#include "xxh3.h"
 
 // ========== Configuration ==========
 
@@ -35,14 +35,14 @@
  * @brief A single open-addressing table slot for the string map.
  */
 typedef struct strmap_entry {
-    const char* key;              /**< Cloned key bytes (owned by the map, NUL-terminated). */
-    size_t key_length;            /**< Length of key (excludes NUL). */
-    void* value;                  /**< Opaque value pointer stored by the caller. */
-    uint64_t hash;                /**< Cached hash of key for faster probing/rehash. */
-    int occupied;                 /**< 1 if slot holds a live entry. */
-    int removed;                  /**< 1 if slot is a tombstone (keeps probe chains intact). */
-    struct strmap_entry* prev;    /**< Previous entry in insertion-order list. */
-    struct strmap_entry* next;    /**< Next entry in insertion-order list. */
+    const char* key;           /**< Cloned key bytes (owned by the map, NUL-terminated). */
+    size_t key_length;         /**< Length of key (excludes NUL). */
+    void* value;               /**< Opaque value pointer stored by the caller. */
+    uint64_t hash;             /**< Cached hash of key for faster probing/rehash. */
+    int occupied;              /**< 1 if slot holds a live entry. */
+    int removed;               /**< 1 if slot is a tombstone (keeps probe chains intact). */
+    struct strmap_entry* prev; /**< Previous entry in insertion-order list. */
+    struct strmap_entry* next; /**< Next entry in insertion-order list. */
 } strmap_entry;
 
 /**
@@ -60,7 +60,7 @@ typedef struct strmap {
 } strmap;
 
 #ifndef MAX_STRMAP_CAPACITY
-#define MAX_STRMAP_CAPACITY ((size_t)(SIZE_MAX / sizeof(strmap_entry) / 2))
+#define MAX_STRMAP_CAPACITY ((size_t) (SIZE_MAX / sizeof(strmap_entry) / 2))
 #endif
 
 // ========== Forward Declarations (Public API) ==========
@@ -474,9 +474,7 @@ static inline int c_strmap_set(strmap* map, const char* key, size_t key_len, voi
         if (!entry->occupied && !tombstone) {
             tombstone = entry;
         }
-        else if (entry->occupied &&
-            entry->key_length == key_len &&
-            memcmp(entry->key, key, key_len) == 0) {
+        else if (entry->occupied && entry->key_length == key_len && memcmp(entry->key, key, key_len) == 0) {
             entry->value = value;
             if (out_entry) *out_entry = entry;
             return STRMAP_OK;
@@ -569,4 +567,4 @@ static inline strmap_entry* c_strmap_prev(strmap_entry* entry) {
     return entry ? entry->prev : NULL;
 }
 
-#endif // C_STRMAP_H
+#endif  // C_STRMAP_H

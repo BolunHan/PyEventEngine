@@ -26,48 +26,64 @@ def get_version(rel_path):
 
 cython_extension = []
 ext_modules = []
-opt_flags = []
 with_annotation = False
+mode = os.environ.get("PYEE_OPT", "").lower()
 
-match os.environ.get("PYEE_OPT", "").lower():
-    case "debug":
-        with_annotation = True
-        opt_flags = ["-g", "-O0"]
-    case "size":
-        opt_flags = ["-Os"]
-    case "fast":
-        opt_flags = ["-O3", "-ffast-math"]
-    case "none":
-        opt_flags = []
-    case _:  # default to -O3
-        opt_flags = ["-O3"]
+if os.name == "nt":
+    match mode:
+        case "debug":
+            with_annotation = True
+            flags = ["/Od", "/Zi"]
+        case "size":
+            flags = ["/O1"]
+        case "fast":
+            flags = ["/O2", "/fp:fast"]
+        case "none":
+            flags = ["/Od"]
+        case _:
+            flags = ["/O2"]
+    flags.append("/std:clatest")
+    flags.append("/experimental:c11atomics")
+else:  # gcc / clang / apple clang
+    match mode:
+        case "debug":
+            with_annotation = True
+            flags = ["-g", "-O0"]
+        case "size":
+            flags = ["-Os"]
+        case "fast":
+            flags = ["-O3", "-ffast-math"]
+        case "none":
+            flags = []
+        case _:
+            flags = ["-O3"]
+    flags.append("-std=c23")
 
-if os.name == 'posix':
-    cython_extension.extend([
-        Extension(
-            name="event_engine.base.c_strmap",
-            sources=["event_engine/base/c_strmap.pyx"],
-            extra_compile_args=opt_flags,
-        ),
-        Extension(
-            name="event_engine.capi.c_topic",
-            sources=["event_engine/capi/c_topic.pyx"],
-            extra_compile_args=opt_flags,
-            include_dirs=["event_engine/base"]
-        ),
-        Extension(
-            name="event_engine.capi.c_event",
-            sources=["event_engine/capi/c_event.pyx"],
-            extra_compile_args=opt_flags,
-            include_dirs=["event_engine/base"]
-        ),
-        Extension(
-            name="event_engine.capi.c_engine",
-            sources=["event_engine/capi/c_engine.pyx"],
-            extra_compile_args=opt_flags,
-            include_dirs=["event_engine/base"]
-        ),
-    ])
+cython_extension.extend([
+    Extension(
+        name="event_engine.base.c_strmap",
+        sources=["event_engine/base/c_strmap.pyx"],
+        extra_compile_args=list(flags),
+    ),
+    Extension(
+        name="event_engine.capi.c_topic",
+        sources=["event_engine/capi/c_topic.pyx"],
+        extra_compile_args=list(flags),
+        include_dirs=["event_engine/base"]
+    ),
+    Extension(
+        name="event_engine.capi.c_event",
+        sources=["event_engine/capi/c_event.pyx"],
+        extra_compile_args=list(flags),
+        include_dirs=["event_engine/base"]
+    ),
+    Extension(
+        name="event_engine.capi.c_engine",
+        sources=["event_engine/capi/c_engine.pyx"],
+        extra_compile_args=list(flags),
+        include_dirs=["event_engine/base"]
+    ),
+])
 
 
 class BuildExtWithConfig(build_ext):

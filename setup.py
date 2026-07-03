@@ -40,17 +40,15 @@ class BuildExtWithConfig(build_ext):
 
     def run(self):
         self.pre_compile()
-        self.collect_sources()
 
         super().run()
 
         self.post_compile()
-        # self.cleanup_sources()
         print(f"[build_py] <{DISPLAY_NAME}> v{__VERSION__} setup complete. Built {len(self.extensions)} Cython extensions.")
 
     def build_extensions(self):
         macros = []
-        for macro in ["DEBUG"]:
+        for macro in ["DEBUG", "TICKER_SIZE", "BOOK_SIZE", "ID_SIZE", "MAX_WORKERS"]:
             val = os.environ.get(macro)
             if val:
                 print(f'Compile-time variable {macro} overridden with value {val}')
@@ -65,6 +63,19 @@ class BuildExtWithConfig(build_ext):
                 "event_engine.capi",
             ]
         )
+
+        self.collect_sources()
+
+    def post_compile(self):
+        # Monkey hack the "__init__.pxd" issue:
+        self.inject_pxd(
+            [
+                "event_engine.capi",
+            ]
+        )
+
+        # Inject the generated include/ mirror into build_lib so it gets packaged
+        self.inject_sources()
 
     def collect_sources(self) -> None:
         project_root = Path(__file__).resolve().parent
@@ -88,17 +99,6 @@ class BuildExtWithConfig(build_ext):
                 copied += 1
 
         print(f"[build_py] <{DISPLAY_NAME}> mirrored {copied} C source file(s) -> {include_root.relative_to(project_root)}")
-
-    def post_compile(self):
-        # Inject the generated include/ mirror into build_lib so it gets packaged
-        self.inject_sources()
-
-        # Monkey hack the "__init__.pxd" issue:
-        self.inject_pxd(
-            [
-                "event_engine.capi",
-            ]
-        )
 
     def inject_sources(self) -> None:
         project_root = Path(__file__).resolve().parent

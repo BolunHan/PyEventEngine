@@ -1,4 +1,4 @@
-__version__ = '0.5.0.post2'
+__version__ = '0.5.1'
 
 import functools
 import pathlib
@@ -21,6 +21,17 @@ def get_include() -> list[str]:
     import os
     from .base import LOGGER
 
-    res_dir = os.path.dirname(__file__)
+    res_dir = pathlib.Path(__file__).parent
     LOGGER.info(f'Building with <PyEventEngine> version: "{__version__}", resource directory: "{res_dir}".')
-    return [res_dir, pathlib.Path(res_dir).joinpath('base').__str__(), pathlib.Path(res_dir).joinpath('capi').__str__()]
+
+    scr_dir = [
+        os.path.realpath(res_dir),
+        os.path.realpath(res_dir / 'base'),
+        os.path.realpath(res_dir / 'capi'),
+    ]
+
+    include_root = os.path.realpath(res_dir / 'include')
+    if os.path.isdir(include_root):
+        scr_dir.append(include_root)
+
+    return scr_dir

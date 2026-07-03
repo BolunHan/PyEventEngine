@@ -11,9 +11,9 @@
 #include <regex.h>
 #endif
 
-#include "c_heap_allocator.h"
-#include "c_strmap.h"
-#include "xxh3.h"
+#include <event_engine/base/c_heap_allocator.h>
+#include <event_engine/base/c_strmap.h>
+#include <event_engine/base/xxh3.h>
 
 #ifndef DEFAULT_TOPIC_SEP
 #define DEFAULT_TOPIC_SEP '.'
@@ -52,33 +52,33 @@ union evt_topic_part_variant;
 
 // Common header — must be first in every variant
 typedef struct evt_topic_part {
-    evt_topic_type ttype;
+    evt_topic_type                ttype;
     union evt_topic_part_variant* next;
 } evt_topic_part;
 
 // Exact match: literal string segment
 typedef struct evt_topic_exact {
     evt_topic_part header;
-    char* part;
-    size_t part_len;
+    char*          part;
+    size_t         part_len;
 } evt_topic_exact;
 
 // Wildcard: matches any single segment (e.g., '+')
 // Optional name for binding (e.g., "+user_id")
 typedef struct evt_topic_any {
     evt_topic_part header;
-    char* name;  // may be NULL
-    size_t name_len;
+    char*          name;  // may be NULL
+    size_t         name_len;
 } evt_topic_any;
 
 // Range: matches one of several literals, like "(user|admin|guest)"
 typedef struct evt_topic_range {
     evt_topic_part header;
-    char** options;         // array of option string.
-    size_t* option_length;  // length of each option
-    size_t num_options;     // count
-    char* literal;          // original literal string (for reference)
-    size_t literal_len;     // length of literal string
+    char**         options;        // array of option string.
+    size_t*        option_length;  // length of each option
+    size_t         num_options;    // count
+    char*          literal;        // original literal string (for reference)
+    size_t         literal_len;    // length of literal string
 } evt_topic_range;
 
 // Pattern: full regex on the entire topic key (not per-part!)
@@ -86,38 +86,38 @@ typedef struct evt_topic_range {
 //       e.g., evt_topic = [ evt_topic_pattern ]
 typedef struct evt_topic_pattern {
     evt_topic_part header;
-    char* pattern;
-    size_t pattern_len;
+    char*          pattern;
+    size_t         pattern_len;
 } evt_topic_pattern;
 
 // Unified evt_topic_part_variant as a tagged union
 typedef union evt_topic_part_variant {
-    evt_topic_part header;
-    evt_topic_exact exact;
-    evt_topic_any any;
-    evt_topic_range range;
+    evt_topic_part    header;
+    evt_topic_exact   exact;
+    evt_topic_any     any;
+    evt_topic_range   range;
     evt_topic_pattern pattern;
 } evt_topic_part_variant;
 
 // Full topic = sequence of parts + metadata
 typedef struct evt_topic {
     evt_topic_part_variant* parts;  // head of linked list
-    size_t n;                       // number of parts
-    uint64_t hash;                  // cached hash (for fast compare)
-    char* key;                      // interned key string, e.g., "a.b.c"
-    size_t key_len;
-    int is_exact;
-    heap_allocator* allocator;  // allocator used for all internal allocations
+    size_t                  n;      // number of parts
+    uint64_t                hash;   // cached hash (for fast compare)
+    char*                   key;    // interned key string, e.g., "a.b.c"
+    size_t                  key_len;
+    int                     is_exact;
+    heap_allocator*         allocator;  // allocator used for all internal allocations
 } evt_topic;
 
 typedef struct evt_topic_match {
-    int matched;                     // 1 if matched, for this part alone, 0 otherwise
-    evt_topic_part_variant* part_a;  // matched part from topic_a
-    evt_topic_part_variant* part_b;  // matched part from topic_b
-    char* literal;                   // matched literal string, which is a borrowed pointer from part_a or part_b, if there is any.
-    size_t literal_len;              // length of matched literal
-    struct evt_topic_match* next;    // next match result in linked list
-    heap_allocator* allocator;       // allocator used for this result
+    int                     matched;      // 1 if matched, for this part alone, 0 otherwise
+    evt_topic_part_variant* part_a;       // matched part from topic_a
+    evt_topic_part_variant* part_b;       // matched part from topic_b
+    char*                   literal;      // matched literal string, which is a borrowed pointer from part_a or part_b, if there is any.
+    size_t                  literal_len;  // length of matched literal
+    struct evt_topic_match* next;         // next match result in linked list
+    heap_allocator*         allocator;    // allocator used for this result
 } evt_topic_match;
 
 // --- Function Declarations ---
@@ -474,7 +474,7 @@ static inline int c_topic_append(evt_topic* topic, const char* s, size_t len, ev
 
     heap_allocator* allocator = topic->allocator;
     c_heap_lock(allocator, with_lock);
-    int ret_code = -1;
+    int   ret_code = -1;
 
     char* internal;
     if (allocator) {
@@ -557,8 +557,8 @@ static inline int c_topic_append(evt_topic* topic, const char* s, size_t len, ev
 
             // Assign options array pointing to internal strings
             size_t* option_length = (size_t*) ((char*) options + option_count * sizeof(char*));
-            size_t opt_idx = 0;
-            char* start = internal;
+            size_t  opt_idx = 0;
+            char*   start = internal;
             option_count = 0;  // Reset counting
             for (size_t i = 0; i <= len; i++) {
                 if (i == len || internal[i] == DEFAULT_OPTION_SEP || internal[i] == '\0') {
@@ -643,7 +643,7 @@ static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_le
 
     heap_allocator* allocator = topic->allocator;
     c_heap_lock(allocator, with_lock);
-    int ret_code = -1;
+    int    ret_code = -1;
 
     size_t i = 0;
     while (i < key_len) {
@@ -651,8 +651,8 @@ static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_le
         if ((i == 0 && key[0] == DEFAULT_PATTERN_DELIM) ||
             (i + 1 < key_len && key[i] == DEFAULT_TOPIC_SEP && key[i + 1] == DEFAULT_PATTERN_DELIM)) {
 
-            size_t content_start = key[i] == DEFAULT_TOPIC_SEP ? i + 2 : 1;
-            size_t j = content_start;
+            size_t  content_start = key[i] == DEFAULT_TOPIC_SEP ? i + 2 : 1;
+            size_t  j = content_start;
             uint8_t found_close = 0;
 
             while (j < key_len) {
@@ -775,7 +775,7 @@ static inline int c_topic_update_literal(evt_topic* topic, int with_lock) {
     int ret_code = -1;
 
     // Reconstruct key literal from parts
-    size_t total_len = 0;
+    size_t                  total_len = 0;
     evt_topic_part_variant* curr = topic->parts;
     while (curr) {
         switch (curr->header.ttype) {
@@ -803,7 +803,7 @@ static inline int c_topic_update_literal(evt_topic* topic, int with_lock) {
         curr = curr->header.next;
     }
 
-    char* key_literal;
+    char*           key_literal;
     heap_allocator* heap_allocator = topic->allocator;
     if (heap_allocator) {
         key_literal = (char*) c_heap_request(heap_allocator, total_len + 1, 1, 0);
@@ -925,10 +925,10 @@ static inline evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topi
 
     evt_topic_part_variant* part_a = topic_a->parts;
     evt_topic_part_variant* part_b = topic_b->parts;
-    evt_topic_match* res = out;
-    evt_topic_match* tmp_alloc = NULL;
-    evt_topic_match* head = res;
-    evt_topic_match* tail = NULL;
+    evt_topic_match*        res = out;
+    evt_topic_match*        tmp_alloc = NULL;
+    evt_topic_match*        head = res;
+    evt_topic_match*        tail = NULL;
     evt_topic_part_variant* part_exact;
     evt_topic_part_variant* part_other;
     c_heap_lock(allocator, with_lock);
@@ -1013,7 +1013,7 @@ static inline evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topi
             }
             case TOPIC_PART_PATTERN: {
                 regex_t regex;
-                int compile_ret = regcomp(&regex, part_other->pattern.pattern, REG_EXTENDED);
+                int     compile_ret = regcomp(&regex, part_other->pattern.pattern, REG_EXTENDED);
                 if (compile_ret) {
                     res->matched = 0;
                     goto unlock_and_return;
@@ -1097,7 +1097,7 @@ static inline void c_topic_match_free(evt_topic_match* res, int with_lock) {
     evt_topic_match* curr = res;
     while (curr) {
         evt_topic_match* next = curr->next;
-        heap_allocator* allocator = curr->allocator;
+        heap_allocator*  allocator = curr->allocator;
 
         if (allocator) {
             c_heap_free(curr, with_lock ? &allocator->lock : NULL);
@@ -1165,7 +1165,7 @@ static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) {
             }
             case TOPIC_PART_PATTERN: {
                 regex_t regex;
-                int compile_ret = regcomp(&regex, part_other->pattern.pattern, REG_EXTENDED);
+                int     compile_ret = regcomp(&regex, part_other->pattern.pattern, REG_EXTENDED);
                 if (compile_ret) {
                     return 0;
                 }

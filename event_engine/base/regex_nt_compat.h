@@ -52,7 +52,7 @@ static inline int regcomp(regex_t* regex, const char* pattern, int cflags) {
     regex->compiled = NULL;
 
     PyGILState_STATE gil_state = PyGILState_Ensure();
-    PyObject* re_module = PyImport_ImportModule("re");
+    PyObject*        re_module = PyImport_ImportModule("re");
     if (!re_module) {
         PyErr_Clear();
         PyGILState_Release(gil_state);
@@ -82,7 +82,7 @@ static inline int regexec(const regex_t* regex, const char* string, size_t nmatc
     }
 
     PyGILState_STATE gil_state = PyGILState_Ensure();
-    PyObject* match = PyObject_CallMethod(regex->compiled, "search", "s", string);
+    PyObject*        match = PyObject_CallMethod(regex->compiled, "search", "s", string);
     if (!match) {
         PyErr_Clear();
         PyGILState_Release(gil_state);

@@ -29,28 +29,28 @@
 // ========== Heap Allocator Structs ==========
 
 typedef struct heap_memory_block {
-    size_t capacity;
-    size_t size;
+    size_t                    capacity;
+    size_t                    size;
     struct heap_memory_block* next_free;
     struct heap_memory_block* next_allocated;
-    struct heap_page* parent_page;
-    char buffer[];
+    struct heap_page*         parent_page;
+    char                      buffer[];
 } heap_memory_block;
 
 typedef struct heap_page {
-    size_t capacity;
-    size_t occupied;
-    struct heap_allocator* allocator;
-    struct heap_page* prev;
+    size_t                    capacity;
+    size_t                    occupied;
+    struct heap_allocator*    allocator;
+    struct heap_page*         prev;
     struct heap_memory_block* allocated;
-    char buffer[];
+    char                      buffer[];
 } heap_page;
 
 typedef struct heap_allocator {
-    pthread_mutex_t lock;
-    size_t mapped_pages;
+    pthread_mutex_t           lock;
+    size_t                    mapped_pages;
     struct heap_memory_block* free_list;
-    struct heap_page* active_page;
+    struct heap_page*         active_page;
 } heap_allocator;
 
 // ========== Utility Functions ==========
@@ -132,7 +132,7 @@ static inline heap_page* c_heap_allocator_extend(heap_allocator* allocator, size
         }
     }
 
-    size_t total_capacity = c_page_roundup(capacity);
+    size_t     total_capacity = c_page_roundup(capacity);
 
     heap_page* page = (heap_page*) calloc(1, total_capacity);
 
@@ -193,11 +193,11 @@ static inline void* c_heap_calloc(heap_allocator* allocator, size_t size, pthrea
         return NULL;
     }
 
-    size_t cap_net = c_block_roundup(size);
-    size_t overhead = sizeof(heap_memory_block);
-    size_t cap_total = cap_net + overhead;
+    size_t           cap_net = c_block_roundup(size);
+    size_t           overhead = sizeof(heap_memory_block);
+    size_t           cap_total = cap_net + overhead;
 
-    uint8_t locked = 0;
+    uint8_t          locked = 0;
     pthread_mutex_t* builtin_lock = &allocator->lock;
     pthread_mutex_t* child_lock = &allocator->lock;
     if (lock) {
@@ -249,7 +249,7 @@ static inline void* c_heap_calloc(heap_allocator* allocator, size_t size, pthrea
         }
     }
 
-    size_t offset = page->occupied;
+    size_t             offset = page->occupied;
     heap_memory_block* block = (heap_memory_block*) ((char*) page + offset);
     block->capacity = cap_net;
     block->size = size;
@@ -272,11 +272,11 @@ static inline void* c_heap_request(heap_allocator* allocator, size_t size, int s
         return NULL;
     }
 
-    size_t cap_net = c_block_roundup(size);
-    size_t overhead = sizeof(heap_memory_block);
-    size_t cap_total = cap_net + overhead;
+    size_t           cap_net = c_block_roundup(size);
+    size_t           overhead = sizeof(heap_memory_block);
+    size_t           cap_total = cap_net + overhead;
 
-    uint8_t locked = 0;
+    uint8_t          locked = 0;
     pthread_mutex_t* builtin_lock = &allocator->lock;
     pthread_mutex_t* child_lock = &allocator->lock;
     if (lock) {
@@ -295,7 +295,7 @@ static inline void* c_heap_request(heap_allocator* allocator, size_t size, int s
     }
 
     heap_memory_block** prevp = &allocator->free_list;
-    heap_memory_block* free_blk = allocator->free_list;
+    heap_memory_block*  free_blk = allocator->free_list;
     while (free_blk) {
         if (free_blk->capacity >= cap_net) {
             *prevp = free_blk->next_free;
@@ -329,7 +329,7 @@ static inline void* c_heap_request(heap_allocator* allocator, size_t size, int s
 
     if (!target_page) {
         heap_page* current = allocator->active_page;
-        size_t target_cap;
+        size_t     target_cap;
 
         if (!current) {
             target_cap = DEFAULT_AUTOPAGE_CAPACITY;
@@ -361,7 +361,7 @@ static inline void* c_heap_request(heap_allocator* allocator, size_t size, int s
         }
     }
 
-    size_t offset = target_page->occupied;
+    size_t             offset = target_page->occupied;
     heap_memory_block* block = (heap_memory_block*) ((char*) target_page + offset);
     block->capacity = cap_net;
     block->size = size;
@@ -386,7 +386,7 @@ static inline void c_heap_free(void* ptr, pthread_mutex_t* lock) {
     }
 
     heap_memory_block* block = (heap_memory_block*) ((char*) ptr - sizeof(heap_memory_block));
-    heap_page* page = block->parent_page;
+    heap_page*         page = block->parent_page;
     if (!page || !page->allocator) {
         errno = EINVAL;
         return;
@@ -394,7 +394,7 @@ static inline void c_heap_free(void* ptr, pthread_mutex_t* lock) {
 
     heap_allocator* allocator = page->allocator;
 
-    uint8_t locked = 0;
+    uint8_t         locked = 0;
     if (lock) {
         int ret = pthread_mutex_lock(lock);
         if (ret != 0) {

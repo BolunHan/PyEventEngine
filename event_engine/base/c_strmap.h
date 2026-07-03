@@ -22,6 +22,8 @@
 
 // ========== Constants ==========
 
+// clang-format off
+
 #define STRMAP_OK                0
 #define STRMAP_ERR_INVALID_BUF  -1
 #define STRMAP_ERR_INVALID_KEY  -2
@@ -29,20 +31,22 @@
 #define STRMAP_ERR_FULL         -4
 #define STRMAP_ERR_EMPTY        -5
 
+// clang-format on
+
 // ========== Structs ==========
 
 /**
  * @brief A single open-addressing table slot for the string map.
  */
 typedef struct strmap_entry {
-    const char* key;           /**< Cloned key bytes (owned by the map, NUL-terminated). */
-    size_t key_length;         /**< Length of key (excludes NUL). */
-    void* value;               /**< Opaque value pointer stored by the caller. */
-    uint64_t hash;             /**< Cached hash of key for faster probing/rehash. */
-    int occupied;              /**< 1 if slot holds a live entry. */
-    int removed;               /**< 1 if slot is a tombstone (keeps probe chains intact). */
-    struct strmap_entry* prev; /**< Previous entry in insertion-order list. */
-    struct strmap_entry* next; /**< Next entry in insertion-order list. */
+    const char*          key;        /**< Cloned key bytes (owned by the map, NUL-terminated). */
+    size_t               key_length; /**< Length of key (excludes NUL). */
+    void*                value;      /**< Opaque value pointer stored by the caller. */
+    uint64_t             hash;       /**< Cached hash of key for faster probing/rehash. */
+    int                  occupied;   /**< 1 if slot holds a live entry. */
+    int                  removed;    /**< 1 if slot is a tombstone (keeps probe chains intact). */
+    struct strmap_entry* prev;       /**< Previous entry in insertion-order list. */
+    struct strmap_entry* next;       /**< Next entry in insertion-order list. */
 } strmap_entry;
 
 /**
@@ -50,13 +54,13 @@ typedef struct strmap_entry {
  */
 typedef struct strmap {
     heap_allocator* heap_allocator; /**< Optional custom allocator; NULL uses system heap. */
-    strmap_entry* table;            /**< Backing array of slots; zeroed on allocation. */
-    size_t capacity;                /**< Number of slots in `table`. */
-    size_t size;                    /**< Used-slot count since last rehash (live + tombstones). */
-    size_t occupied;                /**< Number of live entries. */
-    strmap_entry* first;            /**< Head of insertion-order doubly linked list. */
-    strmap_entry* last;             /**< Tail of insertion-order doubly linked list. */
-    uint64_t salt;                  /**< Per-map hash salt for XXH3. */
+    strmap_entry*   table;          /**< Backing array of slots; zeroed on allocation. */
+    size_t          capacity;       /**< Number of slots in `table`. */
+    size_t          size;           /**< Used-slot count since last rehash (live + tombstones). */
+    size_t          occupied;       /**< Number of live entries. */
+    strmap_entry*   first;          /**< Head of insertion-order doubly linked list. */
+    strmap_entry*   last;           /**< Tail of insertion-order doubly linked list. */
+    uint64_t        salt;           /**< Per-map hash salt for XXH3. */
 } strmap;
 
 #ifndef MAX_STRMAP_CAPACITY
@@ -235,7 +239,7 @@ static inline const char* c_strmap_clone_key(strmap* map, const char* key, size_
         if (!key_len) return NULL;
     }
 
-    char* buf;
+    char*           buf;
     heap_allocator* allocator = map->heap_allocator;
 
     if (allocator) {
@@ -267,7 +271,7 @@ static inline strmap* c_strmap_new(size_t capacity, heap_allocator* heap_allocat
     if (capacity < MIN_STRMAP_CAPACITY) capacity = MIN_STRMAP_CAPACITY;
     if (capacity > MAX_STRMAP_CAPACITY) return NULL;
 
-    strmap* map;
+    strmap*       map;
     strmap_entry* table;
 
     if (heap_allocator) {
@@ -300,9 +304,9 @@ static inline strmap* c_strmap_new(size_t capacity, heap_allocator* heap_allocat
 static inline void c_strmap_clear(strmap* map, int with_lock) {
     if (!map || !map->table) return;
 
-    heap_allocator* heap_allocator = map->heap_allocator;
+    heap_allocator*  heap_allocator = map->heap_allocator;
     pthread_mutex_t* lock = heap_allocator ? &heap_allocator->lock : NULL;
-    int locked = 0;
+    int              locked = 0;
 
     if (lock && with_lock) {
         if (pthread_mutex_lock(lock) == 0) {
@@ -361,9 +365,9 @@ static inline int c_strmap_get(strmap* map, const char* key, size_t key_len, voi
     if (key_len == 0) key_len = strlen(key);
     if (key_len == 0) return STRMAP_ERR_INVALID_KEY;
 
-    uint64_t hash = c_strmap_hash(map, key, key_len);
-    size_t idx = hash % map->capacity;
-    size_t start = idx;
+    uint64_t      hash = c_strmap_hash(map, key, key_len);
+    size_t        idx = hash % map->capacity;
+    size_t        start = idx;
     strmap_entry* entry = &map->table[idx];
 
     while (entry->occupied || entry->removed) {
@@ -385,9 +389,9 @@ static inline int c_strmap_contains(strmap* map, const char* key, size_t key_len
     if (key_len == 0) key_len = strlen(key);
     if (key_len == 0) return STRMAP_ERR_INVALID_KEY;
 
-    uint64_t hash = c_strmap_hash(map, key, key_len);
-    size_t idx = hash % map->capacity;
-    size_t start = idx;
+    uint64_t      hash = c_strmap_hash(map, key, key_len);
+    size_t        idx = hash % map->capacity;
+    size_t        start = idx;
     strmap_entry* entry = &map->table[idx];
 
     while (entry->occupied || entry->removed) {
@@ -407,7 +411,7 @@ static inline int c_strmap_rehash(strmap* map, size_t new_capacity, int with_loc
     if (!map || new_capacity == 0 || new_capacity > MAX_STRMAP_CAPACITY) return STRMAP_ERR_INVALID_BUF;
 
     heap_allocator* heap_allocator = map->heap_allocator;
-    strmap_entry* new_table;
+    strmap_entry*   new_table;
 
     if (heap_allocator) {
         new_table = (strmap_entry*) c_heap_request(heap_allocator, new_capacity * sizeof(strmap_entry), 1, with_lock ? &heap_allocator->lock : NULL);
@@ -464,9 +468,9 @@ static inline int c_strmap_set(strmap* map, const char* key, size_t key_len, voi
         if (c_strmap_rehash(map, new_cap, with_lock) != STRMAP_OK) return STRMAP_ERR_INVALID_BUF;
     }
 
-    uint64_t hash = c_strmap_hash(map, key, key_len);
-    size_t idx = hash % map->capacity;
-    size_t start = idx;
+    uint64_t      hash = c_strmap_hash(map, key, key_len);
+    size_t        idx = hash % map->capacity;
+    size_t        start = idx;
     strmap_entry* tombstone = NULL;
     strmap_entry* entry = &map->table[idx];
 
@@ -520,8 +524,8 @@ static inline int c_strmap_pop(strmap* map, const char* key, size_t key_len, voi
     if (key_len == 0) return STRMAP_ERR_INVALID_KEY;
 
     uint64_t hash = c_strmap_hash(map, key, key_len);
-    size_t idx = hash % map->capacity;
-    size_t start = idx;
+    size_t   idx = hash % map->capacity;
+    size_t   start = idx;
 
     while (1) {
         strmap_entry* entry = &map->table[idx];

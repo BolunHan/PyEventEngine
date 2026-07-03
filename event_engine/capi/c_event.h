@@ -1,10 +1,11 @@
 #ifndef C_EVENT_H
 #define C_EVENT_H
 
-#include "c_heap_allocator.h"
-#include "c_topic.h"
 #include <stdint.h>
 #include <stdlib.h>
+
+#include <event_engine/base/c_heap_allocator.h>
+#include <event_engine/capi/c_topic.h>
 
 /* @brief Message payload stored in the queue
  *
@@ -13,9 +14,9 @@
  * and a sequence identifier.
  */
 typedef struct evt_message_payload {
-    void* args;                 // optional user data pointer
-    evt_topic* topic;           // optional Topic borrowed pointer
-    uint64_t seq_id;            // optional sequence id (0 if unused)
+    void*           args;       // optional user data pointer
+    evt_topic*      topic;      // optional Topic borrowed pointer
+    uint64_t        seq_id;     // optional sequence id (0 if unused)
     heap_allocator* allocator;  // allocator for payload data (may be NULL)
 } evt_message_payload;
 
@@ -70,9 +71,9 @@ typedef union evt_callback_variants {
 // clang-format on
 
 typedef struct evt_callback {
-    evt_callback_type type;
+    evt_callback_type     type;
     evt_callback_variants fn;
-    void* user_data;
+    void*                 user_data;
 } evt_callback;
 
 typedef enum evt_hook_watcher_type {
@@ -86,7 +87,7 @@ typedef void (*evt_hook_watcher_fn)(evt_hook* hook, evt_hook_watcher_type watche
 
 typedef struct evt_hook_watcher {
     evt_hook_watcher_fn fn;
-    void* user_data;
+    void*               user_data;
 } evt_hook_watcher;
 
 typedef enum evt_hook_ret_code {
@@ -97,20 +98,20 @@ typedef enum evt_hook_ret_code {
 } evt_hook_ret_code;
 
 typedef struct evt_hook {
-    evt_topic* topic;
-    evt_callback* callbacks;
-    size_t n_callbacks;
+    evt_topic*        topic;
+    evt_callback*     callbacks;
+    size_t            n_callbacks;
     evt_hook_watcher* pre_watchers;
-    size_t n_pre_watchers;
+    size_t            n_pre_watchers;
     evt_hook_watcher* post_watchers;
-    size_t n_post_watchers;
+    size_t            n_post_watchers;
 } evt_hook;
 
 static inline void c_evt_callback_invoke(const evt_callback* callback, evt_message_payload* payload) {
     if (!callback) return;
-    void* args = payload ? payload->args : NULL;
+    void*      args = payload ? payload->args : NULL;
     evt_topic* topic = payload ? payload->topic : NULL;
-    void* user_data = callback->user_data;
+    void*      user_data = callback->user_data;
 
     switch (callback->type) {
         case EVT_CALLBACK_WITH_PAYLOAD_USERDATA:
@@ -174,7 +175,7 @@ static inline void c_evt_hook_free(evt_hook* hook) {
 static inline int c_evt_hook_add_watcher(evt_hook* hook, evt_hook_watcher_fn fn, void* user_data, evt_hook_watcher_type type) {
     if (!hook || !fn) return EVT_HOOK_ERR_INVALID_INPUT;
     if (type == EVT_HOOK_WATCHER_PRE_INVOKED) {
-        const size_t new_count = hook->n_pre_watchers + 1;
+        const size_t      new_count = hook->n_pre_watchers + 1;
         evt_hook_watcher* grown = (evt_hook_watcher*) realloc(hook->pre_watchers, new_count * sizeof(evt_hook_watcher));
         if (!grown) return EVT_HOOK_ERR_OOM;
         hook->pre_watchers = grown;
@@ -184,7 +185,7 @@ static inline int c_evt_hook_add_watcher(evt_hook* hook, evt_hook_watcher_fn fn,
         return EVT_HOOK_OK;
     }
     else if (type == EVT_HOOK_WATCHER_POST_INVOKED) {
-        const size_t new_count = hook->n_post_watchers + 1;
+        const size_t      new_count = hook->n_post_watchers + 1;
         evt_hook_watcher* grown = (evt_hook_watcher*) realloc(hook->post_watchers, new_count * sizeof(evt_hook_watcher));
         if (!grown) return EVT_HOOK_ERR_OOM;
         hook->post_watchers = grown;
@@ -245,7 +246,7 @@ static inline int c_evt_hook_register_callback(evt_hook* hook, const void* fn, e
         }
     }
 
-    const size_t new_count = hook->n_callbacks + 1;
+    const size_t  new_count = hook->n_callbacks + 1;
     evt_callback* grown = (evt_callback*) realloc(hook->callbacks, new_count * sizeof(evt_callback));
     if (!grown) {
         return EVT_HOOK_ERR_OOM;

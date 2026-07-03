@@ -14,12 +14,12 @@
 #endif
 #include <windows.h>
 
-typedef CRITICAL_SECTION pthread_mutex_t;
-typedef void pthread_mutexattr_t;
+typedef CRITICAL_SECTION   pthread_mutex_t;
+typedef void               pthread_mutexattr_t;
 typedef CONDITION_VARIABLE pthread_cond_t;
-typedef void pthread_condattr_t;
+typedef void               pthread_condattr_t;
 
-static inline DWORD pthread_nt_timeout_ms(const struct timespec* abstime) {
+static inline DWORD        pthread_nt_timeout_ms(const struct timespec* abstime) {
     if (!abstime) {
         return INFINITE;
     }
@@ -30,7 +30,7 @@ static inline DWORD pthread_nt_timeout_ms(const struct timespec* abstime) {
     }
 
     time_t sec = abstime->tv_sec - now.tv_sec;
-    long nsec = abstime->tv_nsec - now.tv_nsec;
+    long   nsec = abstime->tv_nsec - now.tv_nsec;
     if (nsec < 0) {
         sec -= 1;
         nsec += 1000000000L;

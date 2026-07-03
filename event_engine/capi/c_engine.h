@@ -15,9 +15,9 @@
 #include <string.h>
 #include <time.h>
 
-#include "c_event.h"
-#include "c_heap_allocator.h"
-#include "c_topic.h"
+#include <event_engine/base/c_heap_allocator.h>
+#include <event_engine/capi/c_event.h>
+#include <event_engine/capi/c_topic.h>
 
 /* Default capacity if not provided elsewhere */
 #ifndef DEFAULT_MQ_CAPACITY
@@ -41,15 +41,15 @@
  */
 typedef struct message_queue {
     heap_allocator* allocator;  // allocator for internal allocations
-    size_t capacity;            // max number of entries
-    size_t head;                // index to pop
-    size_t tail;                // index to push
-    size_t count;               // current count
-    evt_topic* topic;           // topic this queue is bound to (may be NULL)
+    size_t          capacity;   // max number of entries
+    size_t          head;       // index to pop
+    size_t          tail;       // index to push
+    size_t          count;      // current count
+    evt_topic*      topic;      // topic this queue is bound to (may be NULL)
 
     pthread_mutex_t mutex;
-    pthread_cond_t not_empty;
-    pthread_cond_t not_full;
+    pthread_cond_t  not_empty;
+    pthread_cond_t  not_full;
 
 #ifdef _WIN32
     evt_message_payload* buf[1];  // MSVC-compatible trailing storage
@@ -166,7 +166,7 @@ static inline size_t c_mq_occupied(message_queue* mq);
 /* Helper: add seconds (fractional allowed) to timespec */
 static inline void timespec_add_seconds(struct timespec* ts, double seconds) {
     time_t sec = (time_t) seconds;
-    long nsec = (long) ((seconds - (double) sec) * 1e9);
+    long   nsec = (long) ((seconds - (double) sec) * 1e9);
     ts->tv_sec += sec;
     ts->tv_nsec += nsec;
     if (ts->tv_nsec >= 1000000000L) {

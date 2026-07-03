@@ -1,23 +1,52 @@
-import codecs
 import os
+import platform
+import re
 import shutil
 import sys
 from contextlib import suppress
 from pathlib import Path
 
-import setuptools
 from Cython.Build import cythonize
+from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
-from setuptools.extension import Extension
 
+# ==============================
+# Setup Configuration
+# ==============================
+
+PACKAGE_NAME = "event_engine"
+DISPLAY_NAME = "PyEventEngine"
+
+WITH_ANNOTATION = False
+COMPILE_FLAGS = ["/Ox"] if platform.system() == "Windows" else ['-O3', '-march=native', '-ffast-math']
+REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
+N_CORES = os.cpu_count() or 1
+N_THREADS = max(1, N_CORES - 2)
+__VERSION__ = match.group(1) if (match := re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', (Path(REPO_ROOT) / PACKAGE_NAME / '__init__.py').read_text(), re.MULTILINE)) else "unknown"
+
+ext_modules = []
+c_extensions = []
+cython_extension = []
+
+
+# ==============================
+# Custom Build Extension Class
+# ==============================
 
 class BuildExtWithConfig(build_ext):
+    def initialize_options(self):
+        super().initialize_options()
+        self.parallel = N_THREADS
+
     def run(self):
         self.pre_compile()
+        self.collect_sources()
 
         super().run()
 
         self.post_compile()
+        # self.cleanup_sources()
+        print(f"[build_py] <{DISPLAY_NAME}> v{__VERSION__} setup complete. Built {len(self.extensions)} Cython extensions.")
 
     def build_extensions(self):
         macros = []
@@ -28,7 +57,7 @@ class BuildExtWithConfig(build_ext):
                 macros.append((macro, val))
         for ext in self.extensions:
             ext.define_macros = macros
-        build_ext.build_extensions(self)
+        super().build_extensions()
 
     def pre_compile(self):
         self.remove_pxd(
@@ -37,13 +66,54 @@ class BuildExtWithConfig(build_ext):
             ]
         )
 
+    def collect_sources(self) -> None:
+        project_root = Path(__file__).resolve().parent
+        source_root = project_root / PACKAGE_NAME
+        include_root = project_root / PACKAGE_NAME / "include"
+        mirror_root = include_root / PACKAGE_NAME
+
+        if mirror_root.exists():
+            shutil.rmtree(mirror_root)
+
+        copied = 0
+        source_patterns = ["*.h", "*.c", "*.cpp"]
+        for pattern in source_patterns:
+            for source_file in sorted(source_root.rglob(pattern)):
+                # Skip files inside the generated include_root
+                if include_root in source_file.parents:
+                    continue
+                dest = include_root.joinpath(*source_file.relative_to(project_root).parts)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source_file, dest)
+                copied += 1
+
+        print(f"[build_py] <{DISPLAY_NAME}> mirrored {copied} C source file(s) -> {include_root.relative_to(project_root)}")
+
     def post_compile(self):
+        # Inject the generated include/ mirror into build_lib so it gets packaged
+        self.inject_sources()
+
         # Monkey hack the "__init__.pxd" issue:
         self.inject_pxd(
             [
                 "event_engine.capi",
             ]
         )
+
+    def inject_sources(self) -> None:
+        project_root = Path(__file__).resolve().parent
+        include_root = project_root / PACKAGE_NAME / "include"
+        mirror_root = include_root / PACKAGE_NAME
+
+        if not mirror_root.exists():
+            return
+
+        dest_root = Path(self.build_lib, PACKAGE_NAME, "include", PACKAGE_NAME)
+        if dest_root.exists():
+            shutil.rmtree(dest_root)
+
+        shutil.copytree(mirror_root, dest_root)
+        print(f"[build_py] <{DISPLAY_NAME}> injected include mirror -> {dest_root.relative_to(Path(self.build_lib))}")
 
     def remove_pxd(self, modules: list[str]) -> None:
         project_root = Path(__file__).resolve().parent
@@ -74,87 +144,61 @@ class BuildExtWithConfig(build_ext):
             shutil.copyfile(infra_pxd, init_pxd)
 
 
-def read(rel_path):
-    here = os.path.abspath(os.path.dirname(__file__))
-    # intentionally *not* adding an encoding option to open, See:
-    #   https://github.com/pypa/virtualenv/issues/201#issuecomment-3145690
-    with codecs.open(os.path.join(here, rel_path), 'r') as fp:
-        return fp.read()
-
-
-def get_version(rel_path):
-    for line in read(rel_path).splitlines():
-        if line.startswith('__version__'):
-            # __version__ = "0.9"
-            delim = '"' if '"' in line else "'"
-            return line.split(delim)[1]
-    raise RuntimeError("Unable to find version string.")
-
-
-cython_extension = []
-ext_modules = []
-with_annotation = False
-mode = os.environ.get("PYEE_OPT", "").lower()
-
-if os.name == "nt":
-    match mode:
-        case "debug":
-            with_annotation = True
-            flags = ["/Od", "/Zi"]
-        case "size":
-            flags = ["/O1"]
-        case "fast":
-            flags = ["/O2", "/fp:fast"]
-        case "none":
-            flags = ["/Od"]
-        case _:
-            flags = ["/O2"]
-    flags.append("/std:clatest")
-    flags.append("/experimental:c11atomics")
-else:  # gcc / clang / apple clang
-    match mode:
-        case "debug":
-            with_annotation = True
-            flags = ["-g", "-O0"]
-        case "size":
-            flags = ["-Os"]
-        case "fast":
-            flags = ["-O3", "-ffast-math"]
-        case "none":
-            flags = []
-        case _:
-            flags = ["-O3"]
-    flags.append("-std=c2x")
+# =============================
+# Define Cython Extensions
+# =============================
 
 cython_extension.extend([
     Extension(
         name="event_engine.base.c_strmap",
         sources=["event_engine/base/c_strmap.pyx"],
-        extra_compile_args=list(flags),
+        extra_compile_args=[*COMPILE_FLAGS],
+        include_dirs=[REPO_ROOT]
     ),
     Extension(
         name="event_engine.capi.c_topic",
         sources=["event_engine/capi/c_topic.pyx"],
-        extra_compile_args=list(flags),
-        include_dirs=["event_engine/base"]
+        extra_compile_args=[*COMPILE_FLAGS],
+        include_dirs=[REPO_ROOT]
     ),
     Extension(
         name="event_engine.capi.c_event",
         sources=["event_engine/capi/c_event.pyx"],
-        extra_compile_args=list(flags),
-        include_dirs=["event_engine/base"]
+        extra_compile_args=[*COMPILE_FLAGS],
+        include_dirs=[REPO_ROOT]
     ),
     Extension(
         name="event_engine.capi.c_engine",
         sources=["event_engine/capi/c_engine.pyx"],
-        extra_compile_args=list(flags),
-        include_dirs=["event_engine/base"]
+        extra_compile_args=[*COMPILE_FLAGS],
+        include_dirs=[REPO_ROOT]
     ),
 ])
 
-ext_modules.extend(cythonize(cython_extension, annotate=with_annotation, compiler_directives={"language_level": "3"}, force="--force" in sys.argv))
+ext_modules.extend(
+    cythonize(
+        cython_extension,
+        annotate=WITH_ANNOTATION,
+        compiler_directives={
+            "language_level": "3",
+            'embedsignature': True
+        },
+        force="--force" in sys.argv,
+        # nthreads=N_THREADS,
+    )
+)
 
-setuptools.setup(
+# =============================
+# Define C Extensions
+# =============================
+
+ext_modules.extend(c_extensions)
+
+# =============================
+# Setup Function
+# =============================
+
+setup(
     name="PyEventEngine",
     ext_modules=ext_modules,
     cmdclass={"build_ext": BuildExtWithConfig},

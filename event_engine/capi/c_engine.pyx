@@ -1,14 +1,13 @@
 from threading import Thread
 
-from cpython.datetime cimport datetime, timedelta
+from cpython.datetime cimport timedelta
 from cpython.object cimport PyObject
-from cpython.ref cimport Py_INCREF, Py_XINCREF, Py_XDECREF
+from cpython.ref cimport Py_INCREF, Py_XDECREF, Py_XINCREF
 from cpython.unicode cimport PyUnicode_FromStringAndSize
 
-from .c_event cimport MessagePayload, EMPTY_ARGS, c_evt_payload_new, c_evt_payload_free, evt_py_payload, c_evt_hook_invoke
-from .c_topic cimport c_topic_match_bool, HEAP_ALLOCATOR
+from .c_event cimport EMPTY_ARGS, MessagePayload, c_evt_hook_invoke, c_evt_payload_free, c_evt_payload_new, evt_py_payload
+from .c_topic cimport HEAP_ALLOCATOR, c_topic_match_bool
 from ..base import LOGGER
-from ..base.c_strmap cimport StrMap
 
 LOGGER = LOGGER.getChild('Engine')
 

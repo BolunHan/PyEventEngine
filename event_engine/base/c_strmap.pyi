@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ctypes import c_size_t, c_uint64
 from dataclasses import dataclass
-from typing import Union, Any, Iterator, Annotated
+from typing import Annotated, Any, Iterator, Union
 
 
 @dataclass

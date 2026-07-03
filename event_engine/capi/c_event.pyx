@@ -1,15 +1,15 @@
 import inspect
 import traceback
+
 from cpython.exc cimport PyErr_Clear, PyErr_Fetch
 from cpython.method cimport PyMethod_Check, PyMethod_GET_FUNCTION, PyMethod_GET_SELF
-from cpython.ref cimport Py_XINCREF, Py_XDECREF
+from cpython.ref cimport Py_XDECREF, Py_XINCREF
 from cpython.time cimport perf_counter
 from libc.stdlib cimport calloc, free
 
 from ..base import LOGGER
 
 LOGGER = LOGGER.getChild('Event')
-
 
 cdef tuple EMPTY_ARGS = ()
 cdef str TOPIC_FIELD_NAME = 'topic'
@@ -165,10 +165,7 @@ cdef inline bint py_callable_same(PyObject* a, PyObject* b):
     cdef object fn_a = <object> a
     cdef object fn_b = <object> b
     if PyMethod_Check(fn_a) and PyMethod_Check(fn_b):
-        return (
-            PyMethod_GET_SELF(fn_a) == PyMethod_GET_SELF(fn_b)
-            and PyMethod_GET_FUNCTION(fn_a) == PyMethod_GET_FUNCTION(fn_b)
-        )
+        return PyMethod_GET_SELF(fn_a) == PyMethod_GET_SELF(fn_b) and PyMethod_GET_FUNCTION(fn_a) == PyMethod_GET_FUNCTION(fn_b)
     return False
 
 
@@ -361,10 +358,10 @@ cdef class EventHook:
             cdef list out = []
             while curr:
                 out.append(dict(
-                    fn = <object> curr.fn,
-                    logger = <object> curr.logger,
-                    idx = curr.idx,
-                    with_topic = curr.with_topic
+                    fn=<object> curr.fn,
+                    logger=<object> curr.logger,
+                    idx=curr.idx,
+                    with_topic=curr.with_topic
                 ))
                 Py_XINCREF(curr.fn)
                 Py_XINCREF(curr.logger)

@@ -3,7 +3,6 @@ from cpython.ref cimport PyObject
 from cpython.unicode cimport PyUnicode_AsUTF8AndSize, PyUnicode_FromStringAndSize
 from libc.stdint cimport uintptr_t
 
-
 cdef object STRMAP_NO_DEFAULT = object()
 
 

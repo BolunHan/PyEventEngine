@@ -9,10 +9,10 @@ from libc.string cimport memcpy, strlen
 
 
 class TopicType(enum.IntEnum):
-    TOPIC_PART_EXACT = evt_topic_type.TOPIC_PART_EXACT
-    TOPIC_PART_ANY = evt_topic_type.TOPIC_PART_ANY
-    TOPIC_PART_RANGE = evt_topic_type.TOPIC_PART_RANGE
-    TOPIC_PART_PATTERN = evt_topic_type.TOPIC_PART_PATTERN
+    TOPIC_PART_EXACT    = evt_topic_type.TOPIC_PART_EXACT
+    TOPIC_PART_ANY      = evt_topic_type.TOPIC_PART_ANY
+    TOPIC_PART_RANGE    = evt_topic_type.TOPIC_PART_RANGE
+    TOPIC_PART_PATTERN  = evt_topic_type.TOPIC_PART_PATTERN
 
 
 cdef class TopicPart:

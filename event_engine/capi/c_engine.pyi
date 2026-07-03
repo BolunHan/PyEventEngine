@@ -3,7 +3,7 @@ from datetime import datetime
 from logging import Logger
 from typing import Any
 
-from .c_bytemap import ByteMap
+from ..base.c_strmap import StrMap
 from .c_event import MessagePayload, EventHook
 from .c_topic import Topic
 
@@ -24,7 +24,7 @@ class EventEngine:
     based on topic matching rules. Internally, it uses the following C components:
       - A pthread-based event loop that consumes messages and triggers callbacks.
       - A custom payload allocator to avoid frequent ``malloc``/``free`` in performance-critical paths.
-      - Two ``ByteMap`` instances:
+      - Two ``StrMap`` instances:
           * One for **exact** topic matches (literal key equality).
           * One for **generic** topic matches (pattern-based, handled by ``Topic``).
 
@@ -68,7 +68,7 @@ class EventEngine:
         Allocates the following internal C resources:
           - A fixed-capacity message queue.
           - A high-performance payload allocator.
-          - Two ``ByteMap`` instances for exact and generic topic routing.
+          - Two ``StrMap`` instances for exact and generic topic routing.
 
         It is recommended to use singleton instances to minimize resource overhead.
 
@@ -316,15 +316,15 @@ class EventEngine:
         ...
 
     @property
-    def exact_topic_hook_map(self) -> dict[Topic, EventHook]:
+    def exact_topic_hook_map(self) -> StrMap | dict[Topic, EventHook]:
         """
-        ByteMap of exact topic to ``EventHook`` mappings.
+        StrMap of exact topic to ``EventHook`` mappings.
         """
 
     @property
-    def generic_topic_hook_map(self) -> dict[Topic, EventHook]:
+    def generic_topic_hook_map(self) -> StrMap | dict[Topic, EventHook]:
         """
-        ByteMap of generic topic to ``EventHook`` mappings.
+        StrMap of generic topic to ``EventHook`` mappings.
         """
         ...
 

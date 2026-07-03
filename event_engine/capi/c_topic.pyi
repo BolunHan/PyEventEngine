@@ -1,6 +1,6 @@
 import enum
 import re
-from collections.abc import Iterator, Iterable
+from collections.abc import Iterable, Iterator
 from typing import Any, TypedDict, overload
 
 

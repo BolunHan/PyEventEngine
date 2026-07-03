@@ -1,12 +1,12 @@
 from libc.stdint cimport uint64_t
 
 
-cdef extern from "c_heap_allocator.h":
+cdef extern from "event_engine/base/c_heap_allocator.h":
     ctypedef struct heap_allocator:
         pass
 
 
-cdef extern from "c_strmap.h":
+cdef extern from "event_engine/base/c_strmap.h":
     const size_t MIN_STRMAP_CAPACITY
     const size_t DEFAULT_STRMAP_CAPACITY
     const size_t MAX_STRMAP_CAPACITY

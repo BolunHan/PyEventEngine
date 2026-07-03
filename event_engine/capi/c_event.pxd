@@ -1,7 +1,7 @@
 from cpython.object cimport PyObject
 from libc.stdint cimport uint64_t
 
-from .c_topic cimport evt_topic, Topic
+from .c_topic cimport Topic, evt_topic
 
 
 cdef extern from "Python.h":
@@ -12,7 +12,7 @@ cdef extern from "Python.h":
     int PyCallable_Check(PyObject* o)
 
 
-cdef extern from "c_heap_allocator.h":
+cdef extern from "event_engine/base/c_heap_allocator.h":
     ctypedef struct pthread_mutex_t:
         pass
 
@@ -23,7 +23,7 @@ cdef extern from "c_heap_allocator.h":
     void c_heap_free(void* ptr, pthread_mutex_t* lock) noexcept nogil
 
 
-cdef extern from "c_event.h":
+cdef extern from "event_engine/capi/c_event.h":
     ctypedef struct evt_message_payload:
         void* args
         evt_topic* topic
@@ -158,9 +158,12 @@ cdef struct evt_hook_stats:
     double ts_call_complete
     double elapsed_seconds
 
+
 cdef void c_hook_enter(evt_hook* hook, evt_hook_watcher_type watcher_type, evt_message_payload* payload, void* user_data) noexcept nogil
 
+
 cdef void c_hook_exit(evt_hook* hook, evt_hook_watcher_type watcher_type, evt_message_payload* payload, void* user_data) noexcept nogil
+
 
 cdef class EventHookEx(EventHook):
     cdef evt_hook_stats hook_stats

@@ -1,14 +1,14 @@
 from libc.stdint cimport uint64_t
 
 
-cdef extern from "c_heap_allocator.h":
+cdef extern from "event_engine/base/c_heap_allocator.h":
     ctypedef struct heap_allocator:
         pass
 
     heap_allocator* c_heap_allocator_new()
 
 
-cdef extern from "c_strmap.h":
+cdef extern from "event_engine/base/c_strmap.h":
     ctypedef struct strmap_entry:
         const char* key
         size_t key_length
@@ -35,7 +35,7 @@ cdef extern from "c_strmap.h":
     int c_strmap_set(strmap* map, const char* key, size_t key_len, void* value, strmap_entry** out_entry, int with_lock) noexcept nogil
 
 
-cdef extern from "c_topic.h":
+cdef extern from "event_engine/capi/c_topic.h":
     const char DEFAULT_TOPIC_SEP
     const char DEFAULT_OPTION_SEP
     const char* DEFAULT_RANGE_BRACKETS
@@ -144,7 +144,9 @@ cdef class TopicPartPattern(TopicPart):
 
 cdef heap_allocator* HEAP_ALLOCATOR
 
-cpdef Topic get_internal_topic(str key, bint owner=*)
+
+cpdef Topic get_internal_topic(str key, bint owner=?)
+
 
 cpdef dict get_internal_map()
 
@@ -165,7 +167,7 @@ cdef class Topic:
     cdef readonly bint owner
 
     @staticmethod
-    cdef Topic c_from_header(evt_topic* header, bint owner=*)
+    cdef Topic c_from_header(evt_topic* header, bint owner=?)
 
     cdef void c_append(self, evt_topic_part_variant* tpart)
 

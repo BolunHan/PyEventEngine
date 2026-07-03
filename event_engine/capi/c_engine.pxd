@@ -1,11 +1,11 @@
 from cpython.datetime cimport datetime
 from libc.stdint cimport uint64_t
 
-from .c_event cimport evt_message_payload, EventHook
-from .c_topic cimport evt_topic, Topic
+from .c_event cimport EventHook, evt_message_payload
+from .c_topic cimport Topic, evt_topic
 
 
-cdef extern from "c_heap_allocator.h":
+cdef extern from "event_engine/base/c_heap_allocator.h":
     ctypedef struct pthread_mutex_t:
         pass
 
@@ -22,7 +22,7 @@ cdef extern from "c_heap_allocator.h":
     void c_heap_free(void* ptr, pthread_mutex_t* lock)
 
 
-cdef extern from "c_strmap.h":
+cdef extern from "event_engine/base/c_strmap.h":
     const int STRMAP_OK
     const int STRMAP_ERR_NOT_FOUND
 
@@ -46,7 +46,6 @@ cdef extern from "c_strmap.h":
         strmap_entry* last
         uint64_t salt
 
-
     strmap* c_strmap_new(size_t capacity, heap_allocator* heap_allocator, int with_lock) noexcept nogil
     void c_strmap_clear(strmap* map, int with_lock) noexcept nogil
     void c_strmap_free(strmap* map, int free_self, int with_lock) noexcept nogil
@@ -57,7 +56,7 @@ cdef extern from "c_strmap.h":
     int c_strmap_pop(strmap* map, const char* key, size_t key_len, void** out, int with_lock) noexcept nogil
 
 
-cdef extern from "c_engine.h":
+cdef extern from "event_engine/capi/c_engine.h":
     const size_t DEFAULT_MQ_CAPACITY
     const size_t DEFAULT_MQ_SPIN_LIMIT
     const double DEFAULT_MQ_TIMEOUT_SECONDS

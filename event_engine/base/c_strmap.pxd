@@ -11,12 +11,13 @@ cdef extern from "event_engine/base/c_strmap.h":
     const size_t DEFAULT_STRMAP_CAPACITY
     const size_t MAX_STRMAP_CAPACITY
 
-    const int STRMAP_OK
-    const int STRMAP_ERR_INVALID_BUF
-    const int STRMAP_ERR_INVALID_KEY
-    const int STRMAP_ERR_NOT_FOUND
-    const int STRMAP_ERR_FULL
-    const int STRMAP_ERR_EMPTY
+    ctypedef enum strmap_ret_code:
+        STRMAP_OK
+        STRMAP_ERR_INVALID_BUF
+        STRMAP_ERR_INVALID_KEY
+        STRMAP_ERR_NOT_FOUND
+        STRMAP_ERR_FULL
+        STRMAP_ERR_EMPTY
 
     ctypedef struct strmap_entry:
         const char* key

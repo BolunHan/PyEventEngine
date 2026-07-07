@@ -34,13 +34,13 @@ cdef class StrMap:
         cdef void* out
         cdef int ret_code = c_strmap_get(self.header, key, 0, &out)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return out
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_NOT_FOUND:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_NOT_FOUND:
             raise KeyError('Not found')
         else:
             raise RuntimeError(f'Failed to get from {self.__class__.__name__}, err code: {ret_code}')
@@ -51,13 +51,13 @@ cdef class StrMap:
         cdef void* out
         cdef int ret_code = c_strmap_get(self.header, key, length, &out)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return out
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_NOT_FOUND:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_NOT_FOUND:
             raise KeyError(key_bytes)
         else:
             raise RuntimeError(f'Failed to get from {self.__class__.__name__}, err code: {ret_code}')
@@ -68,13 +68,13 @@ cdef class StrMap:
         cdef void* out
         cdef int ret_code = c_strmap_get(self.header, key, length, &out)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return out
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_NOT_FOUND:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_NOT_FOUND:
             raise KeyError(key_str)
         else:
             raise RuntimeError(f'Failed to get from {self.__class__.__name__}, err code: {ret_code}')
@@ -82,13 +82,13 @@ cdef class StrMap:
     cdef inline void c_set(self, const char* key, void* value):
         cdef int ret_code = c_strmap_set(self.header, key, 0, value, NULL, 1)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_FULL:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_FULL:
             raise MemoryError('Mapping is full')
         else:
             raise RuntimeError(f'Failed to set to {self.__class__.__name__}, err code: {ret_code}')
@@ -98,13 +98,13 @@ cdef class StrMap:
         cdef const char* key = <const char*> key_bytes
         cdef int ret_code = c_strmap_set(self.header, key, length, value, NULL, 1)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_FULL:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_FULL:
             raise MemoryError('Mapping is full')
         else:
             raise RuntimeError(f'Failed to set to {self.__class__.__name__}, err code: {ret_code}')
@@ -114,13 +114,13 @@ cdef class StrMap:
         cdef const char* key = PyUnicode_AsUTF8AndSize(key_str, &length)
         cdef int ret_code = c_strmap_set(self.header, key, length, value, NULL, 1)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_FULL:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_FULL:
             raise MemoryError('Mapping is full')
         else:
             raise RuntimeError(f'Failed to set to {self.__class__.__name__}, err code: {ret_code}')
@@ -128,13 +128,13 @@ cdef class StrMap:
     cdef inline void c_pop(self, const char* key, void** out):
         cdef int ret_code = c_strmap_pop(self.header, key, 0, out, 1)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_NOT_FOUND:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_NOT_FOUND:
             raise KeyError('Not found')
         else:
             raise RuntimeError(f'Failed to pop from {self.__class__.__name__}, err code: {ret_code}')
@@ -144,13 +144,13 @@ cdef class StrMap:
         cdef const char* key = <const char*> key_bytes
         cdef int ret_code = c_strmap_pop(self.header, key, length, out, 1)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_NOT_FOUND:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_NOT_FOUND:
             raise KeyError(key_bytes)
         else:
             raise RuntimeError(f'Failed to pop from {self.__class__.__name__}, err code: {ret_code}')
@@ -160,13 +160,13 @@ cdef class StrMap:
         cdef const char* key = PyUnicode_AsUTF8AndSize(key_str, &length)
         cdef int ret_code = c_strmap_pop(self.header, key, length, out, 1)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_NOT_FOUND:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_NOT_FOUND:
             raise KeyError(key_str)
         else:
             raise RuntimeError(f'Failed to pop from {self.__class__.__name__}, err code: {ret_code}')
@@ -176,9 +176,9 @@ cdef class StrMap:
 
         if ret_code >= 0:
             return <bint> ret_code
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
         else:
             raise RuntimeError(f'Failed to check {self.__class__.__name__} contain, err code: {ret_code}')
@@ -190,9 +190,9 @@ cdef class StrMap:
 
         if ret_code >= 0:
             return <bint> ret_code
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
         else:
             raise RuntimeError(f'Failed to check {self.__class__.__name__} contain, err code: {ret_code}')
@@ -204,9 +204,9 @@ cdef class StrMap:
 
         if ret_code >= 0:
             return <bint> ret_code
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
         else:
             raise RuntimeError(f'Failed to check {self.__class__.__name__} contain, err code: {ret_code}')
@@ -234,9 +234,9 @@ cdef class StrMap:
 
         if ret_code >= 0:
             return <bint> ret_code
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
         else:
             raise RuntimeError(f'Failed to check {self.__class__.__name__} contain, err code: {ret_code}')
@@ -255,13 +255,13 @@ cdef class StrMap:
         cdef void* out
         cdef int ret_code = c_strmap_get(self.header, key_ptr, length, &out)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return <object> <PyObject*> out
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_NOT_FOUND:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_NOT_FOUND:
             raise KeyError(key)
         else:
             raise RuntimeError(f'Failed to get from {self.__class__.__name__}, err code: {ret_code}')
@@ -279,13 +279,13 @@ cdef class StrMap:
 
         cdef int ret_code = c_strmap_set(self.header, key_ptr, length, <void*> <PyObject*> value, NULL, 1)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_FULL:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_FULL:
             raise MemoryError('Mapping is full')
         else:
             raise RuntimeError(f'Failed to set to {self.__class__.__name__}, err code: {ret_code}')
@@ -307,13 +307,13 @@ cdef class StrMap:
         cdef void* out
         cdef int ret_code = c_strmap_get(self.header, key_ptr, length, &out)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return <object> <PyObject*> out
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_NOT_FOUND:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_NOT_FOUND:
             return default
         else:
             raise RuntimeError(f'Failed to get from {self.__class__.__name__}, err code: {ret_code}')
@@ -332,13 +332,13 @@ cdef class StrMap:
         cdef void* out
         cdef int ret_code = c_strmap_get(self.header, key_ptr, length, &out)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return <uintptr_t> out
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_NOT_FOUND:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_NOT_FOUND:
             raise KeyError(key)
         else:
             raise RuntimeError(f'Failed to get from {self.__class__.__name__}, err code: {ret_code}')
@@ -356,13 +356,13 @@ cdef class StrMap:
 
         cdef int ret_code = c_strmap_set(self.header, key_ptr, length, <void*> <PyObject*> value, NULL, 1)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_FULL:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_FULL:
             raise MemoryError('Mapping is full')
         else:
             raise RuntimeError(f'Failed to set to {self.__class__.__name__}, err code: {ret_code}')
@@ -380,13 +380,13 @@ cdef class StrMap:
 
         cdef int ret_code = c_strmap_set(self.header, key_ptr, length, <void*> value, NULL, 1)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_FULL:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_FULL:
             raise MemoryError('Mapping is full')
         else:
             raise RuntimeError(f'Failed to set to {self.__class__.__name__}, err code: {ret_code}')
@@ -405,13 +405,13 @@ cdef class StrMap:
         cdef void* out
         cdef int ret_code = c_strmap_pop(self.header, key_ptr, length, &out, 1)
 
-        if ret_code == STRMAP_OK:
+        if ret_code == strmap_ret_code.STRMAP_OK:
             return
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
-        elif ret_code == STRMAP_ERR_NOT_FOUND:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_NOT_FOUND:
             if default is STRMAP_NO_DEFAULT:
                 raise KeyError(key)
             else:
@@ -434,9 +434,9 @@ cdef class StrMap:
 
         if ret_code >= 0:
             return <bint> ret_code
-        elif ret_code == STRMAP_ERR_INVALID_BUF:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_BUF:
             raise ValueError('Invalid args')
-        elif ret_code == STRMAP_ERR_INVALID_KEY:
+        elif ret_code == strmap_ret_code.STRMAP_ERR_INVALID_KEY:
             raise KeyError('Invalid key')
         else:
             raise RuntimeError(f'Failed to check {self.__class__.__name__} contain, err code: {ret_code}')

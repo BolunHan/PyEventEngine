@@ -7,8 +7,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "c_heap_allocator.h"
-#include "xxh3.h"
+#include <event_engine/base/c_heap_allocator.h>
+#include <event_engine/base/xxh3.h>
 
 // ========== Configuration ==========
 
@@ -22,16 +22,14 @@
 
 // ========== Constants ==========
 
-// clang-format off
-
-#define STRMAP_OK                0
-#define STRMAP_ERR_INVALID_BUF  -1
-#define STRMAP_ERR_INVALID_KEY  -2
-#define STRMAP_ERR_NOT_FOUND    -3
-#define STRMAP_ERR_FULL         -4
-#define STRMAP_ERR_EMPTY        -5
-
-// clang-format on
+typedef enum strmap_ret_code {
+    STRMAP_OK = 0,
+    STRMAP_ERR_INVALID_BUF = -1,
+    STRMAP_ERR_INVALID_KEY = -2,
+    STRMAP_ERR_NOT_FOUND = -3,
+    STRMAP_ERR_FULL = -4,
+    STRMAP_ERR_EMPTY = -5
+} strmap_ret_code;
 
 // ========== Structs ==========
 

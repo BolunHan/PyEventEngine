@@ -3,8 +3,8 @@
 
 #include <errno.h>
 #ifdef _WIN32
-#include "pthread_nt_compat.h"
-#include "time_sched_nt_compat.h"
+#include <event_engine/base/pthread_nt_compat.h>
+#include <event_engine/base/time_sched_nt_compat.h>
 #else
 #include <pthread.h>
 #include <sched.h>

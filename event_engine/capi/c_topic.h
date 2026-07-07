@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
-#include "regex_nt_compat.h"
+#include <event_engine/base/regex_nt_compat.h>
 #else
 #include <regex.h>
 #endif

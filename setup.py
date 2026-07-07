@@ -34,6 +34,11 @@ cython_extension = []
 # ==============================
 
 class BuildExtWithConfig(build_ext):
+    __cy_modules__ = [
+        "event_engine",
+        "event_engine.capi",
+    ]
+
     def initialize_options(self):
         super().initialize_options()
         self.parallel = N_THREADS
@@ -51,35 +56,24 @@ class BuildExtWithConfig(build_ext):
         for macro in ["DEBUG", "TICKER_SIZE", "BOOK_SIZE", "ID_SIZE", "MAX_WORKERS"]:
             val = os.environ.get(macro)
             if val:
-                print(f'Compile-time variable {macro} overridden with value {val}')
+                print(f'[build_py] Compile-time variable {macro} overridden with value {val}')
                 macros.append((macro, val))
         for ext in self.extensions:
             ext.define_macros = macros
         super().build_extensions()
 
     def pre_compile(self):
-        self.remove_pxd(
-            [
-                "event_engine",
-                "event_engine.capi",
-            ]
-        )
-
         self.collect_sources()
 
     def post_compile(self):
         # Monkey hack the "__init__.pxd" issue:
-        self.inject_pxd(
-            [
-                "event_engine",
-                "event_engine.capi",
-            ]
-        )
+        self.inject_pxd()
 
         # Inject the generated include/ mirror into build_lib so it gets packaged
         self.inject_sources()
 
-    def collect_sources(self) -> None:
+    @classmethod
+    def collect_sources(cls) -> None:
         project_root = Path(__file__).resolve().parent
         source_root = project_root / PACKAGE_NAME
         include_root = project_root / PACKAGE_NAME / "include"
@@ -117,21 +111,23 @@ class BuildExtWithConfig(build_ext):
         shutil.copytree(mirror_root, dest_root)
         print(f"[build_py] <{DISPLAY_NAME}> injected include mirror -> {dest_root.relative_to(Path(self.build_lib))}")
 
-    def remove_pxd(self, modules: list[str]) -> None:
+    @classmethod
+    def remove_pxd(cls) -> None:
         project_root = Path(__file__).resolve().parent
 
-        for module in modules:
+        for module in cls.__cy_modules__:
             src_dir = project_root.joinpath(*module.split("."))
             init_pxd = src_dir / "__init__.pxd"
 
             if init_pxd.exists():
-                print(f"[pre_compile] Removing {init_pxd}")
+                print(f"[build_py] [pre_compile] Removing {init_pxd}")
                 with suppress(FileNotFoundError):
                     init_pxd.unlink()
 
-    def inject_pxd(self, modules: list[str]) -> None:
-        for module in modules:
-            project_root = Path(__file__).resolve().parent
+    def inject_pxd(self) -> None:
+        project_root = Path(__file__).resolve().parent
+
+        for module in self.__cy_modules__:
             src_dir = project_root.joinpath(*module.split("."))
             pkg_dir = Path(self.build_lib, *module.split("."))
 
@@ -139,11 +135,17 @@ class BuildExtWithConfig(build_ext):
             if not infra_pxd.exists():
                 continue
 
+            # Inject into build_lib (for wheel / deploy)
             pkg_dir.mkdir(parents=True, exist_ok=True)
             init_pxd = pkg_dir / "__init__.pxd"
-
-            print(f"[build_py] Injecting {infra_pxd} -> {init_pxd}")
+            print(f"[build_py] [post_compile] Injecting {infra_pxd} -> {init_pxd}")
             shutil.copyfile(infra_pxd, init_pxd)
+
+            # Also restore into src_dir (so source tree keeps __init__.pxd)
+            src_init_pxd = src_dir / "__init__.pxd"
+            if not src_init_pxd.exists():
+                print(f"[build_py] [post_compile] Restoring {infra_pxd} -> {src_init_pxd}")
+                shutil.copyfile(infra_pxd, src_init_pxd)
 
 
 # =============================
@@ -177,6 +179,8 @@ cython_extension.extend([
     ),
 ])
 
+BuildExtWithConfig.remove_pxd()
+
 ext_modules.extend(
     cythonize(
         cython_extension,
@@ -186,7 +190,7 @@ ext_modules.extend(
             'embedsignature': True
         },
         force="--force" in sys.argv,
-        # nthreads=N_THREADS,
+        nthreads=N_THREADS,
     )
 )
 

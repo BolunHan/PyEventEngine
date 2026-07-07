@@ -2,7 +2,7 @@ PYTHON ?= python
 PACKAGE := event_engine
 EGG_INFO := PyEventEngine.egg-info
 BUILD_DIR := build
-INCLUDE_DIR := $(PACKAGE)/include
+INCLUDE_DIR := $(PACKAGE)/includes
 
 .PHONY: all clean clean-all build install uninstall reinstall dev list-args help
 
@@ -24,7 +24,7 @@ help:
 	@echo "  dev         Same as build (alias)"
 	@echo "  install     pip uninstall + pip install ."
 	@echo "  reinstall   pip uninstall + pip install . --force-reinstall --no-deps"
-	@echo "  clean       Remove build/, egg-info/, and include/ artifacts"
+	@echo "  clean       Remove build/, egg-info/, and includes/ artifacts"
 	@echo "  clean-all   clean + remove all generated .c/.so files"
 	@echo "  list-args   List all compile-time macros and their default values"
 	@echo "  help        Show this message"
@@ -65,7 +65,7 @@ clean:
 clean-all: clean
 	@echo "[make] Removing all generated Cython outputs..."
 	find $(PACKAGE) -type f \( -name '*.so' -o -name '*.c' \) \
-		! -path "$(PACKAGE)/include/*" \
+		! -path "$(PACKAGE)/includes/*" \
 		-delete -print
 	@echo "[make] Clean-all done"
 

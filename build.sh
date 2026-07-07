@@ -8,7 +8,7 @@ set -euo pipefail
 PACKAGE_NAME="event_engine"
 EGG_INFO="PyEventEngine.egg-info"
 BUILD_DIR="build"
-INCLUDE_DIR="${PACKAGE_NAME}/include"
+INCLUDE_DIR="${PACKAGE_NAME}/includes"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Options
@@ -111,7 +111,7 @@ do_clean_all() {
     echo -e "${YELLOW}[clean-all] Removing generated .c and .so files...${NC}"
     cd "$SCRIPT_DIR"
     find "$PACKAGE_NAME" -type f \( -name '*.so' -o -name '*.c' \) \
-        ! -path "${PACKAGE_NAME}/include/*" \
+        ! -path "${PACKAGE_NAME}/includes/*" \
         -delete -print
     echo -e "${GREEN}[clean-all] Done${NC}"
 }

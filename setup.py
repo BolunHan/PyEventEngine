@@ -69,14 +69,14 @@ class BuildExtWithConfig(build_ext):
         # Monkey hack the "__init__.pxd" issue:
         self.inject_pxd()
 
-        # Inject the generated include/ mirror into build_lib so it gets packaged
+        # Inject the generated includes/ mirror into build_lib so it gets packaged
         self.inject_sources()
 
     @classmethod
     def collect_sources(cls) -> None:
         project_root = Path(__file__).resolve().parent
         source_root = project_root / PACKAGE_NAME
-        include_root = project_root / PACKAGE_NAME / "include"
+        include_root = project_root / PACKAGE_NAME / "includes"
         mirror_root = include_root / PACKAGE_NAME
 
         if mirror_root.exists():
@@ -98,18 +98,18 @@ class BuildExtWithConfig(build_ext):
 
     def inject_sources(self) -> None:
         project_root = Path(__file__).resolve().parent
-        include_root = project_root / PACKAGE_NAME / "include"
+        include_root = project_root / PACKAGE_NAME / "includes"
         mirror_root = include_root / PACKAGE_NAME
 
         if not mirror_root.exists():
             return
 
-        dest_root = Path(self.build_lib, PACKAGE_NAME, "include", PACKAGE_NAME)
+        dest_root = Path(self.build_lib, PACKAGE_NAME, "includes", PACKAGE_NAME)
         if dest_root.exists():
             shutil.rmtree(dest_root)
 
         shutil.copytree(mirror_root, dest_root)
-        print(f"[build_py] <{DISPLAY_NAME}> injected include mirror -> {dest_root.relative_to(Path(self.build_lib))}")
+        print(f"[build_py] <{DISPLAY_NAME}> injected includes mirror -> {dest_root.relative_to(Path(self.build_lib))}")
 
     @classmethod
     def remove_pxd(cls) -> None:

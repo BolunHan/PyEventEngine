@@ -60,6 +60,7 @@ class BuildExtWithConfig(build_ext):
     def pre_compile(self):
         self.remove_pxd(
             [
+                "event_engine",
                 "event_engine.capi",
             ]
         )
@@ -70,6 +71,7 @@ class BuildExtWithConfig(build_ext):
         # Monkey hack the "__init__.pxd" issue:
         self.inject_pxd(
             [
+                "event_engine",
                 "event_engine.capi",
             ]
         )

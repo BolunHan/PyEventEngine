@@ -33,7 +33,7 @@ include = ["event_engine*"]
 "event_engine" = ["*.pyi", "*.pyx", "*.pxd", "*.h", "*.c"]
 "event_engine.base" = ["*.pyi", "*.pyx", "*.pxd", "*.h", "*.c"]
 "event_engine.capi" = ["*.pyi", "*.pyx", "*.pxd", "*.h", "*.c"]
-"event_engine.include" = ["**/*.h", "**/*.c", "**/*.cpp"]
+"event_engine.includes" = ["**/*.h", "**/*.c", "**/*.cpp"]
 
 [tool.setuptools.dynamic]
 version = { attr = "event_engine.__version__" }

@@ -30,7 +30,7 @@ def get_include() -> list[str]:
         os.path.realpath(res_dir / 'capi'),
     ]
 
-    include_root = os.path.realpath(res_dir / 'include')
+    include_root = os.path.realpath(res_dir / 'includes')
     if os.path.isdir(include_root):
         scr_dir.append(include_root)
 

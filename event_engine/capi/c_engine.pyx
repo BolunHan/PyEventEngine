@@ -45,8 +45,6 @@ cdef class EventEngine:
             self.mq = NULL
             raise MemoryError(f'Failed to allocate generic_topic_hooks for {self.__class__.__name__}.')
 
-        self.payload_allocator = EE_HEAP_ALLOCATOR
-
         self.seq_id = 0
 
     def __dealloc__(self):
@@ -101,7 +99,7 @@ cdef class EventEngine:
             raise ValueError('Topic must be all of exact parts')
 
         # Step 0: Request payload buffer (MUST be done with GIL held - allocator is NOT thread-safe)
-        cdef evt_message_payload* payload = c_evt_payload_new(self.payload_allocator, topic, args, kwargs)
+        cdef evt_message_payload* payload = c_evt_payload_new(topic, args, kwargs)
 
         # Step 1: Assembling payload (MUST be done with GIL held - touching Python objects)
         payload.seq_id = self.seq_id

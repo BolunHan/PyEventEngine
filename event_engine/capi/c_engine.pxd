@@ -47,7 +47,6 @@ cdef class EventEngine:
     cdef message_queue* mq
     cdef bytemap* exact_topic_hooks
     cdef bytemap* generic_topic_hooks
-    cdef allocator_protocol* payload_allocator
 
     cdef readonly bint active
     cdef readonly object engine

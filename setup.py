@@ -6,6 +6,7 @@ import sys
 from contextlib import suppress
 from pathlib import Path
 
+import cbase
 from Cython.Build import cythonize
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
@@ -18,7 +19,7 @@ PACKAGE_NAME = "event_engine"
 DISPLAY_NAME = "PyEventEngine"
 
 WITH_ANNOTATION = False
-COMPILE_FLAGS = ["/Ox"] if platform.system() == "Windows" else ['-O3', '-march=native']
+COMPILE_FLAGS = ["/Ox", "/std:c17", "/experimental:c11atomics"] if platform.system() == "Windows" else ['-O3', '-march=native']
 REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
 N_CORES = os.cpu_count() or 1
 N_THREADS = max(1, N_CORES - 2)
@@ -36,6 +37,7 @@ cython_extension = []
 class BuildExtWithConfig(build_ext):
     __cy_modules__ = [
         "event_engine",
+        "event_engine.base",
         "event_engine.capi",
     ]
 
@@ -179,28 +181,28 @@ class BuildExtWithConfig(build_ext):
 
 cython_extension.extend([
     Extension(
-        name="event_engine.base.c_strmap",
-        sources=["event_engine/base/c_strmap.pyx"],
-        extra_compile_args=[*COMPILE_FLAGS],
-        include_dirs=[REPO_ROOT]
+        name="event_engine.base.c_allocator_protocol",
+        sources=["event_engine/base/c_allocator_protocol.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="event_engine.capi.c_topic",
         sources=["event_engine/capi/c_topic.pyx"],
-        extra_compile_args=[*COMPILE_FLAGS],
-        include_dirs=[REPO_ROOT]
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="event_engine.capi.c_event",
         sources=["event_engine/capi/c_event.pyx"],
-        extra_compile_args=[*COMPILE_FLAGS],
-        include_dirs=[REPO_ROOT]
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="event_engine.capi.c_engine",
         sources=["event_engine/capi/c_engine.pyx"],
-        extra_compile_args=[*COMPILE_FLAGS],
-        include_dirs=[REPO_ROOT]
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
     ),
 ])
 
@@ -233,7 +235,7 @@ ext_modules.extend(c_extensions)
 # =============================
 
 setup(
-    name="PyEventEngine",
+    name=PACKAGE_NAME,
     ext_modules=ext_modules,
-    cmdclass={"build_ext": BuildExtWithConfig},
+    cmdclass={"build_ext": BuildExtWithConfig}
 )

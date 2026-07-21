@@ -5,8 +5,11 @@ from cpython.exc cimport PyErr_Clear, PyErr_Fetch
 from cpython.method cimport PyMethod_Check, PyMethod_GET_FUNCTION, PyMethod_GET_SELF
 from cpython.ref cimport Py_XDECREF, Py_XINCREF
 from cpython.time cimport perf_counter
-from libc.stdlib cimport calloc, free
+from libc.stdlib cimport free
 
+from cbase.allocator_protocol.c_allocator_protocol cimport c_ap_alloc, c_ap_free, c_ap_protocol_from_ptr
+
+from ..base.c_allocator_protocol cimport EE_HEAP_ALLOCATOR
 from ..base import LOGGER
 
 LOGGER = LOGGER.getChild('Event')
@@ -15,14 +18,14 @@ cdef tuple EMPTY_ARGS = ()
 cdef str TOPIC_FIELD_NAME = 'topic'
 
 
-cdef inline evt_message_payload* c_evt_payload_new(heap_allocator* allocator, Topic topic, tuple args, dict kwargs, int with_lock):
+cdef inline evt_message_payload* c_evt_payload_new(allocator_protocol* allocator, Topic topic, tuple args, dict kwargs):
     cdef evt_message_payload* c_payload
     cdef size_t payload_size = sizeof(evt_message_payload) + sizeof(evt_py_payload)
 
     if allocator:
-        c_payload = <evt_message_payload*> c_heap_request(allocator, payload_size, 1, &allocator.lock if with_lock else NULL)
+        c_payload = <evt_message_payload*> c_ap_alloc(payload_size, allocator)
     else:
-        c_payload = <evt_message_payload*> calloc(1, payload_size)
+        c_payload = <evt_message_payload*> c_ap_alloc(payload_size, EE_HEAP_ALLOCATOR)
 
     if not c_payload:
         return NULL
@@ -43,12 +46,11 @@ cdef inline evt_message_payload* c_evt_payload_new(heap_allocator* allocator, To
 
     c_payload.args = py_payload
     c_payload.topic = topic.header
-    c_payload.allocator = allocator
     return c_payload
 
 
-cdef inline void c_evt_payload_free(evt_message_payload* payload, int with_lock):
-    cdef heap_allocator* allocator = payload.allocator
+cdef inline void c_evt_payload_free(evt_message_payload* payload):
+    cdef allocator_protocol* allocator = c_ap_protocol_from_ptr(payload)
     cdef evt_py_payload* py_payload = <evt_py_payload*> (payload + 1)
 
     Py_XDECREF(py_payload.py_topic)
@@ -57,14 +59,14 @@ cdef inline void c_evt_payload_free(evt_message_payload* payload, int with_lock)
     Py_XDECREF(py_payload.py_kwargs_aggregated)
 
     if allocator:
-        c_heap_free(payload, &allocator.lock if with_lock else NULL)
+        c_ap_free(payload)
     else:
         free(payload)
 
 
 cdef class MessagePayload:
     def __init__(self, Topic topic, tuple args, dict kwargs):
-        self.header = c_evt_payload_new(NULL, topic, args, kwargs, 1)
+        self.header = c_evt_payload_new(NULL, topic, args, kwargs)
         if not self.header:
             raise MemoryError('Failed to allocate memory for evt_message_payload')
         self.owner = True
@@ -74,7 +76,7 @@ cdef class MessagePayload:
             return
 
         if self.header:
-            c_evt_payload_free(self.header, 1)
+            c_evt_payload_free(self.header)
 
     @staticmethod
     cdef MessagePayload c_from_header(evt_message_payload* payload, bint owner=False):
@@ -171,7 +173,7 @@ cdef inline bint py_callable_same(PyObject* a, PyObject* b):
 
 cdef class EventHook:
     def __cinit__(self, Topic topic, object logger=None):
-        self.header = c_evt_hook_new(topic.header)
+        self.header = c_evt_hook_new(topic.header, EE_HEAP_ALLOCATOR)
         if not self.header:
             raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
         self.callables = NULL
@@ -231,7 +233,7 @@ cdef class EventHook:
             callable_frame = callable_frame.next
 
         # Allocate new node
-        callable_frame = <evt_py_callable*> calloc(1, sizeof(evt_py_callable))
+        callable_frame = <evt_py_callable*> c_ap_alloc(sizeof(evt_py_callable), EE_HEAP_ALLOCATOR)
         if not callable_frame:
             raise MemoryError('Failed to allocate memory for new evt_py_callable')
 
@@ -274,7 +276,7 @@ cdef class EventHook:
                 while prior:
                     prior.idx -= 1
                     prior = prior.next
-                free(curr)
+                c_ap_free(curr)
                 return 1
             prior = curr
             curr = curr.next
@@ -297,7 +299,7 @@ cdef class EventHook:
             Py_XDECREF(curr.fn)
             Py_XDECREF(curr.logger)
             c_evt_hook_pop_callback(self.header, 0)
-            free(curr)
+            c_ap_free(curr)
             curr = next
         self.callables = NULL
 

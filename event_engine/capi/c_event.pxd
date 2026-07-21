@@ -1,6 +1,8 @@
 from cpython.object cimport PyObject
 from libc.stdint cimport uint64_t
 
+from cbase.allocator_protocol.c_allocator_protocol cimport allocator_protocol
+
 from .c_topic cimport Topic, evt_topic
 
 
@@ -12,23 +14,11 @@ cdef extern from "Python.h":
     int PyCallable_Check(PyObject* o)
 
 
-cdef extern from "event_engine/base/c_heap_allocator.h":
-    ctypedef struct pthread_mutex_t:
-        pass
-
-    ctypedef struct heap_allocator:
-        pthread_mutex_t lock
-
-    void* c_heap_request(heap_allocator* allocator, size_t size, int scan_all_pages, pthread_mutex_t* lock) noexcept nogil
-    void c_heap_free(void* ptr, pthread_mutex_t* lock) noexcept nogil
-
-
 cdef extern from "event_engine/capi/c_event.h":
     ctypedef struct evt_message_payload:
         void* args
         evt_topic* topic
         uint64_t seq_id
-        heap_allocator* allocator
 
     ctypedef void (*evt_callback_bare)()
     ctypedef void (*evt_callback_with_args)(void* args)
@@ -96,7 +86,7 @@ cdef extern from "event_engine/capi/c_event.h":
         size_t n_post_watchers
 
     void c_evt_callback_invoke(const evt_callback* callback, evt_message_payload* payload) noexcept nogil
-    evt_hook* c_evt_hook_new(evt_topic* topic) noexcept nogil
+    evt_hook* c_evt_hook_new(evt_topic* topic, allocator_protocol* allocator) noexcept nogil
     void c_evt_hook_free(evt_hook* hook) noexcept nogil
     int c_evt_hook_add_watcher(evt_hook* hook, evt_hook_watcher_fn fn, void* user_data, evt_hook_watcher_type type) noexcept nogil
     int c_evt_hook_register_callback(evt_hook* hook, const void* fn, evt_callback_type ftype, void* user_data, int deduplicate) noexcept nogil
@@ -113,9 +103,9 @@ cdef tuple EMPTY_ARGS
 
 cdef str TOPIC_FIELD_NAME
 
-cdef evt_message_payload* c_evt_payload_new(heap_allocator* allocator, Topic topic, tuple args, dict kwargs, int with_lock)
+cdef evt_message_payload* c_evt_payload_new(allocator_protocol* schematic, Topic topic, tuple args, dict kwargs)
 
-cdef void c_evt_payload_free(evt_message_payload* payload, int with_lock)
+cdef void c_evt_payload_free(evt_message_payload* payload)
 
 
 cdef class MessagePayload:

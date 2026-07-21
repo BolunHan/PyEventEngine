@@ -103,7 +103,7 @@ cdef tuple EMPTY_ARGS
 
 cdef str TOPIC_FIELD_NAME
 
-cdef evt_message_payload* c_evt_payload_new(allocator_protocol* schematic, Topic topic, tuple args, dict kwargs)
+cdef evt_message_payload* c_evt_payload_new(Topic topic, tuple args, dict kwargs)
 
 cdef void c_evt_payload_free(evt_message_payload* payload)
 

@@ -5,8 +5,11 @@ from cpython.object cimport PyObject
 from cpython.ref cimport Py_INCREF, Py_XDECREF, Py_XINCREF
 from cpython.unicode cimport PyUnicode_FromStringAndSize
 
+from cbase.bytemap.c_bytemap cimport bytemap_ret_code, bytemap, bytemap_entry, c_bytemap_new, c_bytemap_clear, c_bytemap_free, c_bytemap_get, c_bytemap_set, c_bytemap_pop, c_bytemap_entry_value
+
 from .c_event cimport EMPTY_ARGS, MessagePayload, c_evt_hook_invoke, c_evt_payload_free, c_evt_payload_new, evt_py_payload
-from .c_topic cimport HEAP_ALLOCATOR, c_topic_match_bool
+from .c_topic cimport c_topic_match_bool
+from ..base.c_allocator_protocol cimport EE_HEAP_ALLOCATOR
 from ..base import LOGGER
 
 LOGGER = LOGGER.getChild('Engine')
@@ -23,53 +26,41 @@ class Empty(Exception):
 cdef class EventEngine:
     def __cinit__(self, size_t capacity=DEFAULT_MQ_CAPACITY, object logger=None):
         self.logger = LOGGER.getChild(f'EventEngine') if logger is None else logger
-        cdef heap_allocator* allocator = HEAP_ALLOCATOR
+        cdef allocator_protocol* allocator = EE_HEAP_ALLOCATOR
 
         self.mq = c_mq_new(capacity, NULL, allocator)
         if not self.mq:
             raise MemoryError(f'Failed to allocate MessageQueue for {self.__class__.__name__}.')
 
-        self.exact_topic_hooks = c_strmap_new(0, NULL, 0)
+        self.exact_topic_hooks = c_bytemap_new(0, NULL)
         if not self.exact_topic_hooks:
-            c_mq_free(self.mq, 1)
+            c_mq_free(self.mq)
             self.mq = NULL
-            raise MemoryError(f'Failed to allocate MessageQueue for {self.__class__.__name__}.')
+            raise MemoryError(f'Failed to allocate exact_topic_hooks for {self.__class__.__name__}.')
 
-        self.generic_topic_hooks = c_strmap_new(0, NULL, 0)
+        self.generic_topic_hooks = c_bytemap_new(0, NULL)
         if not self.generic_topic_hooks:
-            c_mq_free(self.mq, 1)
-            c_strmap_free(self.exact_topic_hooks, 1, 1)
+            c_mq_free(self.mq)
+            c_bytemap_free(self.exact_topic_hooks)
             self.mq = NULL
-            raise MemoryError(f'Failed to allocate MessageQueue for {self.__class__.__name__}.')
+            raise MemoryError(f'Failed to allocate generic_topic_hooks for {self.__class__.__name__}.')
 
-        self.payload_allocator = c_heap_allocator_new()
-        if not self.payload_allocator:
-            c_mq_free(self.mq, 1)
-            c_strmap_free(self.exact_topic_hooks, 1, 1)
-            c_strmap_free(self.generic_topic_hooks, 1, 1)
-            self.mq = NULL
-            self.exact_topic_hooks = NULL
-            self.generic_topic_hooks = NULL
-            raise MemoryError(f'Failed to allocate MemoryAllocator for {self.__class__.__name__}.')
+        self.payload_allocator = EE_HEAP_ALLOCATOR
 
         self.seq_id = 0
 
     def __dealloc__(self):
         if self.mq:
-            c_mq_free(self.mq, 1)
+            c_mq_free(self.mq)
             self.mq = NULL
 
         if self.exact_topic_hooks:
-            c_strmap_free(self.exact_topic_hooks, 1, 1)
+            c_bytemap_free(self.exact_topic_hooks)
             self.exact_topic_hooks = NULL
 
         if self.generic_topic_hooks:
-            c_strmap_free(self.generic_topic_hooks, 1, 1)
+            c_bytemap_free(self.generic_topic_hooks)
             self.generic_topic_hooks = NULL
-
-        if self.payload_allocator:
-            c_heap_allocator_free(self.payload_allocator)
-            self.payload_allocator = NULL
 
     cdef inline void c_loop(self):
         if not self.mq:
@@ -84,7 +75,6 @@ cdef class EventEngine:
             # Step 1: Await message
             with nogil:
                 ret_code = c_mq_get_hybrid(mq, &msg, DEFAULT_MQ_SPIN_LIMIT, DEFAULT_MQ_TIMEOUT_SECONDS)
-                # ret_code = c_mq_get_await(mq, &msg, DEFAULT_MQ_TIMEOUT_SECONDS)
                 if ret_code != 0:
                     continue
 
@@ -92,7 +82,7 @@ cdef class EventEngine:
             self.c_trigger(msg)
 
             # Clean up the message payload
-            c_evt_payload_free(msg, 1)
+            c_evt_payload_free(msg)
 
     cdef inline evt_message_payload* c_get(self, bint block, size_t max_spin, double timeout):
         cdef evt_message_payload* msg = NULL
@@ -111,7 +101,7 @@ cdef class EventEngine:
             raise ValueError('Topic must be all of exact parts')
 
         # Step 0: Request payload buffer (MUST be done with GIL held - allocator is NOT thread-safe)
-        cdef evt_message_payload* payload = c_evt_payload_new(self.payload_allocator, topic, args, kwargs, 1)
+        cdef evt_message_payload* payload = c_evt_payload_new(self.payload_allocator, topic, args, kwargs)
 
         # Step 1: Assembling payload (MUST be done with GIL held - touching Python objects)
         payload.seq_id = self.seq_id
@@ -130,7 +120,7 @@ cdef class EventEngine:
             return ret_code
 
         self.seq_id -= 1
-        c_evt_payload_free(payload, 1)
+        c_evt_payload_free(payload)
         return ret_code
 
     cdef inline void c_trigger(self, evt_message_payload* msg):
@@ -139,17 +129,18 @@ cdef class EventEngine:
         cdef PyObject* hook_ptr = NULL
         cdef EventHook event_hook
 
-        cdef int ret_code = c_strmap_get(self.exact_topic_hooks, msg_topic.key, msg_topic.key_len, <void**> &hook_ptr)
+        cdef int ret_code = c_bytemap_get(self.exact_topic_hooks, msg_topic.key, msg_topic.key_len, <void**> &hook_ptr)
         if hook_ptr:
             event_hook = <EventHook> hook_ptr
             c_evt_hook_invoke(event_hook.header, msg)
 
         # Step 2: Match generic_topic_hooks
-        cdef strmap_entry* entry = self.generic_topic_hooks.first
+        cdef bytemap_entry* entry = self.generic_topic_hooks.first
         cdef int is_matched
         while entry:
-            hook_ptr = <PyObject*> entry.value
+            hook_ptr = <PyObject*> c_bytemap_entry_value(entry)
             if not hook_ptr:
+                entry = entry.next
                 continue
             event_hook = <EventHook> <PyObject*> hook_ptr
             is_matched = c_topic_match_bool(event_hook.topic.header, msg_topic)
@@ -161,15 +152,15 @@ cdef class EventEngine:
         cdef evt_topic* topic_ptr = topic.header
         cdef PyObject* hook_ptr = NULL
         cdef EventHook event_hook
-        cdef strmap* hook_map
+        cdef bytemap* hook_map
 
         if topic_ptr.is_exact:
             hook_map = self.exact_topic_hooks
         else:
             hook_map = self.generic_topic_hooks
 
-        cdef int ret_code = c_strmap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
-        if ret_code == STRMAP_ERR_NOT_FOUND:
+        cdef int ret_code = c_bytemap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
+        if ret_code == bytemap_ret_code.BYTEMAP_ERR_NOT_FOUND:
             raise KeyError(f'No EventHook registered for {topic.value}')
         event_hook = <EventHook> hook_ptr
         Py_XINCREF(hook_ptr)
@@ -178,29 +169,29 @@ cdef class EventEngine:
     cdef inline void c_register_hook(self, EventHook hook):
         cdef evt_topic* topic_ptr = hook.topic.header
         cdef PyObject* existing_hook_ptr = NULL
-        cdef strmap* hook_map
+        cdef bytemap* hook_map
 
         if topic_ptr.is_exact:
             hook_map = self.exact_topic_hooks
         else:
             hook_map = self.generic_topic_hooks
 
-        cdef int ret_code = c_strmap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &existing_hook_ptr)
+        cdef int ret_code = c_bytemap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &existing_hook_ptr)
         if existing_hook_ptr and existing_hook_ptr != <PyObject*> hook:
             raise KeyError(f'Another EventHook already registered for {hook.topic.value}')
-        ret_code = c_strmap_set(hook_map, topic_ptr.key, topic_ptr.key_len, <void*> <PyObject*> hook, NULL, 0)
+        ret_code = c_bytemap_set(hook_map, topic_ptr.key, topic_ptr.key_len, <void*> <PyObject*> hook, NULL)
         Py_INCREF(hook)
 
     cdef inline EventHook c_unregister_hook(self, Topic topic):
         cdef evt_topic* topic_ptr = topic.header
         cdef PyObject* existing_hook_ptr = NULL
-        cdef strmap* hook_map
+        cdef bytemap* hook_map
 
         if topic_ptr.is_exact:
             hook_map = self.exact_topic_hooks
         else:
             hook_map = self.generic_topic_hooks
-        cdef int ret_code = c_strmap_pop(hook_map, <char*> topic_ptr.key, topic_ptr.key_len, <void**> &existing_hook_ptr, 0)
+        cdef int ret_code = c_bytemap_pop(hook_map, <char*> topic_ptr.key, topic_ptr.key_len, <void**> &existing_hook_ptr)
         if not existing_hook_ptr:
             raise KeyError(f'No EventHook registered for {topic.value}')
         cdef EventHook hook = <EventHook> existing_hook_ptr
@@ -211,70 +202,68 @@ cdef class EventEngine:
         cdef evt_topic* topic_ptr = topic.header
         cdef PyObject* hook_ptr = NULL
         cdef EventHook event_hook
-        cdef strmap* hook_map
+        cdef bytemap* hook_map
 
         if topic_ptr.is_exact:
             hook_map = self.exact_topic_hooks
         else:
             hook_map = self.generic_topic_hooks
 
-        cdef int ret_code = c_strmap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
-        if ret_code == STRMAP_ERR_NOT_FOUND:
+        cdef int ret_code = c_bytemap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
+        if ret_code == bytemap_ret_code.BYTEMAP_ERR_NOT_FOUND:
             event_hook = EventHook.__new__(EventHook, topic, self.logger)
-            c_strmap_set(hook_map, topic_ptr.key, topic_ptr.key_len, <void*> <PyObject*> event_hook, NULL, 0)
+            c_bytemap_set(hook_map, topic_ptr.key, topic_ptr.key_len, <void*> <PyObject*> event_hook, NULL)
             Py_INCREF(event_hook)
         elif not hook_ptr:
             raise BufferError(f'Corrected buffer, invalid registered event hook.')
         else:
             event_hook = <EventHook> hook_ptr
-        event_hook.add_handler(py_callable, deduplicate)
+        event_hook.add_handler(py_callable, None, deduplicate)
 
     cdef inline void c_unregister_handler(self, Topic topic, object py_callable):
         cdef evt_topic* topic_ptr = topic.header
         cdef PyObject* hook_ptr = NULL
         cdef EventHook event_hook
-        cdef strmap* hook_map
+        cdef bytemap* hook_map
 
         if topic_ptr.is_exact:
             hook_map = self.exact_topic_hooks
         else:
             hook_map = self.generic_topic_hooks
 
-        cdef int ret_code = c_strmap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
-        if ret_code == STRMAP_ERR_NOT_FOUND:
+        cdef int ret_code = c_bytemap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
+        if ret_code == bytemap_ret_code.BYTEMAP_ERR_NOT_FOUND:
             LOGGER.error(f'No EventHook registered for "{topic.value}"')
             return
         event_hook = <EventHook> hook_ptr
         event_hook.remove_handler(py_callable)
         if len(event_hook) == 0:
-            c_strmap_pop(hook_map, topic_ptr.key, topic_ptr.key_len, NULL, 0)
+            c_bytemap_pop(hook_map, topic_ptr.key, topic_ptr.key_len, NULL)
             Py_XDECREF(<PyObject*> event_hook)
 
     cdef inline void c_clear(self):
-        cdef strmap_entry* entry
+        cdef bytemap_entry* entry
         cdef EventHook event_hook
 
         # Clear exact_topic_hooks
         entry = self.exact_topic_hooks.first
         while entry:
-            if entry.value:
-                event_hook = <EventHook> <PyObject*> entry.value
+            if c_bytemap_entry_value(entry):
+                event_hook = <EventHook> <PyObject*> c_bytemap_entry_value(entry)
                 event_hook.clear()
-                entry.value = NULL
                 Py_XDECREF(<PyObject*> event_hook)
             entry = entry.next
-        c_strmap_clear(self.exact_topic_hooks, 0)
+        c_bytemap_clear(self.exact_topic_hooks)
 
         # Clear generic_topic_hooks
         entry = self.generic_topic_hooks.first
         while entry:
-            if entry.value:
-                event_hook = <EventHook> <PyObject*> entry.value
+            if c_bytemap_entry_value(entry):
+                event_hook = <EventHook> <PyObject*> c_bytemap_entry_value(entry)
                 event_hook.clear()
-                entry.value = NULL
                 Py_XDECREF(<PyObject*> event_hook)
             entry = entry.next
-        c_strmap_clear(self.generic_topic_hooks, 0)
+        c_bytemap_clear(self.generic_topic_hooks)
 
     # --- Python Interfaces---
 
@@ -282,12 +271,12 @@ cdef class EventEngine:
         count = 0
         entry = self.exact_topic_hooks.first
         while entry:
-            if entry.value:
+            if c_bytemap_entry_value(entry):
                 count += 1
             entry = entry.next
         entry = self.generic_topic_hooks.first
         while entry:
-            if entry.value:
+            if c_bytemap_entry_value(entry):
                 count += 1
             entry = entry.next
         return count
@@ -300,19 +289,19 @@ cdef class EventEngine:
         cdef evt_topic* topic_ptr = topic.header
         cdef PyObject* hook_ptr = NULL
         cdef EventHook event_hook
-        cdef strmap* hook_map
 
-        cdef int ret_code = c_strmap_get(self.exact_topic_hooks, topic.key, topic_ptr.key_len, <void**> &hook_ptr)
+        cdef int ret_code = c_bytemap_get(self.exact_topic_hooks, topic.key, topic_ptr.key_len, <void**> &hook_ptr)
         if hook_ptr:
             event_hook = <EventHook> hook_ptr
             Py_XINCREF(hook_ptr)
             out.append(event_hook)
 
-        cdef strmap_entry* entry = self.generic_topic_hooks.first
+        cdef bytemap_entry* entry = self.generic_topic_hooks.first
         cdef int is_matched
         while entry:
-            hook_ptr = <PyObject*> entry.value
+            hook_ptr = <PyObject*> c_bytemap_entry_value(entry)
             if not hook_ptr:
+                entry = entry.next
                 continue
             event_hook = <EventHook> hook_ptr
             is_matched = c_topic_match_bool(event_hook.topic.header, topic_ptr)
@@ -390,38 +379,38 @@ cdef class EventEngine:
     def event_hooks(self):
         entry = self.exact_topic_hooks.first
         while entry:
-            if entry.value:
-                yield <EventHook> <PyObject*> entry.value
+            if c_bytemap_entry_value(entry):
+                yield <EventHook> <PyObject*> c_bytemap_entry_value(entry)
             entry = entry.next
         entry = self.generic_topic_hooks.first
         while entry:
-            if entry.value:
-                yield <EventHook> <PyObject*> entry.value
+            if c_bytemap_entry_value(entry):
+                yield <EventHook> <PyObject*> c_bytemap_entry_value(entry)
             entry = entry.next
 
     def topics(self):
         entry = self.exact_topic_hooks.first
         while entry:
-            if entry.value:
-                yield (<EventHook> <PyObject*> entry.value).topic
+            if c_bytemap_entry_value(entry):
+                yield (<EventHook> <PyObject*> c_bytemap_entry_value(entry)).topic
             entry = entry.next
         entry = self.generic_topic_hooks.first
         while entry:
-            if entry.value:
-                yield (<EventHook> <PyObject*> entry.value).topic
+            if c_bytemap_entry_value(entry):
+                yield (<EventHook> <PyObject*> c_bytemap_entry_value(entry)).topic
             entry = entry.next
 
     def items(self):
         entry = self.exact_topic_hooks.first
         while entry:
-            if entry.value:
-                hook = <EventHook> <PyObject*> entry.value
+            if c_bytemap_entry_value(entry):
+                hook = <EventHook> <PyObject*> c_bytemap_entry_value(entry)
                 yield (hook.topic, hook)
             entry = entry.next
         entry = self.generic_topic_hooks.first
         while entry:
-            if entry.value:
-                hook = <EventHook> <PyObject*> entry.value
+            if c_bytemap_entry_value(entry):
+                hook = <EventHook> <PyObject*> c_bytemap_entry_value(entry)
                 yield (hook.topic, hook)
             entry = entry.next
 
@@ -436,12 +425,12 @@ cdef class EventEngine:
     property exact_topic_hook_map:
         def __get__(self):
             cdef dict out = {}
-            cdef strmap_entry* entry = self.exact_topic_hooks.first
+            cdef bytemap_entry* entry = self.exact_topic_hooks.first
             cdef str topic_str
             cdef EventHook event_hook
             while entry:
                 topic_str = PyUnicode_FromStringAndSize(entry.key, entry.key_length)
-                event_hook = <EventHook> <PyObject*> entry.value
+                event_hook = <EventHook> <PyObject*> c_bytemap_entry_value(entry)
                 entry = entry.next
                 Py_XINCREF(<PyObject*> event_hook)
                 out[Topic(topic_str)] = event_hook
@@ -450,12 +439,12 @@ cdef class EventEngine:
     property generic_topic_hook_map:
         def __get__(self):
             cdef dict out = {}
-            cdef strmap_entry* entry = self.generic_topic_hooks.first
+            cdef bytemap_entry* entry = self.generic_topic_hooks.first
             cdef str topic_str
             cdef EventHook event_hook
             while entry:
                 topic_str = PyUnicode_FromStringAndSize(entry.key, entry.key_length)
-                event_hook = <EventHook> <PyObject*> entry.value
+                event_hook = <EventHook> <PyObject*> c_bytemap_entry_value(entry)
                 entry = entry.next
                 Py_XINCREF(<PyObject*> event_hook)
                 out[Topic(topic_str)] = event_hook
@@ -505,7 +494,7 @@ cdef class EventEngineEx(EventEngine):
     cdef inline void c_second_timer_loop(self, Topic topic):
         from time import time, sleep
         cdef double t, scheduled_time, next_time, sleep_time
-        cdef dict kwargs = {'interval': 60}
+        cdef dict kwargs = {'interval': 1}
 
         while self.active:
             t = time()

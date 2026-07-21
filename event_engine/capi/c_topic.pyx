@@ -4,8 +4,12 @@ from collections.abc import Iterable
 
 from cpython.unicode cimport PyUnicode_AsUTF8AndSize, PyUnicode_FromStringAndSize
 from libc.stdint cimport uint8_t, uintptr_t
-from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy, strlen
+
+from cbase.allocator_protocol.c_allocator_protocol cimport c_ap_alloc, c_ap_free, c_ap_protocol_from_ptr
+from cbase.bytemap.c_bytemap cimport bytemap_entry, c_bytemap_entry_value, c_bytemap_get, c_bytemap_new
+
+from event_engine.base.c_allocator_protocol cimport EE_DEFAULT_ALLOCATOR, EE_HEAP_ALLOCATOR
 
 
 class TopicType(enum.IntEnum):
@@ -20,14 +24,14 @@ cdef class TopicPart:
         if not alloc:
             return
 
-        self.header = <evt_topic_part_variant*> calloc(1, sizeof(evt_topic_part_variant))
+        self.header = <evt_topic_part_variant*> c_ap_alloc(sizeof(evt_topic_part_variant), EE_HEAP_ALLOCATOR)
         if not self.header:
             raise MemoryError('Failed to allocate memory!')
         self.owner = True
 
     def __dealloc__(self):
         if self.owner and self.header:
-            free(self.header)
+            c_ap_free(self.header)
             self.header = NULL
 
     @staticmethod
@@ -86,9 +90,9 @@ cdef class TopicPartExact(TopicPart):
 
         cdef Py_ssize_t length
         cdef const char* key_ptr = PyUnicode_AsUTF8AndSize(part, &length)
-        cdef char* part_ptr = <char*> calloc(length + 1, sizeof(char))
+        cdef char* part_ptr = <char*> c_ap_alloc(length + 1, EE_HEAP_ALLOCATOR)
         if not part_ptr:
-            free(self.header)
+            c_ap_free(self.header)
             self.header = NULL
             raise MemoryError('Failed to allocate memory!')
         memcpy(part_ptr, key_ptr, length)
@@ -100,7 +104,7 @@ cdef class TopicPartExact(TopicPart):
     def __dealloc__(self):
         if self.owner and self.header:
             if self.header.exact.part:
-                free(self.header.exact.part)
+                c_ap_free(self.header.exact.part)
 
     def __repr__(self):
         if self.header:
@@ -127,9 +131,9 @@ cdef class TopicPartAny(TopicPart):
 
         cdef Py_ssize_t length
         cdef const char* key_ptr = PyUnicode_AsUTF8AndSize(name, &length)
-        cdef char* name_ptr = <char*> calloc(length + 1, sizeof(char))
+        cdef char* name_ptr = <char*> c_ap_alloc(length + 1, EE_HEAP_ALLOCATOR)
         if not name_ptr:
-            free(self.header)
+            c_ap_free(self.header)
             self.header = NULL
             raise MemoryError('Failed to allocate memory!')
         memcpy(name_ptr, key_ptr, length)
@@ -141,7 +145,7 @@ cdef class TopicPartAny(TopicPart):
     def __dealloc__(self):
         if self.owner and self.header:
             if self.header.any.name:
-                free(self.header.any.name)
+                c_ap_free(self.header.any.name)
 
     def __repr__(self):
         if self.header:
@@ -164,17 +168,17 @@ cdef class TopicPartRange(TopicPart):
             return
 
         cdef size_t n_internal = len(options) - 1 + sum(len(_) for _ in options)
-        cdef char* internal = <char*> calloc(n_internal + 1, sizeof(char))
+        cdef char* internal = <char*> c_ap_alloc(n_internal + 1, EE_HEAP_ALLOCATOR)
         if not internal:
-            free(self.header)
+            c_ap_free(self.header)
             self.header = NULL
             raise MemoryError('Failed to allocate memory!')
 
         cdef size_t n_options = len(options)
-        cdef char** option_array = <char**> calloc(n_options, sizeof(char*))
+        cdef char** option_array = <char**> c_ap_alloc(n_options * sizeof(char*), EE_HEAP_ALLOCATOR)
         if not option_array:
-            free(internal)
-            free(self.header)
+            c_ap_free(internal)
+            c_ap_free(self.header)
             self.header = NULL
             raise MemoryError('Failed to allocate memory!')
 
@@ -188,9 +192,9 @@ cdef class TopicPartRange(TopicPart):
             memcpy(<char*> internal + start, <void*> option_ptr, option_length)
             option_array[i] = <char*> internal + start
             if not option_array[i]:
-                free(internal)
-                free(option_array)
-                free(self.header)
+                c_ap_free(internal)
+                c_ap_free(option_array)
+                c_ap_free(self.header)
                 self.header = NULL
                 raise MemoryError('Failed to allocate memory!')
             i += 1
@@ -204,9 +208,9 @@ cdef class TopicPartRange(TopicPart):
     def __dealloc__(self):
         if self.owner and self.header:
             if self.header.range.options:
-                free(self.header.range.options)
+                c_ap_free(self.header.range.options)
             if self.header.range.literal:
-                free(self.header.range.literal)
+                c_ap_free(self.header.range.literal)
 
     def __repr__(self):
         if self.header:
@@ -247,9 +251,9 @@ cdef class TopicPartPattern(TopicPart):
 
         cdef Py_ssize_t length
         cdef const char* key_ptr = PyUnicode_AsUTF8AndSize(regex, &length)
-        cdef char* regex_ptr = <char*> calloc(length + 1, sizeof(char))
+        cdef char* regex_ptr = <char*> c_ap_alloc(length + 1, EE_HEAP_ALLOCATOR)
         if not regex_ptr:
-            free(self.header)
+            c_ap_free(self.header)
             self.header = NULL
             raise MemoryError('Failed to allocate memory!')
         memcpy(regex_ptr, key_ptr, length)
@@ -261,7 +265,7 @@ cdef class TopicPartPattern(TopicPart):
     def __dealloc__(self):
         if self.owner and self.header:
             if self.header.pattern.pattern:
-                free(self.header.pattern.pattern)
+                c_ap_free(self.header.pattern.pattern)
 
     def __repr__(self):
         if self.header:
@@ -277,8 +281,10 @@ cdef class TopicPartPattern(TopicPart):
             return re.compile(self.pattern)
 
 
-cdef heap_allocator* HEAP_ALLOCATOR = c_heap_allocator_new()
-GLOBAL_INTERNAL_MAP = c_strmap_new(0, HEAP_ALLOCATOR, 1)
+cdef allocator_protocol* TOPIC_ALLOCATOR = EE_DEFAULT_ALLOCATOR
+
+# Module init: set up the global internal map using the default allocator
+GLOBAL_INTERNAL_MAP = c_bytemap_new(0, EE_DEFAULT_ALLOCATOR)
 
 
 cpdef Topic get_internal_topic(str key, bint owner=False):
@@ -289,7 +295,7 @@ cpdef Topic get_internal_topic(str key, bint owner=False):
     cdef Py_ssize_t key_length
     cdef const char* key_ptr = PyUnicode_AsUTF8AndSize(key, &key_length)
     cdef evt_topic* topic = NULL
-    cdef int ret_code = c_strmap_get(GLOBAL_INTERNAL_MAP, key_ptr, key_length, <void**> &topic)
+    cdef int ret_code = c_bytemap_get(GLOBAL_INTERNAL_MAP, key_ptr, key_length, <void**> &topic)
     if topic is NULL:
         return None
     return Topic.c_from_header(topic, owner)
@@ -302,11 +308,11 @@ cpdef dict get_internal_map():
 
     cdef str key
     cdef evt_topic* topic
-    cdef strmap_entry* entry = GLOBAL_INTERNAL_MAP.first
+    cdef bytemap_entry* entry = GLOBAL_INTERNAL_MAP.first
     cdef dict out = {}
     while entry:
         key = PyUnicode_FromStringAndSize(entry.key, entry.key_length)
-        topic = <evt_topic*> entry.value
+        topic = <evt_topic*> c_bytemap_entry_value(entry)
         out[key] = Topic.c_from_header(topic, False)
         entry = entry.next
     return out
@@ -322,16 +328,16 @@ cdef class TopicMatchResult:
         cdef size_t i
         cdef evt_topic_match* node = NULL
         for i in range(n_parts):
-            node = c_topic_match_new(node, HEAP_ALLOCATOR, 1)
+            node = c_topic_match_new(node, EE_DEFAULT_ALLOCATOR)
             if not node:
-                c_topic_match_free(self.header, 1)
+                c_topic_match_free(self.header)
             elif not self.header:
                 self.header = node
                 self.owner = True
 
     def __dealloc__(self):
         if self.owner and self.header:
-            c_topic_match_free(self.header, 1)
+            c_topic_match_free(self.header)
 
     @staticmethod
     cdef TopicMatchResult c_from_header(evt_topic_match* node, bint owner=True):
@@ -427,7 +433,7 @@ cdef class Topic:
             return
 
         if not topic:
-            self.header = c_topic_new(NULL, 0, HEAP_ALLOCATOR, 1)
+            self.header = c_topic_new(NULL, 0, EE_DEFAULT_ALLOCATOR)
             self.owner = True
             if not self.header:
                 raise MemoryError(f'Failed to init topic ":{topic}", check if the syntax is correct!')
@@ -435,13 +441,13 @@ cdef class Topic:
 
         cdef Py_ssize_t topic_length
         cdef const char* topic_ptr = PyUnicode_AsUTF8AndSize(topic, &topic_length)
-        self.header = c_topic_new(topic_ptr, topic_length, HEAP_ALLOCATOR, 1)
+        self.header = c_topic_new(topic_ptr, topic_length, EE_DEFAULT_ALLOCATOR)
         if not self.header:
             raise MemoryError('Failed to allocate memory!')
 
     def __dealloc__(self):
         if self.owner and self.header:
-            c_topic_free(self.header, 1, 1)
+            c_topic_free(self.header)
 
     @staticmethod
     cdef Topic c_from_header(evt_topic* header, bint owner=False):
@@ -466,10 +472,10 @@ cdef class Topic:
             literal_len = tpart.pattern.pattern_len
         else:
             raise RuntimeError(f'Unknown topic type {TopicType(ttype)}')
-        c_topic_append(self.header, literal, literal_len, ttype, 1)
+        c_topic_append(self.header, literal, literal_len, ttype)
 
     cdef void c_update_literal(self):
-        c_topic_update_literal(self.header, 1)
+        c_topic_update_literal(self.header)
 
     # --- Python Interface ---
 
@@ -542,7 +548,7 @@ cdef class Topic:
         cdef evt_topic_part_variant* other_part
         cdef evt_topic_part_variant* tpart = self.header.parts
         cdef size_t i, n
-        if isinstance(object, Topic):
+        if isinstance(topic, Topic):
             other_part = (<Topic> topic).header.parts
             n = self.header.n
             for i in range(n):
@@ -550,7 +556,7 @@ cdef class Topic:
             n = (<Topic> topic).header.n
             for i in range(n):
                 aggregated.c_append(<evt_topic_part_variant*> other_part + i)
-        elif isinstance(object, TopicPart):
+        elif isinstance(topic, TopicPart):
             other_part = (<TopicPart> topic).header
             n = self.header.n
             for i in range(n):
@@ -567,12 +573,12 @@ cdef class Topic:
 
         cdef evt_topic_part_variant* other_part
         cdef size_t i, n
-        if isinstance(object, Topic):
+        if isinstance(topic, Topic):
             other_part = (<Topic> topic).header.parts
             n = (<Topic> topic).header.n
             for i in range(n):
                 self.c_append(<evt_topic_part_variant*> other_part + i)
-        elif isinstance(object, TopicPart):
+        elif isinstance(topic, TopicPart):
             other_part = (<TopicPart> topic).header
             self.c_append(other_part)
         else:
@@ -602,8 +608,8 @@ cdef class Topic:
 
         for tpart in topic_parts:
             literal = PyUnicode_AsUTF8AndSize(tpart, &literal_len)
-            c_topic_append(topic, literal, literal_len, evt_topic_type.TOPIC_PART_EXACT, 1)
-        c_topic_update_literal(topic, 1)
+            c_topic_append(topic, literal, literal_len, evt_topic_type.TOPIC_PART_EXACT)
+        c_topic_update_literal(topic)
         return aggregated
 
     cpdef Topic append(self, TopicPart topic_part):
@@ -613,7 +619,7 @@ cdef class Topic:
         cdef evt_topic_part_variant* part = topic_part.header
         cdef evt_topic* topic = self.header
         cdef evt_topic_part_variant* curr = topic.parts
-        cdef heap_allocator* allocator = topic.allocator
+        cdef allocator_protocol* allocator = c_ap_protocol_from_ptr(self.header)
         cdef char* literal
         cdef size_t literal_len
 
@@ -641,7 +647,7 @@ cdef class Topic:
         if not self.header:
             raise RuntimeError('Not initialized!')
 
-        cdef evt_topic_match* match_res = c_topic_match(self.header, other.header, NULL, 1)
+        cdef evt_topic_match* match_res = c_topic_match(self.header, other.header, NULL)
         return TopicMatchResult.c_from_header(match_res, True)
 
     def update_literal(self) -> Topic:
@@ -651,7 +657,7 @@ cdef class Topic:
     cpdef Topic format_map(self, dict mapping, bint internalized=True, bint strict=False):
         cdef evt_topic_part_variant* tpart = self.header.parts
         cdef evt_topic_type ttype
-        cdef evt_topic* formatted = c_topic_new(NULL, 0, self.header.allocator, 1)
+        cdef evt_topic* formatted = c_topic_new(NULL, 0, c_ap_protocol_from_ptr(self.header))
         cdef str key
         cdef const char* literal
         cdef Py_ssize_t literal_len
@@ -660,27 +666,27 @@ cdef class Topic:
             ttype = tpart.header.ttype
             # Case 1: For an exact part, simply append it.
             if ttype == evt_topic_type.TOPIC_PART_EXACT:
-                c_topic_append(formatted, tpart.exact.part, tpart.exact.part_len, ttype, 1)
+                c_topic_append(formatted, tpart.exact.part, tpart.exact.part_len, ttype)
             # Case 2: For a named any part, check from the mapping dict.
             elif ttype == evt_topic_type.TOPIC_PART_ANY:
                 key = PyUnicode_FromStringAndSize(tpart.any.name, tpart.any.name_len)
                 # Raise KeyError if not found.
                 if key not in mapping:
                     if strict:
-                        c_topic_free(formatted, 1, 1)
+                        c_topic_free(formatted)
                         raise KeyError(key)
                     else:
-                        c_topic_append(formatted, tpart.any.name, tpart.any.name_len, evt_topic_type.TOPIC_PART_ANY, 1)
+                        c_topic_append(formatted, tpart.any.name, tpart.any.name_len, evt_topic_type.TOPIC_PART_ANY)
                 else:
                     # Append the mapped value as an exact part.
                     literal = PyUnicode_AsUTF8AndSize(mapping[key], &literal_len)
-                    c_topic_append(formatted, literal, literal_len, evt_topic_type.TOPIC_PART_EXACT, 1)
+                    c_topic_append(formatted, literal, literal_len, evt_topic_type.TOPIC_PART_EXACT)
             else:
-                c_topic_free(formatted, 1, 1)
+                c_topic_free(formatted)
                 raise ValueError(f'Not supported topic type {TopicType(ttype)}')
             tpart = tpart.header.next
 
-        c_topic_update_literal(formatted, 1)
+        c_topic_update_literal(formatted)
         # If internalized, the TopicPart will not own the literal buffers.
         # Requested or not, in any way, the topic literal must be added to the internal map.
         return Topic.c_from_header(formatted, not internalized)
@@ -702,7 +708,7 @@ cdef class Topic:
 
             cdef Py_ssize_t topic_length
             cdef const char* topic_ptr = PyUnicode_AsUTF8AndSize(value, &topic_length)
-            cdef int assign_ret = c_topic_assign(self.header, topic_ptr, topic_length, 1)
+            cdef int assign_ret = c_topic_assign(self.header, topic_ptr, topic_length)
             if assign_ret:
                 raise ValueError(f'Failed to assign topic "{value}", check if syntax is correct!')
 

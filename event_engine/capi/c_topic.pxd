@@ -1,38 +1,7 @@
 from libc.stdint cimport uint64_t
 
-
-cdef extern from "event_engine/base/c_heap_allocator.h":
-    ctypedef struct heap_allocator:
-        pass
-
-    heap_allocator* c_heap_allocator_new()
-
-
-cdef extern from "event_engine/base/c_strmap.h":
-    ctypedef struct strmap_entry:
-        const char* key
-        size_t key_length
-        void* value
-        uint64_t hash
-        int occupied
-        int removed
-        strmap_entry* prev
-        strmap_entry* next
-
-    ctypedef struct strmap:
-        heap_allocator* heap_allocator
-        strmap_entry* tabl
-        size_t capacity
-        size_t size
-        size_t occupied
-        strmap_entry* first
-        strmap_entry* last
-        uint64_t salt
-
-    strmap* c_strmap_new(size_t capacity, heap_allocator* heap_allocator, int with_lock) noexcept nogil
-    void c_strmap_free(strmap* map, int free_self, int with_lock) noexcept nogil
-    int c_strmap_get(strmap* map, const char* key, size_t key_len, void** out) noexcept nogil
-    int c_strmap_set(strmap* map, const char* key, size_t key_len, void* value, strmap_entry** out_entry, int with_lock) noexcept nogil
+from cbase.allocator_protocol.c_allocator_protocol cimport allocator_protocol
+from cbase.bytemap.c_bytemap cimport bytemap
 
 
 cdef extern from "event_engine/capi/c_topic.h":
@@ -42,7 +11,7 @@ cdef extern from "event_engine/capi/c_topic.h":
     const char* DEFAULT_WILDCARD_BRACKETS
     const char DEFAULT_WILDCARD_MARKER
     const char DEFAULT_PATTERN_DELIM
-    strmap* GLOBAL_INTERNAL_MAP
+    bytemap* GLOBAL_INTERNAL_MAP
 
     ctypedef enum evt_topic_type:
         TOPIC_PART_EXACT = 0
@@ -91,7 +60,6 @@ cdef extern from "event_engine/capi/c_topic.h":
         char* key
         size_t key_len
         int is_exact
-        heap_allocator* allocator
 
     ctypedef struct evt_topic_match:
         int matched
@@ -100,19 +68,18 @@ cdef extern from "event_engine/capi/c_topic.h":
         char* literal
         size_t literal_len
         evt_topic_match* next
-        heap_allocator* allocator
 
-    strmap* c_get_global_internal_map(heap_allocator* allocator, int with_lock) noexcept nogil
-    evt_topic* c_topic_new(const char* key, size_t key_len, heap_allocator* allocator, int with_lock) noexcept nogil
-    int c_topic_free(evt_topic* topic, int free_self, int with_lock) noexcept nogil
-    int c_topic_internalize(evt_topic* topic, const char* key, size_t key_len, int with_lock) noexcept nogil
-    int c_topic_append(evt_topic* topic, const char* s, size_t len, evt_topic_type ttype, int with_lock) noexcept nogil
-    int c_topic_parse(evt_topic* topic, const char* key, size_t key_len, int with_lock) noexcept nogil
-    int c_topic_assign(evt_topic* topic, const char* key, size_t key_len, int with_lock) noexcept nogil
-    int c_topic_update_literal(evt_topic* topic, int with_lock) noexcept nogil
-    evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topic_b, evt_topic_match* out, int with_lock) noexcept nogil
-    evt_topic_match* c_topic_match_new(evt_topic_match* prev, heap_allocator* allocator, int with_lock) noexcept nogil
-    void c_topic_match_free(evt_topic_match* res, int with_lock) noexcept nogil
+    bytemap* c_get_global_internal_map(allocator_protocol* allocator) noexcept nogil
+    evt_topic* c_topic_new(const char* key, size_t key_len, allocator_protocol* allocator) noexcept nogil
+    void c_topic_free(evt_topic* topic) noexcept nogil
+    int c_topic_internalize(evt_topic* topic, const char* key, size_t key_len) noexcept nogil
+    int c_topic_append(evt_topic* topic, const char* s, size_t len, evt_topic_type ttype) noexcept nogil
+    int c_topic_parse(evt_topic* topic, const char* key, size_t key_len) noexcept nogil
+    int c_topic_assign(evt_topic* topic, const char* key, size_t key_len) noexcept nogil
+    int c_topic_update_literal(evt_topic* topic) noexcept nogil
+    evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topic_b, evt_topic_match* out) noexcept nogil
+    evt_topic_match* c_topic_match_new(evt_topic_match* prev, allocator_protocol* allocator) noexcept nogil
+    void c_topic_match_free(evt_topic_match* res) noexcept nogil
     int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) noexcept nogil
 
 
@@ -142,7 +109,7 @@ cdef class TopicPartPattern(TopicPart):
     pass
 
 
-cdef heap_allocator* HEAP_ALLOCATOR
+cdef allocator_protocol* TOPIC_ALLOCATOR
 
 
 cpdef Topic get_internal_topic(str key, bint owner=?)

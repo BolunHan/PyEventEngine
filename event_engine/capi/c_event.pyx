@@ -5,8 +5,6 @@ from cpython.exc cimport PyErr_Clear, PyErr_Fetch
 from cpython.method cimport PyMethod_Check, PyMethod_GET_FUNCTION, PyMethod_GET_SELF
 from cpython.ref cimport Py_XDECREF, Py_XINCREF
 from cpython.time cimport perf_counter
-from libc.stdlib cimport free
-
 from cbase.allocator_protocol.c_allocator_protocol cimport c_ap_alloc, c_ap_free, c_ap_protocol_from_ptr
 
 from ..base.c_allocator_protocol cimport EE_HEAP_ALLOCATOR
@@ -18,15 +16,9 @@ cdef tuple EMPTY_ARGS = ()
 cdef str TOPIC_FIELD_NAME = 'topic'
 
 
-cdef inline evt_message_payload* c_evt_payload_new(allocator_protocol* allocator, Topic topic, tuple args, dict kwargs):
-    cdef evt_message_payload* c_payload
+cdef inline evt_message_payload* c_evt_payload_new(Topic topic, tuple args, dict kwargs):
     cdef size_t payload_size = sizeof(evt_message_payload) + sizeof(evt_py_payload)
-
-    if allocator:
-        c_payload = <evt_message_payload*> c_ap_alloc(payload_size, allocator)
-    else:
-        c_payload = <evt_message_payload*> c_ap_alloc(payload_size, EE_HEAP_ALLOCATOR)
-
+    cdef evt_message_payload* c_payload = <evt_message_payload*> c_ap_alloc(payload_size, EE_HEAP_ALLOCATOR)
     if not c_payload:
         return NULL
 
@@ -50,7 +42,6 @@ cdef inline evt_message_payload* c_evt_payload_new(allocator_protocol* allocator
 
 
 cdef inline void c_evt_payload_free(evt_message_payload* payload):
-    cdef allocator_protocol* allocator = c_ap_protocol_from_ptr(payload)
     cdef evt_py_payload* py_payload = <evt_py_payload*> (payload + 1)
 
     Py_XDECREF(py_payload.py_topic)
@@ -58,15 +49,12 @@ cdef inline void c_evt_payload_free(evt_message_payload* payload):
     Py_XDECREF(py_payload.py_kwargs)
     Py_XDECREF(py_payload.py_kwargs_aggregated)
 
-    if allocator:
-        c_ap_free(payload)
-    else:
-        free(payload)
+    c_ap_free(payload)
 
 
 cdef class MessagePayload:
     def __init__(self, Topic topic, tuple args, dict kwargs):
-        self.header = c_evt_payload_new(NULL, topic, args, kwargs)
+        self.header = c_evt_payload_new(topic, args, kwargs)
         if not self.header:
             raise MemoryError('Failed to allocate memory for evt_message_payload')
         self.owner = True

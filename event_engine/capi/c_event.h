@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <event_engine/base/c_heap_allocator.h>
+#include <cbase/allocator_protocol/c_allocator_protocol.h>
 #include <event_engine/capi/c_topic.h>
 
 /* @brief Message payload stored in the queue
@@ -14,10 +14,9 @@
  * and a sequence identifier.
  */
 typedef struct evt_message_payload {
-    void*           args;       // optional user data pointer
-    evt_topic*      topic;      // optional Topic borrowed pointer
-    uint64_t        seq_id;     // optional sequence id (0 if unused)
-    heap_allocator* allocator;  // allocator for payload data (may be NULL)
+    void*      args;    // optional user data pointer
+    evt_topic* topic;   // optional Topic borrowed pointer
+    uint64_t   seq_id;  // optional sequence id (0 if unused)
 } evt_message_payload;
 
 typedef void (*evt_callback_bare)(void);
@@ -149,11 +148,10 @@ static inline void c_evt_callback_invoke(const evt_callback* callback, evt_messa
     }
 }
 
-static inline evt_hook* c_evt_hook_new(evt_topic* topic) {
-    evt_hook* hook = (evt_hook*) calloc(1, sizeof(evt_hook));
-    if (!hook) {
-        return NULL;
-    }
+static inline evt_hook* c_evt_hook_new(evt_topic* topic, allocator_protocol* allocator) {
+    evt_hook* hook = (evt_hook*) c_ap_alloc(sizeof(evt_hook), allocator);
+    if (!hook) return NULL;
+
     hook->topic = topic;
     hook->callbacks = NULL;
     hook->n_callbacks = 0;
@@ -169,11 +167,12 @@ static inline void c_evt_hook_free(evt_hook* hook) {
     if (hook->callbacks) free(hook->callbacks);
     if (hook->pre_watchers) free(hook->pre_watchers);
     if (hook->post_watchers) free(hook->post_watchers);
-    free(hook);
+    c_ap_free(hook);
 }
 
 static inline int c_evt_hook_add_watcher(evt_hook* hook, evt_hook_watcher_fn fn, void* user_data, evt_hook_watcher_type type) {
     if (!hook || !fn) return EVT_HOOK_ERR_INVALID_INPUT;
+
     if (type == EVT_HOOK_WATCHER_PRE_INVOKED) {
         const size_t      new_count = hook->n_pre_watchers + 1;
         evt_hook_watcher* grown = (evt_hook_watcher*) realloc(hook->pre_watchers, new_count * sizeof(evt_hook_watcher));
@@ -248,9 +247,7 @@ static inline int c_evt_hook_register_callback(evt_hook* hook, const void* fn, e
 
     const size_t  new_count = hook->n_callbacks + 1;
     evt_callback* grown = (evt_callback*) realloc(hook->callbacks, new_count * sizeof(evt_callback));
-    if (!grown) {
-        return EVT_HOOK_ERR_OOM;
-    }
+    if (!grown) return EVT_HOOK_ERR_OOM;
     hook->callbacks = grown;
 
     evt_callback* cb = hook->callbacks + hook->n_callbacks;

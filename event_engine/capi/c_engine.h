@@ -2,20 +2,21 @@
 #define C_ENGINE_H
 
 #include <errno.h>
-#ifdef _WIN32
-#include <event_engine/base/pthread_nt_compat.h>
-#include <event_engine/base/time_sched_nt_compat.h>
-#else
-#include <pthread.h>
-#include <sched.h>
-#endif
 #include <stdatomic.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include <event_engine/base/c_heap_allocator.h>
+#ifdef _WIN32
+#include <cbase/nt/pthread_nt_compat.h>
+#include <cbase/nt/time_sched_nt_compat.h>
+#else
+#include <pthread.h>
+#include <sched.h>
+#endif
+
+#include <cbase/allocator_protocol/c_allocator_protocol.h>
 #include <event_engine/capi/c_event.h>
 #include <event_engine/capi/c_topic.h>
 
@@ -40,12 +41,11 @@
  * can be allocated in one block for better locality and simpler allocation.
  */
 typedef struct message_queue {
-    heap_allocator* allocator;  // allocator for internal allocations
-    size_t          capacity;   // max number of entries
-    size_t          head;       // index to pop
-    size_t          tail;       // index to push
-    size_t          count;      // current count
-    evt_topic*      topic;      // topic this queue is bound to (may be NULL)
+    size_t          capacity;  // max number of entries
+    size_t          head;      // index to pop
+    size_t          tail;      // index to push
+    size_t          count;     // current count
+    evt_topic*      topic;     // topic this queue is bound to (may be NULL)
 
     pthread_mutex_t mutex;
     pthread_cond_t  not_empty;
@@ -66,21 +66,20 @@ typedef struct message_queue {
  * @brief Create a new message queue.
  * @param capacity maximum number of entries (must be > 0)
  * @param topic optional Topic to bind the queue to (may be NULL)
- * @param allocator optional heap_allocator for internal allocations (may be NULL)
+ * @param allocator allocator_protocol for the allocation
  * @return pointer to newly allocated message_queue or NULL on allocation failure
  */
-static inline message_queue* c_mq_new(size_t capacity, evt_topic* topic, heap_allocator* allocator);
+static inline message_queue* c_mq_new(size_t capacity, evt_topic* topic, allocator_protocol* allocator);
 
 /**
  * @brief Destroy a message queue.
  * @param mq pointer to message_queue to destroy
- * @param free_self if non-zero free the queue allocation as well (true)
  * @return 0 on success, -1 on invalid argument
  *
  * Note: does not free evt_message_payload pointers still present in the buffer;
- * caller is responsible for draining/freeing them before calling with free_self=1.
+ * caller is responsible for draining/freeing them before calling.
  */
-static inline int c_mq_free(message_queue* mq, int free_self);
+static inline int c_mq_free(message_queue* mq);
 
 /**
  * @brief Non-blocking put into the queue.
@@ -180,7 +179,7 @@ static inline void timespec_add_seconds(struct timespec* ts, double seconds) {
 }
 
 /* Create a new queue. Returns NULL on allocation failure. */
-static inline message_queue* c_mq_new(size_t capacity, evt_topic* topic, heap_allocator* allocator) {
+static inline message_queue* c_mq_new(size_t capacity, evt_topic* topic, allocator_protocol* allocator) {
     if (capacity == 0) return NULL;
 
 #ifdef _WIN32
@@ -188,20 +187,13 @@ static inline message_queue* c_mq_new(size_t capacity, evt_topic* topic, heap_al
 #else
     size_t total_bytes = sizeof(message_queue) + capacity * sizeof(evt_message_payload*);
 #endif
-    message_queue* mq;
 
-    if (allocator) {
-        mq = (message_queue*) c_heap_request(allocator, total_bytes, 1, &allocator->lock);
-    }
-    else {
-        mq = (message_queue*) calloc(1, total_bytes);
-    }
+    message_queue* mq = (message_queue*) c_ap_alloc(total_bytes, allocator);
     if (!mq) return NULL;
 
     mq->capacity = capacity;
     mq->head = mq->tail = mq->count = 0;
     mq->topic = topic;
-    mq->allocator = allocator;
 
     pthread_mutex_init(&mq->mutex, NULL);
     pthread_cond_init(&mq->not_empty, NULL);
@@ -211,10 +203,8 @@ static inline message_queue* c_mq_new(size_t capacity, evt_topic* topic, heap_al
 }
 
 /* Destroy queue. Does not free message payloads pointed to by entries. */
-static inline int c_mq_free(message_queue* mq, int free_self) {
-    if (!mq) {
-        return -1;
-    }
+static inline int c_mq_free(message_queue* mq) {
+    if (!mq) return -1;
 
     pthread_mutex_lock(&mq->mutex);
     pthread_mutex_unlock(&mq->mutex);
@@ -222,15 +212,7 @@ static inline int c_mq_free(message_queue* mq, int free_self) {
     pthread_cond_destroy(&mq->not_full);
     pthread_mutex_destroy(&mq->mutex);
 
-    heap_allocator* allocator = mq->allocator;
-    if (free_self) {
-        if (allocator) {
-            c_heap_free(mq, &allocator->lock);
-        }
-        else {
-            free(mq);
-        }
-    }
+    c_ap_free(mq);
     return 0;
 }
 

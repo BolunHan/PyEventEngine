@@ -29,7 +29,7 @@ from .c_topic cimport (
     TopicMatchResult, evt_topic_match,
     Topic, evt_topic,
 
-    HEAP_ALLOCATOR as TOPIC_HEAP_ALLOCATOR,
+    TOPIC_ALLOCATOR,
     get_internal_topic,
     get_internal_map,
 )
@@ -126,7 +126,7 @@ __all__ = [
     'TopicMatchResult', 'evt_topic_match',
     'Topic', 'evt_topic',
 
-    'TOPIC_HEAP_ALLOCATOR',
+    'TOPIC_ALLOCATOR',
     'get_internal_topic',
     'get_internal_map',
 

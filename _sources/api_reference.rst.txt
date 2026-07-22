@@ -27,17 +27,13 @@ event_engine.capi.c_topic
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: event_engine.capi.c_topic
-   :members: PyTopic, PyTopicType, PyTopicPart, PyTopicPartExact, PyTopicPartAny, PyTopicPartRange, PyTopicPartPattern, PyTopicMatchResult, init_internal_map, clear_internal_map, get_internal_topic, get_internal_map, init_allocator
+   :members: Topic, TopicType, TopicPart, TopicPartExact, TopicPartAny, TopicPartRange, TopicPartPattern, TopicMatchResult, init_internal_map, clear_internal_map, get_internal_topic, get_internal_map, init_allocator
    :undoc-members:
    :show-inheritance:
 
-event_engine.native.topic
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: event_engine.native.topic
-   :members: PyTopic, PyTopicType, PyTopicPart, PyTopicPartExact, PyTopicPartAny, PyTopicPartRange, PyTopicPartPattern, PyTopicMatchResult, init_internal_map, clear_internal_map, get_internal_topic, get_internal_map, init_allocator
-   :undoc-members:
-   :show-inheritance:
+.. note::
+   The pure Python fallback (``event_engine.native.topic``) provides the same API.
+   See :doc:`native_fallback` for details.
 
 Event Classes
 -------------
@@ -46,17 +42,13 @@ event_engine.capi.c_event
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: event_engine.capi.c_event
-   :members: PyMessagePayload, EventHook, EventHookEx, HandlerStats
+   :members: MessagePayload, EventHook, EventHookEx, HandlerStats
    :undoc-members:
    :show-inheritance:
 
-event_engine.native.event
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: event_engine.native.event
-   :members: PyMessagePayload, EventHook, EventHookEx, HandlerStats
-   :undoc-members:
-   :show-inheritance:
+.. note::
+   The pure Python fallback (``event_engine.native.event``) provides the same API.
+   See :doc:`native_fallback` for details.
 
 Engine Classes
 --------------
@@ -69,13 +61,9 @@ event_engine.capi.c_engine
    :undoc-members:
    :show-inheritance:
 
-event_engine.native.engine
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: event_engine.native.engine
-   :members: EventEngine, EventEngineEx, Full, Empty
-   :undoc-members:
-   :show-inheritance:
+.. note::
+   The pure Python fallback (``event_engine.native.engine``) provides the same API.
+   See :doc:`native_fallback` for details.
 
 Fallback Engine
 ---------------
@@ -90,14 +78,21 @@ event_engine.capi.fallback_engine
 
 Type Stubs
 ----------
+
 The package includes complete type stubs (``.pyi`` files) for the Cython modules:
+
 - ``event_engine/capi/c_topic.pyi``
 - ``event_engine/capi/c_event.pyi``
 - ``event_engine/capi/c_engine.pyi``
+
 These provide full type information for IDEs and type checkers like mypy.
+
 Example mypy usage:
+
 .. code-block:: bash
+
    mypy my_app.py
+
 All public APIs are fully typed.
 
 See Also

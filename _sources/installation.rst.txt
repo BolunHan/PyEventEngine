@@ -1,114 +1,222 @@
 Installation
 ============
 
-PyEventEngine can be installed from PyPI or built from source. The package includes both a Cython-accelerated implementation and a pure Python fallback.
+PyEventEngine is a **Cython extension package** — extensions must be
+compiled in-place before installation.  Pre-compiled wheels are
+available on PyPI for common platforms; building from source requires
+a C11 compiler and Cython ≥ 3.0.
 
 Quick Install (PyPI)
 --------------------
-
-The simplest way to install PyEventEngine:
 
 .. code-block:: bash
 
    pip install PyEventEngine
 
-This will install the package with pre-compiled wheels if available for your platform, or automatically fall back to the pure Python implementation.
+This installs the package with pre-compiled wheels if available for your
+platform, or falls back to the pure Python implementation if compilation
+fails.
 
 Install from Source
 -------------------
 
-To get the latest development version:
+Quick Build (POSIX)
+~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   pip install git+https://github.com/BolunHan/PyEventEngine.git
+   git clone https://github.com/BolunHan/PyEventEngine.git
+   cd PyEventEngine
 
-Building with Cython (Linux/macOS)
------------------------------------
+   # Build + install (recommended)
+   ./build.sh -i
 
-To build the Cython extensions from source on Linux or macOS, you'll need:
+   # Or via Makefile:
+   make build && pip install -U . --no-build-isolation
 
-- Python 3.12 or later
-- GCC or Clang compiler
-- Cython (automatically installed as build dependency)
+   # Or step by step:
+   python setup.py build_ext --inplace --verbose --force
+   pip install -U . --no-build-isolation
 
-**Step 1: Install build dependencies**
+.. important::
+   ``pip install -e .`` (editable mode) is **not** recommended for
+   PyEventEngine.  Editable installs may interfere with ``.pxd``
+   resolution for downstream Cython projects.  Always use
+   ``setup.py build_ext --inplace`` followed by
+   ``pip install -U . --no-build-isolation``.
+
+Build Script Reference
+----------------------
+
+``build.sh``
+~~~~~~~~~~~~
+
+The primary build script for POSIX (Linux/macOS).  Supports venv
+activation, clean/rebuild/all-clean modes, optional pip install, and
+compile-time macro introspection.
+
+.. code-block:: bash
+
+   ./build.sh [options]
+
+Options:
+
+========  ============================================================
+``-v``    Path to virtual environment to activate before building
+``-i``    ``pip install .`` after build
+``-r``    Force-reinstall (uninstall + ``pip install --force-reinstall``)
+``-c``    Clean build artifacts only (no build)
+``-a``    Deep clean — remove ``.c`` and ``.so`` files, then exit
+``-l``    List all compile-time macros and their default values
+``-h``    Show help
+========  ============================================================
+
+``Makefile``
+~~~~~~~~~~~~
+
+Convenience targets wrapping ``build.sh``:
+
+=============  =====================================================
+Target         Effect
+=============  =====================================================
+``build``      Clean + ``build_ext --inplace --verbose --force``
+``dev``        Alias for ``build``
+``install``    Build + ``pip install .``
+``reinstall``  Build + force-reinstall (uninstall first)
+``clean``      Remove ``build/``, ``*.egg-info``, ``includes/``
+``clean-all``  ``clean`` + delete all ``.c`` and ``.so`` files
+``list-args``  List compile-time macros (delegates to ``build.sh -l``)
+=============  =====================================================
+
+``build.ps1`` (Windows)
+~~~~~~~~~~~~~~~~~~~~~~~
+
+PowerShell build script for Windows NT.  Activates a specified venv,
+cleans artifacts, and runs ``build_ext --inplace --verbose --force``.
+
+.. code-block:: powershell
+
+   .\build.ps1 -VenvPath "C:\Users\...\venv_313"
+
+Compile-Time Macros
+-------------------
+
+PyEventEngine exposes ``#define`` macros that control allocation
+behaviour, page sizes, and queue defaults.  Override any macro at
+compile time by setting an environment variable of the same name:
+
+.. code-block:: bash
+
+   DEBUG=1 ./build.sh            # Enable debug mode
+   AP_ALLOC_VIGILANT=0 make build # Disable vigilant/canary checks
+
+**Listing available macros:**
+
+.. code-block:: bash
+
+   ./build.sh -l        # Reads macros.json; auto-generates via probe.py if missing
+   make list-args       # Same, via Makefile
+   python probe.py      # Run the probe manually
+
+``probe.py`` scans Cython ``.pxd`` files for ``cdef extern from``
+headers, extracts every ``#define`` macro from those headers, and
+writes a JSON inventory to ``macros.json``.
+
+**Key macros** (see ``macros.json`` for the full list):
+
+======================================== ===================== ==========================================
+Macro                                    Default               Description
+======================================== ===================== ==========================================
+``AP_ALLOC_VIGILANT``                    ``1``                 Enable bounds/canary validation
+``AP_ALLOC_MAGIC``                       ``0xCFBBBBFCULL``     Magic sentinel for live allocations
+``AP_DEALLOC_MAGIC``                     ``0xDEADDEADULL``     Magic sentinel for freed memory
+``AP_HEAP_AUTOPAGE_CAPACITY``            ``64 KiB``            Default heap page size
+``AP_HEAP_AUTOPAGE_CAPACITY_MAX``        ``16 MiB``            Max heap page size
+``AP_HEAP_AUTOPAGE_ALIGNMENT``           ``4 KiB``             Heap page alignment
+``DEFAULT_MQ_CAPACITY``                  ``0x0fff`` (4095)     Default message queue capacity
+``DEFAULT_MQ_SPIN_LIMIT``                ``0xffff`` (65535)    Spin-lock limit for non-blocking ops
+======================================== ===================== ==========================================
+
+Prerequisites
+-------------
+
+- **Python**: 3.12 or later
+- **Build**: Cython ≥ 3.0, C11 compiler (GCC/Clang on Linux, MSVC on Windows)
+- **Runtime**: No external Python dependencies (stdlib only for pure Python)
+- **Docs** (optional): ``sphinx`` + ``furo`` + ``sphinx-autodoc-typehints``
+
+Linux
+~~~~~
 
 .. code-block:: bash
 
    # Ubuntu/Debian
-   sudo apt-get update
    sudo apt-get install build-essential python3-dev
 
-   # macOS (with Homebrew)
-   xcode-select --install
-   brew install python
+   # Arch/Manjaro
+   sudo pacman -S base-devel
 
-**Step 2: Clone and build**
+macOS
+~~~~~
 
 .. code-block:: bash
 
-   git clone https://github.com/BolunHan/PyEventEngine.git
-   cd PyEventEngine
+   xcode-select --install
+   brew install python
 
-   # Create virtual environment (recommended)
-   python3 -m venv venv
-   source venv/bin/activate
+Windows
+~~~~~~~
 
-   # Install with Cython compilation
-   pip install -e .
+- Visual C++ Build Tools (`download <https://visualstudio.microsoft.com/visual-cpp-build-tools/>`_)
+- Select "Desktop development with C++" and Windows SDK during install
 
-**Step 3: Verify installation**
-
-.. code-block:: python
-
-   from event_engine import USING_FALLBACK, EventEngine
-   print(f"Using fallback: {USING_FALLBACK}")  # Should be False if compiled
-   print(f"EventEngine: {EventEngine}")
-
-If ``USING_FALLBACK`` is ``False``, you're using the compiled Cython version.
-
-Building on Windows
+Verifying the Build
 -------------------
 
-Building Cython extensions on Windows requires Microsoft Visual C++ Build Tools.
+.. code-block:: python
 
-**Step 1: Install Visual C++ Build Tools**
+   from event_engine import __version__, USING_FALLBACK
 
-Download and install from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+   print(__version__)
+   print(f"Using fallback: {USING_FALLBACK}")  # False if Cython compiled
 
-During installation, select:
-- "Desktop development with C++"
-- Windows 10 SDK (or later)
+   from event_engine import EventEngine, Topic, EventHook
+   engine = EventEngine()
+   engine.start()
+   engine.stop()
+   print("OK")
 
-**Step 2: Clone and build**
+If ``USING_FALLBACK`` is ``False``, the compiled Cython version is active.
 
-.. code-block:: powershell
+Using ``get_include()`` in Downstream Projects
+----------------------------------------------
 
-   git clone https://github.com/BolunHan/PyEventEngine.git
-   cd PyEventEngine
-
-   # Create virtual environment
-   python -m venv venv
-   venv\Scripts\activate
-
-   # Install with Cython compilation
-   pip install -e .
-
-**Step 3: Verify installation**
+PyEventEngine provides ``event_engine.get_include()`` to help downstream
+Cython extensions find ``.pxd`` and ``.h`` files:
 
 .. code-block:: python
 
-   from event_engine import USING_FALLBACK
-   print(f"Using fallback: {USING_FALLBACK}")
+   from setuptools import setup, Extension
+   from Cython.Build import cythonize
+   import event_engine
 
-.. note::
-   If compilation fails on Windows, PyEventEngine will automatically fall back to the pure Python implementation. All features work identically, but performance may be reduced.
+   ext = Extension(
+       "my_module",
+       sources=["my_module.pyx"],
+       include_dirs=event_engine.get_include(),
+   )
+   setup(ext_modules=cythonize([ext]))
+
+This returns a list of absolute paths to the package directory, the
+``base/`` and ``capi/`` subdirectories, and the ``includes/`` mirror
+tree — everything the Cython compiler needs to ``cimport`` from
+PyEventEngine.
 
 Using the Pure Python Fallback
--------------------------------
+------------------------------
 
-If you explicitly want to use the pure Python implementation (e.g., for debugging or platforms without a C compiler):
+If you explicitly want to use the pure Python implementation (e.g., for
+debugging or platforms without a C compiler):
 
 .. code-block:: bash
 
@@ -124,80 +232,57 @@ Or import directly from the native module:
    # This always uses pure Python, even if Cython is available
    engine = EventEngine()
 
-Development Installation
--------------------------
+See :doc:`native_fallback` for details on the fallback implementation.
 
-For development work with tests and documentation:
+Building the Documentation
+--------------------------
 
 .. code-block:: bash
 
-   git clone https://github.com/BolunHan/PyEventEngine.git
-   cd PyEventEngine
-
-   # Create and activate virtual environment
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-   # Install development dependencies
-   pip install -e ".[dev,docs]"
-
-   # Run tests
-   python -m pytest demo/
-
-   # Build documentation
+   pip install sphinx furo sphinx-autodoc-typehints
    cd docs
-   make html
-   # Open docs/_build/html/index.html in a browser
+   sphinx-build -M html . _build
 
-Requirements
-------------
-
-- **Python**: 3.10 or later
-- **Required packages**: None (stdlib only for pure Python)
-- **Optional build dependencies**: Cython >= 3.0, C compiler
-- **Optional dev dependencies**: pytest, sphinx, furo (for docs)
-
-Platform Support
-----------------
-
-PyEventEngine is tested on:
-
-- **Linux**: Ubuntu 20.04+, Debian 11+, RHEL 8+
-- **macOS**: 11.0+ (Big Sur and later)
-- **Windows**: Windows 10/11 with Visual C++ Build Tools
-
-Both x86_64 and ARM64 (Apple Silicon) are supported.
+Open ``docs/_build/html/index.html`` in a browser.
 
 Troubleshooting
 ---------------
 
-**Compilation fails on Linux**
+**Compilation fails with missing Python.h**
 
 .. code-block:: bash
 
-   # Install development headers
    sudo apt-get install python3-dev
 
-   # Or use fallback
-   PEE_NO_CYTHON=1 pip install PyEventEngine
+**Cython version mismatch**
 
-**Compilation fails on Windows**
+.. code-block:: bash
 
-- Ensure Visual C++ Build Tools are installed
-- Try running from "Developer Command Prompt for VS"
-- Or use the pure Python fallback (automatically used if compilation fails)
+   pip install -U cython
 
-**Import errors**
+**Binary incompatibility after rebuild**
 
-.. code-block:: python
+If you see ``ValueError: ... size changed, may indicate binary
+incompatibility``, do a deep clean and rebuild:
 
-   # Check what's actually installed
-   import event_engine
-   print(event_engine.__version__)
-   print(event_engine.USING_FALLBACK)
+.. code-block:: bash
 
-   # If imports fail, try reinstalling
-   pip install --force-reinstall PyEventEngine
+   ./build.sh -a            # Remove all .c and .so files
+   ./build.sh -i            # Rebuild and install
+
+**Build fails or no compiler available**
+
+Pre-compiled wheels are available on PyPI for common platforms.  If
+building from source fails, install from PyPI and the pure Python
+fallback will be used automatically:
+
+.. code-block:: bash
+
+   pip install PyEventEngine
+
+   python -c "from event_engine import USING_FALLBACK; print(USING_FALLBACK)"  # True
+
+All features work identically in the fallback; only throughput is lower.
 
 **Performance concerns**
 
@@ -206,6 +291,6 @@ If ``USING_FALLBACK`` is ``True`` and you need maximum performance:
 1. Ensure you have a C compiler installed
 2. Reinstall with ``pip install --force-reinstall --no-cache-dir PyEventEngine``
 3. Check for compilation errors in the output
+4. Or build from source with ``./build.sh -i``
 
 For benchmarking, see :doc:`examples` for performance test examples.
-

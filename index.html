@@ -190,15 +190,21 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+  <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="welcome.html">Welcome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="capi_c.html">C API Reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="capi_cython.html">Cython API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="capi_python.html">Python API Reference (CAPI)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capi_cython.html">Cython API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capi_c.html">C API Reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="native_fallback.html">Native Python Fallback</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="api_reference.html">API Reference</a></li>
 </ul>
 
@@ -240,10 +246,15 @@
         <article role="main" id="furo-main-content">
           <section id="pyeventengine-documentation">
 <h1>PyEventEngine Documentation<a class="headerlink" href="#pyeventengine-documentation" title="Link to this heading">¶</a></h1>
-<p>High-performance, topic-driven event engine for Python with a Cython-accelerated core and a native Python fallback.</p>
-<p><strong>PyEventEngine</strong> provides fast publish/subscribe event routing by topic with exact and generic wildcard/pattern matching. It features a clean, typed API with automatic fallback when C extensions are unavailable, plus built-in timers, handler statistics, and convenient formatting helpers.</p>
+<p>High-performance, topic-driven event engine for Python with a
+Cython-accelerated core and a native Python fallback.</p>
+<p><strong>PyEventEngine</strong> provides fast publish/subscribe event routing by topic
+with exact and generic wildcard/pattern matching.  It features a clean,
+typed API with automatic fallback when C extensions are unavailable,
+plus built-in timers, handler statistics, and convenient formatting
+helpers.</p>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="welcome.html">Welcome</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="welcome.html#overview">Overview</a></li>
@@ -258,12 +269,13 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#quick-install-pypi">Quick Install (PyPI)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#install-from-source">Install from Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#building-with-cython-linux-macos">Building with Cython (Linux/macOS)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#building-on-windows">Building on Windows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#build-script-reference">Build Script Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#compile-time-macros">Compile-Time Macros</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#verifying-the-build">Verifying the Build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#using-get-include-in-downstream-projects">Using <code class="docutils literal notranslate"><span class="pre">get_include()</span></code> in Downstream Projects</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#using-the-pure-python-fallback">Using the Pure Python Fallback</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#development-installation">Development Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#requirements">Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#platform-support">Platform Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#building-the-documentation">Building the Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#troubleshooting">Troubleshooting</a></li>
 </ul>
 </li>
@@ -277,15 +289,19 @@
 <li class="toctree-l2"><a class="reference internal" href="examples.html#see-also">See Also</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="capi_c.html">C API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="capi_c.html#overview">Overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_c.html#header-files">Header Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_c.html#memory-management">Memory Management</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_c.html#thread-safety">Thread Safety</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_c.html#using-from-cython">Using from Cython</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_c.html#performance-considerations">Performance Considerations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_c.html#debugging">Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_c.html#see-also">See Also</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="capi_python.html">Python API Reference (CAPI)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="capi_python.html#quick-import">Quick Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_python.html#topic-classes">Topic Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_python.html#event-classes">Event Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_python.html#engine-classes">Engine Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_python.html#exceptions">Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_python.html#module-functions">Module Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_python.html#see-also">See Also</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="capi_cython.html">Cython API Reference</a><ul>
@@ -302,25 +318,33 @@
 <li class="toctree-l2"><a class="reference internal" href="capi_cython.html#see-also">See Also</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="capi_python.html">Python API Reference (CAPI)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="capi_python.html#quick-import">Quick Import</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_python.html#topic-classes">Topic Classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_python.html#event-classes">Event Classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_python.html#engine-classes">Engine Classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_python.html#exceptions">Exceptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_python.html#module-functions">Module Functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="capi_python.html#see-also">See Also</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capi_c.html">C API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="capi_c.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_c.html#header-files">Header Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_c.html#memory-management">Memory Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_c.html#thread-safety">Thread Safety</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_c.html#using-from-cython">Using from Cython</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_c.html#performance-considerations">Performance Considerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_c.html#debugging">Debugging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="capi_c.html#see-also">See Also</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="native_fallback.html">Native Python Fallback</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="native_fallback.html#overview">Overview</a></li>
 <li class="toctree-l2"><a class="reference internal" href="native_fallback.html#using-the-fallback">Using the Fallback</a></li>
 <li class="toctree-l2"><a class="reference internal" href="native_fallback.html#api-compatibility">API Compatibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="native_fallback.html#thread-safety">Thread Safety</a></li>
 <li class="toctree-l2"><a class="reference internal" href="native_fallback.html#performance-tips">Performance Tips</a></li>
+<li class="toctree-l2"><a class="reference internal" href="native_fallback.html#when-to-use-which-backend">When to Use Which Backend</a></li>
 <li class="toctree-l2"><a class="reference internal" href="native_fallback.html#testing">Testing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="native_fallback.html#see-also">See Also</a></li>
 </ul>
 </li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="api_reference.html">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="api_reference.html#event-engine-module">event_engine Module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api_reference.html#topic-classes">Topic Classes</a></li>
@@ -362,7 +386,7 @@
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, Bolun Han
+                Copyright &#169; 2025–2026, Bolun Han
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             

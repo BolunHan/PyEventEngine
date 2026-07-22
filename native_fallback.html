@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="API Reference" href="api_reference.html"><link rel="prev" title="Python API Reference (CAPI)" href="capi_python.html">
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="API Reference" href="api_reference.html"><link rel="prev" title="C API Reference" href="capi_c.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>Native Python Fallback - PyEventEngine v0.6.0</title>
@@ -190,15 +190,21 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
+  <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="welcome.html">Welcome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="capi_c.html">C API Reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="capi_cython.html">Cython API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="capi_python.html">Python API Reference (CAPI)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capi_cython.html">Cython API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capi_c.html">C API Reference</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Native Python Fallback</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="api_reference.html">API Reference</a></li>
 </ul>
 
@@ -240,90 +246,261 @@
         <article role="main" id="furo-main-content">
           <section id="native-python-fallback">
 <h1>Native Python Fallback<a class="headerlink" href="#native-python-fallback" title="Link to this heading">¶</a></h1>
-<p>PyEventEngine includes a pure Python implementation (<code class="docutils literal notranslate"><span class="pre">event_engine.native</span></code>) that mirrors the Cython API exactly. This fallback is automatically used when Cython extensions fail to compile or are unavailable.</p>
+<p>PyEventEngine includes a pure Python implementation (<code class="docutils literal notranslate"><span class="pre">event_engine.native</span></code>)
+that mirrors the Cython API exactly.  This fallback is automatically used when
+Cython extensions fail to compile or are unavailable — no code changes needed.</p>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p>The native fallback provides <strong>identical functionality</strong> with <strong>reduced performance</strong> compared to the Cython version.</p>
+<p>The native fallback provides <strong>identical functionality</strong> with <strong>reduced
+performance</strong> compared to the Cython version.  It is designed for:</p>
+<ul class="simple">
+<li><p>Platforms without a C compiler (e.g., some Windows or container environments)</p></li>
+<li><p>Development and debugging (pure Python is easier to introspect)</p></li>
+<li><p>CI/CD pipelines that don’t build Cython extensions</p></li>
+<li><p>Quick prototyping without the build step</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All examples and API documentation apply to both backends.  The top-level
+<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">event_engine</span> <span class="pre">import</span> <span class="pre">...</span></code> automatically selects the fastest
+available implementation.</p>
+</div>
 <section id="architecture">
 <h3>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">¶</a></h3>
 <p>The native fallback consists of three modules:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">event_engine.native.topic</span></code> - Topic parsing and matching (pure Python)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">event_engine.native.event</span></code> - Event hooks and message payloads (pure Python)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">event_engine.native.engine</span></code> - Event engine and queue management (<code class="docutils literal notranslate"><span class="pre">threading</span></code> + <code class="docutils literal notranslate"><span class="pre">deque</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">event_engine.native.topic</span></code> — Topic parsing and matching (pure Python)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">event_engine.native.event</span></code> — Event hooks and message payloads (pure Python)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">event_engine.native.engine</span></code> — Event engine and queue management
+(<code class="docutils literal notranslate"><span class="pre">threading</span></code> + <code class="docutils literal notranslate"><span class="pre">collections.deque</span></code>)</p></li>
 </ul>
-<p>All classes use <code class="docutils literal notranslate"><span class="pre">__slots__</span></code> for memory efficiency and expose the same API as the Cython version.</p>
+<p>All classes use <code class="docutils literal notranslate"><span class="pre">__slots__</span></code> for memory efficiency and expose the same API as
+the Cython version.</p>
+</section>
+<section id="internal-data-structures">
+<h3>Internal Data Structures<a class="headerlink" href="#internal-data-structures" title="Link to this heading">¶</a></h3>
+<p>Unlike the Cython backend which uses C-level <code class="docutils literal notranslate"><span class="pre">ByteMap</span></code>, <code class="docutils literal notranslate"><span class="pre">MemoryAllocator</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">MessageQueue</span></code>, the native backend uses Python built-ins:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Component</p></th>
+<th class="head"><p>Cython (capi)</p></th>
+<th class="head"><p>Native (fallback)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Topic routing (exact)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ByteMap</span></code> (xxHash3)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dict[str,</span> <span class="pre">EventHook]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Topic routing (generic)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ByteMap</span></code> (xxHash3)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dict[str,</span> <span class="pre">EventHook]</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Message queue</p></td>
+<td><p>Lock-free ring buffer</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">deque</span></code> + <code class="docutils literal notranslate"><span class="pre">threading.Condition</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Payload allocation</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MemoryAllocator</span></code> pool</p></td>
+<td><p>Python <code class="docutils literal notranslate"><span class="pre">__new__</span></code> / GC</p></td>
+</tr>
+<tr class="row-even"><td><p>Handler lists</p></td>
+<td><p>Linked list (<code class="docutils literal notranslate"><span class="pre">EventHandler*</span></code>)</p></td>
+<td><p>Python <code class="docutils literal notranslate"><span class="pre">list[Callable]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Statistics tracking</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ByteMap</span></code> (handler→stats)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dict[int,</span> <span class="pre">HandlerStats]</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </section>
 <section id="key-differences">
 <h3>Key Differences<a class="headerlink" href="#key-differences" title="Link to this heading">¶</a></h3>
 <ol class="arabic simple">
-<li><p><strong>No C extensions</strong> - All code is pure Python using stdlib only</p></li>
-<li><p><strong>No custom allocators</strong> - Uses Python’s memory management</p></li>
-<li><p><strong>No ByteMap</strong> - Uses built-in <code class="docutils literal notranslate"><span class="pre">dict</span></code> for topic routing</p></li>
-<li><p><strong>Threading-based</strong> - Uses <code class="docutils literal notranslate"><span class="pre">threading.Lock</span></code> and <code class="docutils literal notranslate"><span class="pre">threading.Condition</span></code></p></li>
-<li><p><strong>``owner`` property</strong> - Always returns <code class="docutils literal notranslate"><span class="pre">True</span></code> (all Python objects own their data)</p></li>
+<li><p><strong>No C extensions</strong> — All code is pure Python using stdlib only</p></li>
+<li><p><strong>No custom allocators</strong> — Uses Python’s memory management (<code class="docutils literal notranslate"><span class="pre">__new__</span></code> / GC)</p></li>
+<li><p><strong>No ByteMap</strong> — Uses built-in <code class="docutils literal notranslate"><span class="pre">dict</span></code> for topic routing</p></li>
+<li><p><strong>Threading-based</strong> — Uses <code class="docutils literal notranslate"><span class="pre">threading.Lock</span></code> and <code class="docutils literal notranslate"><span class="pre">threading.Condition</span></code>
+instead of lock-free queues</p></li>
+<li><p><strong>``owner`` property</strong> — Always returns <code class="docutils literal notranslate"><span class="pre">True</span></code> (Python objects always own
+their data)</p></li>
+<li><p><strong>No GIL release</strong> — All operations hold the GIL; no <code class="docutils literal notranslate"><span class="pre">nogil</span></code> sections</p></li>
 </ol>
 </section>
 <section id="performance">
 <h3>Performance<a class="headerlink" href="#performance" title="Link to this heading">¶</a></h3>
-<p>Expected performance characteristics:</p>
-<ul class="simple">
-<li><p><strong>Topic parsing</strong>: ~10-20x slower than Cython</p></li>
-<li><p><strong>Event dispatch</strong>: ~5-10x slower than Cython</p></li>
-<li><p><strong>Throughput</strong>: ~50-200k msg/s (vs ~500k-1M+ msg/s for Cython)</p></li>
-<li><p><strong>Latency</strong>: ~0.01-0.1ms additional overhead per message</p></li>
-</ul>
+<p>Expected performance characteristics (ballpark figures, YMMV):</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Metric</p></th>
+<th class="head"><p>Cython (capi)</p></th>
+<th class="head"><p>Native (fallback)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Topic parsing</p></td>
+<td><p>1× (baseline)</p></td>
+<td><p>~10–20× slower</p></td>
+</tr>
+<tr class="row-odd"><td><p>Event dispatch</p></td>
+<td><p>1× (baseline)</p></td>
+<td><p>~5–10× slower</p></td>
+</tr>
+<tr class="row-even"><td><p>Throughput (msg/s)</p></td>
+<td><p>~500k–1M+</p></td>
+<td><p>~50k–200k</p></td>
+</tr>
+<tr class="row-odd"><td><p>P99 latency (ms)</p></td>
+<td><p>~0.001–0.01</p></td>
+<td><p>~0.01–0.1</p></td>
+</tr>
+<tr class="row-even"><td><p>Memory per payload</p></td>
+<td><p>~64–128 bytes</p></td>
+<td><p>~200–400 bytes</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Actual numbers depend on handler complexity, topic pattern usage, and system
+load.  Run <code class="docutils literal notranslate"><span class="pre">demo/native_performance_test.py</span></code> and
+<code class="docutils literal notranslate"><span class="pre">demo/capi_performance_test.py</span></code> for your specific environment.</p>
 </section>
 </section>
 <section id="using-the-fallback">
 <h2>Using the Fallback<a class="headerlink" href="#using-the-fallback" title="Link to this heading">¶</a></h2>
 <section id="import-directly">
 <h3>Import Directly<a class="headerlink" href="#import-directly" title="Link to this heading">¶</a></h3>
+<p>To force the pure Python implementation regardless of whether Cython
+extensions are available:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">event_engine.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventEngine</span><span class="p">,</span> <span class="n">Topic</span>
+
+<span class="c1"># This always uses pure Python</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="n">EventEngine</span><span class="p">()</span>
+</pre></div>
+</div>
 </section>
 <section id="check-active-backend">
 <h3>Check Active Backend<a class="headerlink" href="#check-active-backend" title="Link to this heading">¶</a></h3>
+<p>Query which backend is currently active:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">event_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">USING_FALLBACK</span>
+
+<span class="k">if</span> <span class="n">USING_FALLBACK</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using pure Python fallback&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using compiled Cython extensions&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">USING_FALLBACK</span></code> flag is set at import time and reflects the state of
+the top-level <code class="docutils literal notranslate"><span class="pre">event_engine</span></code> package.  Direct imports from
+<code class="docutils literal notranslate"><span class="pre">event_engine.native</span></code> always use the fallback regardless of this flag.</p>
 </section>
 </section>
 <section id="api-compatibility">
 <h2>API Compatibility<a class="headerlink" href="#api-compatibility" title="Link to this heading">¶</a></h2>
-<p>The fallback provides 100% API compatibility with the Cython version.
-.. code-block:: python</p>
-<blockquote>
-<div><p># Works identically on both backends
-topic = Topic(‘Market.Data.{symbol}’)
-formatted = topic.format(symbol=’AAPL’)
-engine = EventEngine(capacity=8192)
-engine.start()
-engine.put(topic, ‘data’)
-engine.stop()</p>
-</div></blockquote>
+<p>The fallback provides <strong>100% API compatibility</strong> with the Cython version.
+All classes, methods, properties, and exceptions have identical signatures:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Works identically on both backends</span>
+<span class="n">topic</span> <span class="o">=</span> <span class="n">Topic</span><span class="p">(</span><span class="s1">&#39;Market.Data.</span><span class="si">{symbol}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="n">formatted</span> <span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">symbol</span><span class="o">=</span><span class="s1">&#39;AAPL&#39;</span><span class="p">)</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="n">EventEngine</span><span class="p">(</span><span class="n">capacity</span><span class="o">=</span><span class="mi">8192</span><span class="p">)</span>
+<span class="n">engine</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<span class="n">engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
+<span class="n">engine</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The only observable difference is performance.  Behaviour (topic matching,
+handler dispatch, error handling, timer semantics) is tested to be identical.</p>
+</section>
+<section id="thread-safety">
+<h2>Thread Safety<a class="headerlink" href="#thread-safety" title="Link to this heading">¶</a></h2>
+<p>The native fallback uses <code class="docutils literal notranslate"><span class="pre">threading.Lock</span></code> and <code class="docutils literal notranslate"><span class="pre">threading.Condition</span></code> for
+synchronisation:</p>
+<ul class="simple">
+<li><p><strong>Queue operations</strong> (<code class="docutils literal notranslate"><span class="pre">put</span></code> / <code class="docutils literal notranslate"><span class="pre">get</span></code>): Protected by a single re-entrant
+lock with condition variables for not-empty / not-full signalling.</p></li>
+<li><p><strong>Hook registration</strong> (<code class="docutils literal notranslate"><span class="pre">register_handler</span></code> / <code class="docutils literal notranslate"><span class="pre">unregister_handler</span></code>): Uses
+a separate lock for the topic→hook dictionaries.</p></li>
+<li><p><strong>Handler execution</strong> (<code class="docutils literal notranslate"><span class="pre">trigger</span></code>): Iterates a snapshot of handlers under
+lock, then calls each handler outside the lock (handlers run concurrently
+with queue operations).</p></li>
+</ul>
+<p>This design matches the Cython backend’s thread-safety guarantees:
+multiple producers and consumers can safely interact with the engine from
+different threads.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Handlers are called outside the engine lock.  If a handler modifies
+the engine’s hooks (e.g., calls <code class="docutils literal notranslate"><span class="pre">register_handler</span></code>), the
+modification is safe but may not affect the current dispatch cycle.</p>
+</div>
 </section>
 <section id="performance-tips">
 <h2>Performance Tips<a class="headerlink" href="#performance-tips" title="Link to this heading">¶</a></h2>
 <ol class="arabic simple">
-<li><p><strong>Pre-intern topics</strong> - Parse once, reuse many times</p></li>
-<li><p><strong>Minimize handler work</strong> - Keep handlers fast</p></li>
-<li><p><strong>Use exact topics</strong> - Faster than pattern matching</p></li>
-<li><p><strong>Batch operations</strong> - Publish multiple items together</p></li>
+<li><p><strong>Pre-intern topics</strong> — Parse once, reuse many times.  Each <code class="docutils literal notranslate"><span class="pre">Topic()</span></code>
+call parses the string and builds a part tree.</p></li>
+<li><p><strong>Minimize handler work</strong> — Keep handlers fast; offload heavy work to a
+separate thread or queue.</p></li>
+<li><p><strong>Use exact topics</strong> — Exact matching is O(1) dict lookup; pattern matching
+iterates the generic map and tests each pattern.</p></li>
+<li><p><strong>Batch operations</strong> — Publishing multiple items in a tight loop is more
+efficient than interleaving with other work.</p></li>
+<li><p><strong>Right-size the queue</strong> — The default capacity (4095) is fine for most
+use cases.  Larger queues use more memory; smaller queues risk <code class="docutils literal notranslate"><span class="pre">Full</span></code>
+exceptions under load.</p></li>
 </ol>
+</section>
+<section id="when-to-use-which-backend">
+<h2>When to Use Which Backend<a class="headerlink" href="#when-to-use-which-backend" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Scenario</p></th>
+<th class="head"><p>Recommendation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Production (Linux)</p></td>
+<td><p>Cython (<code class="docutils literal notranslate"><span class="pre">./build.sh</span> <span class="pre">-i</span></code>) — maximum throughput</p></td>
+</tr>
+<tr class="row-odd"><td><p>Production (Windows)</p></td>
+<td><p>Cython if MSVC is available; native otherwise</p></td>
+</tr>
+<tr class="row-even"><td><p>Development</p></td>
+<td><p>Either — native is easier to debug with <code class="docutils literal notranslate"><span class="pre">pdb</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>CI/CD</p></td>
+<td><p>Native — avoids Cython build time and dependencies</p></td>
+</tr>
+<tr class="row-even"><td><p>Prototyping</p></td>
+<td><p>Native — zero build step, <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code> and go</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </section>
 <section id="testing">
 <h2>Testing<a class="headerlink" href="#testing" title="Link to this heading">¶</a></h2>
-<p>Run native implementation tests:
-.. code-block:: bash</p>
-<blockquote>
-<div><p>python demo/test_native_topic.py
-python demo/test_native_event.py
-python demo/test_native_engine.py
-python demo/native_performance_test.py</p>
-</div></blockquote>
+<p>Run native implementation tests:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>demo/test_native_topic.py
+python<span class="w"> </span>demo/test_native_event.py
+python<span class="w"> </span>demo/test_native_engine.py
+python<span class="w"> </span>demo/native_performance_test.py
+</pre></div>
+</div>
 </section>
 <section id="see-also">
 <h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference internal" href="capi_python.html"><span class="doc">Python API Reference (CAPI)</span></a> - Cython Python API (identical interface)</p></li>
-<li><p><a class="reference internal" href="installation.html"><span class="doc">Installation</span></a> - Building Cython extensions</p></li>
-<li><p><a class="reference internal" href="examples.html"><span class="doc">Examples</span></a> - Usage examples (work with both backends)</p></li>
+<li><p><a class="reference internal" href="capi_python.html"><span class="doc">Python API Reference (CAPI)</span></a> — Cython Python API (identical interface)</p></li>
+<li><p><a class="reference internal" href="installation.html"><span class="doc">Installation</span></a> — Building Cython extensions</p></li>
+<li><p><a class="reference internal" href="examples.html"><span class="doc">Examples</span></a> — Usage examples (work with both backends)</p></li>
+<li><p><a class="reference internal" href="api_reference.html"><span class="doc">API Reference</span></a> — Auto-generated API reference</p></li>
 </ul>
 </section>
 </section>
@@ -342,14 +519,14 @@ python demo/native_performance_test.py</p>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="capi_python.html">
+          <a class="prev-page" href="capi_c.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Python API Reference (CAPI)</div>
+                <div class="title">C API Reference</div>
                 
               </div>
             </a>
@@ -357,7 +534,7 @@ python demo/native_performance_test.py</p>
         <div class="bottom-of-page">
           <div class="left-details">
             <div class="copyright">
-                Copyright &#169; 2025, Bolun Han
+                Copyright &#169; 2025–2026, Bolun Han
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
             
@@ -386,6 +563,7 @@ python demo/native_performance_test.py</p>
 <li><a class="reference internal" href="#">Native Python Fallback</a><ul>
 <li><a class="reference internal" href="#overview">Overview</a><ul>
 <li><a class="reference internal" href="#architecture">Architecture</a></li>
+<li><a class="reference internal" href="#internal-data-structures">Internal Data Structures</a></li>
 <li><a class="reference internal" href="#key-differences">Key Differences</a></li>
 <li><a class="reference internal" href="#performance">Performance</a></li>
 </ul>
@@ -396,7 +574,9 @@ python demo/native_performance_test.py</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#api-compatibility">API Compatibility</a></li>
+<li><a class="reference internal" href="#thread-safety">Thread Safety</a></li>
 <li><a class="reference internal" href="#performance-tips">Performance Tips</a></li>
+<li><a class="reference internal" href="#when-to-use-which-backend">When to Use Which Backend</a></li>
 <li><a class="reference internal" href="#testing">Testing</a></li>
 <li><a class="reference internal" href="#see-also">See Also</a></li>
 </ul>

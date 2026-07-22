@@ -53,6 +53,7 @@ class EventEngine:
 
     The engine manages an internal message queue and dispatches events to registered handlers
     based on topic matching rules. In this native Python implementation:
+
       - A threading-based event loop consumes messages and triggers callbacks
       - Message queue uses deque with threading.Lock and Condition variables
       - Two dict instances for exact and generic topic routing

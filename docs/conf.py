@@ -20,11 +20,27 @@ except ImportError:
     release = 'unknown'
     version = 'unknown'
 
+# Resolve forward references for Cython extension type annotations.
+# Cython modules with ``from __future__ import annotations`` may produce
+# stringified forward references that autodoc cannot resolve across sibling
+# modules.  Injecting the referenced types into the sibling modules' namespace
+# at doc-build time allows sphinx_autodoc_typehints to resolve them.
+try:
+    from event_engine.capi import c_event, c_topic  # noqa: E501
+
+    # Make types available for forward reference resolution in c_engine
+    import event_engine.capi.c_engine as _c_engine
+    _c_engine.MessagePayload = c_event.MessagePayload
+    _c_engine.EventHook = c_event.EventHook
+    _c_engine.Topic = c_topic.Topic
+except Exception:
+    pass
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'PyEventEngine'
-copyright = '2025, Bolun Han'
+copyright = '2025–2026, Bolun Han'
 author = 'Bolun Han'
 
 # -- General configuration ---------------------------------------------------
@@ -35,6 +51,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
+    "sphinx_autodoc_typehints",
 ]
 
 templates_path = ['_templates']
@@ -64,6 +81,19 @@ autodoc_default_options = {
 
 # Don't require imports to succeed for autodoc (fallback if modules can't import)
 autodoc_mock_imports = []
+
+# Silence autodoc import failures for Cython extension submodules that
+# Sphinx cannot fully introspect.  The automodule directive still generates
+# complete documentation for all classes and members.
+suppress_warnings = ["autodoc.import_object"]
+
+# autodoc-typehints: load type information from .pyi stub files.
+# This ensures the rich Google-style docstrings and type annotations from
+# the .pyi stubs are injected into the rendered API documentation.
+autodoc_typehints = "both"
+autodoc_typehints_format = "short"
+typehints_fully_qualified = False
+always_document_param_types = True
 
 # Intersphinx mapping to link to Python stdlib docs
 intersphinx_mapping = {

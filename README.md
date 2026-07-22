@@ -9,21 +9,31 @@ High-performance, topic-driven event engine for Python with a Cython-accelerated
 ## Installation
 
 ```bash
+# From PyPI (pre-compiled wheels available)
 pip install PyEventEngine
+
+# From source (requires C compiler + Cython ≥ 3.0)
+git clone https://github.com/BolunHan/PyEventEngine.git
+cd PyEventEngine
+
+# Build + install
+./build.sh -i
+
+# Or via Makefile:
+make build && pip install -U . --no-build-isolation
+
+# Or step by step:
+python setup.py build_ext --inplace --verbose --force
+pip install -U . --no-build-isolation
 ```
 
-Or install from source:
-
-```bash
-pip install git+https://github.com/BolunHan/PyEventEngine.git
-```
+See the [Installation Guide](https://bolunhan.github.io/PyEventEngine/installation.html) for platform-specific prerequisites, compile-time macros, and troubleshooting.
 
 ## Quick Start
 
 ```python
 import time
-
-from event_engine import EventEngine, Topic, EventHook
+from event_engine import EventEngine, Topic
 
 # Create and start the engine
 engine = EventEngine(capacity=8192)
@@ -57,17 +67,15 @@ pattern = Topic('Demo.{what}')
 
 calls = []
 
-
 def f(what: str, topic=None):
     calls.append((what, topic.value))
-
 
 engine.register_handler(pattern, f)
 
 engine.start()
 engine.put(Topic('Demo.Test'), 'a test sub-topic')
 engine.put(Topic('Demo.Live'), 'a live sub-topic')
-time.sleep(0.1)  # allow some time for processing
+time.sleep(0.1)  # allow time for processing
 engine.stop()
 
 print(calls)  # [('a test sub-topic', 'Demo.Test'), ('a live sub-topic', 'Demo.Live')]
@@ -76,7 +84,8 @@ print(calls)  # [('a test sub-topic', 'Demo.Test'), ('a live sub-topic', 'Demo.L
 ### Timers (EventEngineEx)
 
 ```python
-from event_engine import EventEngine, EventEngineBase, EventEngine as EventEngineEx, Topic
+import time
+from event_engine import EventEngineEx, Topic
 
 engine = EventEngineEx(capacity=4096)
 engine.start()
@@ -85,15 +94,15 @@ engine.start()
 timer_topic = engine.get_timer(1.0)
 engine.register_handler(timer_topic, lambda **kw: print('tick', kw))
 
-# ... run a little while
-import time; time.sleep(3)
-engine.stop(); engine.clear()
+time.sleep(3)
+engine.stop()
+engine.clear()
 ```
 
 ### Logging
 
 By default, the package uses a colored logger under `event_engine.base`. To integrate with your
-application's logging, call `set_logger` once after import. It will propagate to submodules.
+application's logging, call `set_logger` once after import — it propagates to submodules.
 
 ```python
 import logging
@@ -107,26 +116,52 @@ set_logger(logger)
 ### Fallback behavior
 
 On import, the package tries to use the Cython implementation (`event_engine.capi`). If that fails
-(e.g., no compiler available), it automatically falls back to the native Python implementation (`event_engine.native`).
-You can check the active backend via:
+(e.g., no compiler available), it automatically falls back to the native Python implementation
+(`event_engine.native`). Check the active backend:
 
 ```python
 from event_engine import USING_FALLBACK
-print('Using native fallback?' , USING_FALLBACK)
+print('Using native fallback?', USING_FALLBACK)
 ```
 
 ## Development
 
-- Run unit tests and demos under `demo/`
-- Native performance test: `python demo/native_performance_test.py`
-- CAPI performance test (requires compiled extensions): `python demo/capi_performance_test.py`
+```bash
+# Clone and build in-place
+git clone https://github.com/BolunHan/PyEventEngine.git
+cd PyEventEngine
+./build.sh -i
+
+# Run tests
+python -m pytest demo/
+
+# Performance benchmarks
+python demo/native_performance_test.py
+python demo/capi_performance_test.py       # requires compiled extensions
+```
+
+### Build scripts
+
+| Command | Effect |
+|---|---|
+| `./build.sh -i` | Clean + build + install |
+| `./build.sh -l` | List compile-time macros |
+| `make build` | Clean + build in-place |
+| `make clean-all` | Deep clean (removes `.c`/`.so`) |
 
 ## Documentation
 
-Full documentation is available at: **https://bolunhan.github.io/PyEventEngine/** *(auto-generated from main branch)*
+Full documentation: **https://bolunhan.github.io/PyEventEngine/**
 
-To build documentation locally, see [`docs/BUILD.md`](docs/BUILD.md).
+Build locally:
 
----
+```bash
+pip install sphinx furo sphinx-autodoc-typehints
+cd docs
+sphinx-build -M html . _build
+# Open _build/html/index.html
+```
 
-See `demo/` for more examples: matching, timers, performance. Issues and PRs welcome!
+## License
+
+MIT — see [LICENSE](LICENSE).

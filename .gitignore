@@ -1,2 +1,34 @@
-nt_config.json.bkp
-nt_config.json.bkp
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+*.egg
+
+# Cython __init__.pxd
+**/__init__.pxd
+
+# Cython-generated C files
+event_engine/**/c_*.c
+
+# Build
+build/
+docs/_build
+
+# Includes
+event_engine/includes/
+
+# IDE
+.idea/
+.vscode/
+
+# Test Artifacts
+test/*/artifacts/
+
+# Macro Probing Cache
+macros.json
+
+# Backup files
+*.bkp

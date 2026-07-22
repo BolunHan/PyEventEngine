@@ -140,7 +140,7 @@ Macro                                    Default               Description
 Prerequisites
 -------------
 
-- **Python**: 3.10 or later
+- **Python**: 3.12 or later
 - **Build**: Cython ≥ 3.0, C11 compiler (GCC/Clang on Linux, MSVC on Windows)
 - **Runtime**: No external Python dependencies (stdlib only for pure Python)
 - **Docs** (optional): ``sphinx`` + ``furo`` + ``sphinx-autodoc-typehints``

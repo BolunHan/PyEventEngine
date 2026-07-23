@@ -1,5 +1,9 @@
 # PyEventEngine
 
+[![docs](https://github.com/BolunHan/PyEventEngine/actions/workflows/build-page-docs.yml/badge.svg)](https://github.com/BolunHan/PyEventEngine/actions/workflows/build-page-docs.yml)
+[![pypi-linux](https://github.com/BolunHan/PyEventEngine/actions/workflows/publish-posix-to-pypi.yml/badge.svg)](https://github.com/BolunHan/PyEventEngine/actions/workflows/publish-posix-to-pypi.yml)
+[![pypi-windows](https://github.com/BolunHan/PyEventEngine/actions/workflows/publish-nt-to-pypi.yml/badge.svg)](https://github.com/BolunHan/PyEventEngine/actions/workflows/publish-nt-to-pypi.yml)
+
 High-performance, topic-driven event engine for Python with a Cython-accelerated core and a native Python fallback.
 
 - Fast publish/subscribe event routing by topic (exact + generic wildcard/pattern matching)

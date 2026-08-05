@@ -2,6 +2,10 @@ __version__ = '0.6.0.post3'
 
 import functools
 import pathlib
+from collections.abc import Mapping
+
+from .config_view import CONFIG_VIEW
+from .base import LOGGER
 
 try:
     from .capi import *  # noqa: F401,F403
@@ -16,13 +20,27 @@ except Exception as e:
     from .native import *  # noqa: F401,F403
 
 
+def _format_config_view(config: Mapping, indent: int = 0) -> str:
+    """Render a (possibly nested) config view as indented bullet lines."""
+    lines = []
+    for key, value in config.items():
+        if isinstance(value, Mapping):
+            lines.append(f"{'  ' * indent}- {key}:")
+            lines.append(_format_config_view(value, indent + 1))
+        else:
+            lines.append(f"{'  ' * indent}- {key}: {value}")
+    return "\n".join(lines)
+
+
 @functools.cache
 def get_include() -> list[str]:
     import os
-    from .base import LOGGER
 
     res_dir = pathlib.Path(__file__).parent
-    LOGGER.info(f'Building with <PyEventEngine> version: "{__version__}", resource directory: "{res_dir}".')
+    LOGGER.info(
+        f'Building with <PyEventEngine> version: "{__version__}", resource directory: "{res_dir}", '
+        f"config:\n{_format_config_view(CONFIG_VIEW)}"
+    )
 
     scr_dir = [
         os.path.realpath(res_dir),
@@ -35,3 +53,10 @@ def get_include() -> list[str]:
         scr_dir.append(include_root)
 
     return scr_dir
+
+
+__all__ = [
+    'CONFIG_VIEW',
+    'get_include',
+    'LOGGER',
+]

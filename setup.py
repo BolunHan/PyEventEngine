@@ -182,6 +182,12 @@ class BuildExtWithConfig(build_ext):
 
 cython_extension.extend([
     Extension(
+        name="event_engine.config_view",
+        sources=["event_engine/config_view.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
         name="event_engine.base.c_allocator_protocol",
         sources=["event_engine/base/c_allocator_protocol.pyx"],
         include_dirs=[REPO_ROOT, *cbase.get_include()],

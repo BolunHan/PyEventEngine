@@ -97,3 +97,26 @@ globals()['EE_SHARED'] = EE_SHARED
 globals()['EE_LOCKED'] = EE_LOCKED
 globals()['EE_LOCKFREE'] = EE_LOCKFREE
 globals()['EE_FREELIST'] = EE_FREELIST
+
+
+# -- Runtime config accessor (reads live cdef globals) --------------------
+class _RuntimeAllocatorConfig:
+    """Property-based accessor for live EE_CFG_* globals.
+
+    Unlike the compile-time CONFIG_VIEW mappingproxy, these properties read
+    the CURRENT value, which may change when an EEConfigContext is active.
+    """
+    @property
+    def EE_CFG_LOCKED(self):
+        return EE_CFG_LOCKED
+
+    @property
+    def EE_CFG_SHARED(self):
+        return EE_CFG_SHARED
+
+    @property
+    def EE_CFG_FREELIST(self):
+        return EE_CFG_FREELIST
+
+
+RUNTIME_ALLOCATOR_CONFIG = _RuntimeAllocatorConfig()

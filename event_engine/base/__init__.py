@@ -16,12 +16,7 @@ def get_logger(**kwargs) -> logging.Logger:
     First call configures the logger via PyCyBase's telemetrics; subsequent
     calls return the same cached instance.
     """
-    return _get_logger(
-        name='EventEngine',
-        level=kwargs.get('level', LOG_LEVEL),
-        stream_io=kwargs.get('stream_io', None),
-        formatter=kwargs.get('formatter', None),
-    )
+    return _get_logger(name='EventEngine', level=kwargs.get('level', LOG_LEVEL), **kwargs)
 
 
 LOGGER = get_logger()

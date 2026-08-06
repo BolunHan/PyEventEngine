@@ -43,16 +43,24 @@ class PyMessagePayload:
 
     __slots__ = ('_topic', '_args', '_kwargs', '_seq_id')
 
-    def __init__(self, alloc: bool = False) -> None:
+    def __init__(self, topic: PyTopic = None, args: tuple = None, kwargs: dict = None, alloc: bool = False) -> None:
         """
         Initialize a ``PyMessagePayload`` instance.
 
+        Mirrors the Cython ``MessagePayload`` constructor: ``topic``, ``args``
+        and ``kwargs`` may be supplied directly. When omitted (e.g. the engine
+        allocating an empty payload), the fields are left ``None`` and can be
+        assigned afterwards via the setters.
+
         Args:
+            topic: Topic to associate with the payload (may be omitted).
+            args: Positional arguments for the payload (may be omitted).
+            kwargs: Keyword arguments for the payload (may be omitted).
             alloc: If ``True``, allocate a new message payload (always True in Python).
         """
-        self._topic: PyTopic | None = None
-        self._args: tuple | None = None
-        self._kwargs: dict | None = None
+        self._topic: PyTopic | None = topic
+        self._args: tuple | None = args
+        self._kwargs: dict | None = kwargs
         self._seq_id: int = 0
 
     def __repr__(self) -> str:
@@ -115,6 +123,18 @@ class PyMessagePayload:
         self._kwargs = value
 
     @property
+    def kwargs_with_topic(self) -> dict | None:
+        """
+        A copy of the payload kwargs with the ``topic`` key injected
+        (mirrors the Cython ``MessagePayload.kwargs_with_topic``).
+        """
+        if self._kwargs is None:
+            return None
+        aggregated = dict(self._kwargs)
+        aggregated[_TOPIC_FIELD_NAME] = self._topic
+        return aggregated
+
+    @property
     def seq_id(self) -> int:
         """
         The sequence ID of the payload.
@@ -143,7 +163,7 @@ class EventHook:
         retry_on_unexpected_topic (bool): If ``True``, retries with no-topic calling convention if a with-topic handler raises a ``TypeError`` and the error message indicates an unexpected topic argument.
     """
 
-    __slots__ = ('topic', 'logger', 'retry_on_unexpected_topic', '_handlers_no_topic', '_handlers_with_topic')
+    __slots__ = ('topic', 'logger', 'retry_on_unexpected_topic', '_handlers', '_handler_loggers')
 
     def __init__(self, topic: PyTopic, logger: Logger = None, retry_on_unexpected_topic: bool = False) -> None:
         """
@@ -157,8 +177,8 @@ class EventHook:
         self.topic: PyTopic = topic
         self.logger: Logger = LOGGER.getChild(f'EventHook.{topic}') if logger is None else logger
         self.retry_on_unexpected_topic: bool = retry_on_unexpected_topic
-        self._handlers_no_topic: list[Callable] = []
-        self._handlers_with_topic: list[Callable] = []
+        self._handlers: list[tuple[Callable, bool]] = []  # (callable, with_topic)
+        self._handler_loggers: dict[int, Logger] = {}
 
     def __call__(self, msg: PyMessagePayload) -> None:
         """
@@ -173,14 +193,15 @@ class EventHook:
 
     def __iadd__(self, handler: Callable) -> EventHook:
         """
-        Add a handler using the ``+=`` operator.
+        Add a handler using the ``+=`` operator (deduplicated, mirroring the
+        Cython ``EventHook.__iadd__``).
 
         Args:
             handler: The callable to register.
         Returns:
             Self, for chaining.
         """
-        self.add_handler(handler)
+        self.add_handler(handler, deduplicate=True)
         return self
 
     def __isub__(self, handler: Callable) -> EventHook:
@@ -196,72 +217,43 @@ class EventHook:
         return self
 
     def __len__(self) -> int:
-        """
-        Return the number of registered handlers.
-        """
-        return len(self._handlers_no_topic) + len(self._handlers_with_topic)
+        """Return the number of registered handlers."""
+        return len(self._handlers)
 
     def __repr__(self) -> str:
-        """
-        Return a string representation of the ``EventHook``.
-        """
+        """Return a string representation of the ``EventHook``."""
         return f'<EventHook topic="{self.topic}" handlers={len(self)}>'
 
-    def __iter__(self) -> Iterator[Callable]:
-        """
-        Iterate over all registered handlers.
-        """
-        yield from self._handlers_no_topic
-        yield from self._handlers_with_topic
+    def __iter__(self) -> Iterator[dict]:
+        """Iterate over handler descriptor dicts (mirroring the Cython ``EventHook``)."""
+        return iter(self.handlers)
 
     def __contains__(self, handler: Callable) -> bool:
-        """
-        Check if a handler is registered.
-
-        Args:
-            handler: The callable to check.
-        Returns:
-            ``True`` if the handler is registered; ``False`` otherwise.
-        """
-        return handler in self._handlers_no_topic or handler in self._handlers_with_topic
+        """Check if a handler is registered (by function identity or bound-method equivalence)."""
+        for fn, _ in self._handlers:
+            if fn is handler:
+                return True
+            if inspect.ismethod(handler) and inspect.ismethod(fn):
+                if handler.__self__ is fn.__self__ and handler.__func__ is fn.__func__:
+                    return True
+        return False
 
     def trigger(self, msg: PyMessagePayload) -> None:
-        """
-        Trigger all registered handlers with the given message payload.
-
-        Handlers are executed in registration order:
-        1. All **no-topic** handlers (called with ``*args, **kwargs`` only).
-        2. All **with-topic** handlers (called with ``topic, *args, **kwargs``).
-        In each group, handlers are invoked in the order they were added.
-
-        If ``retry_on_unexpected_topic`` flag is on and a with-topic handler raises a ``TypeError`` and the error message indicates an unexpected topic argument,
-        the dispatcher retries the call without the topic.
-
-        Args:
-            msg: The message payload to dispatch.
-        """
+        """Trigger all registered handlers in registration order."""
         args = msg.args if msg.args is not None else ()
         kwargs = msg.kwargs if msg.kwargs is not None else {}
         topic = msg.topic
-
-        # Trigger no-topic handlers first
-        for handler in self._handlers_no_topic:
-            try:
-                handler(*args, **kwargs)
-            except Exception:
-                self.logger.error(traceback.format_exc())
-
-        # Trigger with-topic handlers
-        # Create a new kwargs dict with topic added
         kwargs_with_topic = kwargs.copy()
         kwargs_with_topic[_TOPIC_FIELD_NAME] = topic
 
-        for handler in self._handlers_with_topic:
+        for handler, with_topic in self._handlers:
             try:
-                handler(*args, **kwargs_with_topic)
+                if with_topic:
+                    handler(*args, **kwargs_with_topic)
+                else:
+                    handler(*args, **kwargs)
             except TypeError as e:
-                # Check if this is an "unexpected keyword argument 'topic'" error
-                if self.retry_on_unexpected_topic and _TOPIC_UNEXPECTED_ERROR in str(e):
+                if self.retry_on_unexpected_topic and with_topic and _TOPIC_UNEXPECTED_ERROR in str(e):
                     try:
                         handler(*args, **kwargs)
                     except Exception:
@@ -271,28 +263,32 @@ class EventHook:
             except Exception:
                 self.logger.error(traceback.format_exc())
 
-    def add_handler(self, handler: Callable, deduplicate: bool = False) -> None:
+    def add_handler(self, py_callable: Callable, logger: Logger = None, deduplicate: bool = False) -> None:
         """
         Register a new handler.
 
         It is strongly recommended that handlers accept ``**kwargs`` to remain compatible with both
         with-topic and no-topic calling conventions.
 
+        Signature mirrors the Cython ``EventHook.add_handler``: the optional
+        ``logger`` is recorded per callable and surfaced through ``handlers``.
+
         Args:
-            handler: The callable to register.
+            py_callable: The callable to register.
+            logger: Optional per-handler logger (defaults to the hook logger).
             deduplicate: If ``True``, skip registration if the handler is already present.
         """
-        if not callable(handler):
-            raise TypeError(f'Handler must be callable, got {type(handler)}')
+        if not callable(py_callable):
+            raise TypeError(f'Handler must be callable, got {type(py_callable)}')
 
         # Check if handler is already registered
-        if deduplicate and handler in self:
+        if deduplicate and py_callable in self:
             return
 
         # Inspect the handler signature to determine if it accepts 'topic'
         with_topic = False
         try:
-            sig = inspect.signature(handler)
+            sig = inspect.signature(py_callable)
             for param in sig.parameters.values():
                 if param.name == _TOPIC_FIELD_NAME or param.kind == param.VAR_KEYWORD:
                     with_topic = True
@@ -301,50 +297,44 @@ class EventHook:
             # Can't inspect signature, assume no topic
             pass
 
-        if with_topic:
-            self._handlers_with_topic.append(handler)
-        else:
-            self._handlers_no_topic.append(handler)
+        self._handler_loggers[id(py_callable)] = self.logger if logger is None else logger
+        self._handlers.append((py_callable, with_topic))
 
-    def remove_handler(self, handler: Callable) -> EventHook:
+    def remove_handler(self, py_callable: Callable) -> EventHook:
         """
         Remove a handler from the hook.
 
-        Only the first matching occurrence is removed. If the same callable was added multiple times,
-        subsequent instances remain registered.
-
-        Args:
-            handler: The callable to remove.
-
-        Returns:
-            Self, for chaining.
+        Only the first matching occurrence is removed. Mirrors the Cython
+        ``EventHook.remove_handler``: removing an unknown callable logs a warning.
         """
-        try:
-            self._handlers_no_topic.remove(handler)
-        except ValueError:
-            try:
-                self._handlers_with_topic.remove(handler)
-            except ValueError:
-                pass  # Handler not found, silently ignore
+        for i, (fn, _) in enumerate(self._handlers):
+            if fn is py_callable or (
+                    inspect.ismethod(py_callable) and inspect.ismethod(fn)
+                    and py_callable.__self__ is fn.__self__
+                    and py_callable.__func__ is fn.__func__):
+                del self._handlers[i]
+                self._handler_loggers.pop(id(py_callable), None)
+                return self
+        LOGGER.warning(f'{py_callable} not exist in {self} call stacks')
         return self
 
     def clear(self) -> None:
-        """
-        Remove all registered handlers.
-        """
-        self._handlers_no_topic.clear()
-        self._handlers_with_topic.clear()
+        """Remove all registered handlers."""
+        self._handlers.clear()
+        self._handler_loggers.clear()
 
     @property
-    def handlers(self) -> list[Callable]:
-        """
-        List all registered handlers.
-
-        Handlers are ordered as follows:
-        - First, all no-topic handlers (in registration order).
-        - Then, all with-topic handlers (in registration order).
-        """
-        return self._handlers_no_topic + self._handlers_with_topic
+    def handlers(self) -> list[dict]:
+        """List of handler descriptor dicts in registration order (mirrors Cython)."""
+        return [
+            {
+                'fn': fn,
+                'logger': self._handler_loggers.get(id(fn), self.logger),
+                'idx': i,
+                'with_topic': with_topic,
+            }
+            for i, (fn, with_topic) in enumerate(self._handlers)
+        ]
 
 
 class HandlerStats(TypedDict):
@@ -358,7 +348,7 @@ class EventHookEx(EventHook):
     Extended ``EventHook`` that tracks per-handler execution statistics.
     """
 
-    __slots__ = ('_stats',)
+    __slots__ = ('_stats', '_hook_stats')
 
     def __init__(self, topic: PyTopic, logger: Logger = None, retry_on_unexpected_topic: bool = False) -> None:
         """
@@ -371,50 +361,54 @@ class EventHookEx(EventHook):
         """
         super().__init__(topic, logger, retry_on_unexpected_topic)
         self._stats: dict[int, HandlerStats] = {}
+        self._hook_stats: dict = {
+            'n_calls': 0,
+            'last_call_start': 0.0,
+            'last_call_complete': 0.0,
+            'elapsed_seconds': 0.0,
+        }
 
     def trigger(self, msg: PyMessagePayload) -> None:
         """
         Trigger all registered handlers with the given message payload, tracking execution time.
 
+        Hook-level statistics (``stats``) accumulate across trigger calls,
+        mirroring the Cython ``EventHookEx`` watcher-based stats.
+
         Args:
             msg: The message payload to dispatch.
         """
+        self._hook_stats['n_calls'] += 1
+        self._hook_stats['last_call_start'] = time.perf_counter()
+        try:
+            self._trigger_impl(msg)
+        finally:
+            self._hook_stats['last_call_complete'] = time.perf_counter()
+            self._hook_stats['elapsed_seconds'] += (
+                self._hook_stats['last_call_complete'] - self._hook_stats['last_call_start']
+            )
+
+    def _trigger_impl(self, msg: PyMessagePayload) -> None:
+        """Per-handler dispatch and timing in registration order."""
         args = msg.args if msg.args is not None else ()
         kwargs = msg.kwargs if msg.kwargs is not None else {}
         topic = msg.topic
-
-        # Trigger no-topic handlers first
-        for handler in self._handlers_no_topic:
-            handler_id = id(handler)
-            if handler_id not in self._stats:
-                self._stats[handler_id] = {'calls': 0, 'total_time': 0.0}
-
-            start_time = time.perf_counter()
-            try:
-                handler(*args, **kwargs)
-            except Exception:
-                self.logger.error(traceback.format_exc())
-            finally:
-                elapsed = time.perf_counter() - start_time
-                self._stats[handler_id]['calls'] += 1
-                self._stats[handler_id]['total_time'] += elapsed
-
-        # Trigger with-topic handlers
-        # Create a new kwargs dict with topic added
         kwargs_with_topic = kwargs.copy()
         kwargs_with_topic[_TOPIC_FIELD_NAME] = topic
 
-        for handler in self._handlers_with_topic:
+        for handler, with_topic in self._handlers:
             handler_id = id(handler)
             if handler_id not in self._stats:
                 self._stats[handler_id] = {'calls': 0, 'total_time': 0.0}
 
             start_time = time.perf_counter()
             try:
-                handler(*args, **kwargs_with_topic)
+                if with_topic:
+                    handler(*args, **kwargs_with_topic)
+                else:
+                    handler(*args, **kwargs)
             except TypeError as e:
-                # Check if this is an "unexpected keyword argument 'topic'" error
-                if self.retry_on_unexpected_topic and _TOPIC_UNEXPECTED_ERROR in str(e):
+                if self.retry_on_unexpected_topic and with_topic and _TOPIC_UNEXPECTED_ERROR in str(e):
                     try:
                         handler(*args, **kwargs)
                     except Exception:
@@ -442,19 +436,21 @@ class EventHookEx(EventHook):
         return self._stats.get(handler_id)
 
     @property
-    def stats(self) -> Iterator[tuple[Callable, HandlerStats]]:
+    def stats(self) -> dict:
         """
-        Iterate over all registered handlers and their execution statistics.
+        Hook-level execution statistics (mirroring the Cython
+        ``EventHookEx.stats`` shape).
 
         Returns:
-            An iterator yielding ``(handler, stats_dict)`` pairs.
+            A dict with keys ``'n_calls'``, ``'last_call_start'``,
+            ``'last_call_complete'`` and ``'elapsed_seconds'``.
         """
-        for handler in self._handlers_no_topic:
-            handler_id = id(handler)
-            if handler_id in self._stats:
-                yield handler, self._stats[handler_id]
+        return dict(self._hook_stats)
 
-        for handler in self._handlers_with_topic:
+    @property
+    def handler_stats(self) -> Iterator[tuple[Callable, HandlerStats]]:
+        """Iterate over all registered handlers and their per-handler stats."""
+        for handler, _ in self._handlers:
             handler_id = id(handler)
             if handler_id in self._stats:
                 yield handler, self._stats[handler_id]
@@ -465,3 +461,9 @@ class EventHookEx(EventHook):
         """
         super().clear()
         self._stats.clear()
+        self._hook_stats = {
+            'n_calls': 0,
+            'last_call_start': 0.0,
+            'last_call_complete': 0.0,
+            'elapsed_seconds': 0.0,
+        }

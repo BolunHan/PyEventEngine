@@ -301,12 +301,12 @@ class EventEngine:
         """
         Unregister a handler from a topic.
 
+        Mirrors the Cython engine: when no hook is registered for the topic,
+        an error is logged and the call is a no-op (no exception raised).
+
         Args:
             topic: Topic to unregister handler from
             handler: Callable handler to remove
-
-        Raises:
-            KeyError: If no hook is registered for the given topic
         """
         topic_str = topic.value
 
@@ -316,7 +316,8 @@ class EventEngine:
             hook_map = self._generic_topic_hooks
 
         if topic_str not in hook_map:
-            raise KeyError(f'No EventHook registered for {topic_str}')
+            LOGGER.error(f'No EventHook registered for "{topic_str}"')
+            return
 
         hook = hook_map[topic_str]
         hook.remove_handler(handler)
@@ -451,7 +452,7 @@ class EventEngine:
         if ret_code:
             raise Full()
 
-    def publish(self, topic: PyTopic, args: tuple, kwargs: dict, block: bool = True, timeout: float = 0.0) -> None:
+    def publish(self, topic: PyTopic, args: tuple, kwargs: dict, block: bool = True, max_spin: int = DEFAULT_MQ_SPIN_LIMIT, timeout: float = 0.0) -> None:
         """
         Publish an event to the queue.
 
@@ -460,13 +461,15 @@ class EventEngine:
             args: Positional arguments for the event.
             kwargs: Keyword arguments for the event.
             block: If ``True``, wait if the queue is full.
+            max_spin: Spin count before blocking (ignored in pure Python; kept for
+                      API parity with the Cython engine).
             timeout: Maximum wait time in seconds when blocking (``0.0`` = indefinite).
 
         Raises:
             Full: If ``block=False`` and the queue is full.
             ValueError: If ``topic`` is not an exact topic.
         """
-        ret_code = self._publish(topic, args, kwargs, block, DEFAULT_MQ_SPIN_LIMIT, timeout)
+        ret_code = self._publish(topic, args, kwargs, block, max_spin, timeout)
         if ret_code:
             raise Full()
 
@@ -518,6 +521,45 @@ class EventEngine:
         """
         self._unregister_handler(topic, handler)
 
+    def get_hook(self, topic: PyTopic) -> EventHook:
+        """
+        Retrieve the ``EventHook`` registered for a topic.
+
+        Args:
+            topic: Topic to look up.
+
+        Returns:
+            The registered ``EventHook``.
+
+        Raises:
+            KeyError: If no hook is registered for the given topic.
+        """
+        topic_str = topic.value
+        hook_map = self._exact_topic_hooks if topic.is_exact else self._generic_topic_hooks
+        if topic_str not in hook_map:
+            raise KeyError(f'No EventHook registered for {topic_str}')
+        return hook_map[topic_str]
+
+    def __getitem__(self, topic: PyTopic) -> list:
+        """
+        Return all hooks that would receive a message published for ``topic``:
+        the exact-topic hook (if registered) plus every matching generic hook.
+
+        Args:
+            topic: The topic to resolve hooks for.
+
+        Returns:
+            A list of ``EventHook`` instances (possibly empty).
+        """
+        out = []
+        exact = self._exact_topic_hooks.get(topic.value)
+        if exact:
+            out.append(exact)
+        for hook in self._generic_topic_hooks.values():
+            if hook.topic.match(topic).matched:
+                out.append(hook)
+        return out
+
     def event_hooks(self):
         """Iterate over all registered event hooks."""
         yield from self._exact_topic_hooks.values()
@@ -543,6 +585,11 @@ class EventEngine:
         """Get the current number of messages in the queue."""
         with self._lock:
             return len(self._queue)
+
+    @property
+    def seq_id(self) -> int:
+        """Get the sequence ID of the last published message (mirrors the Cython engine)."""
+        return self._seq_id
 
     @property
     def exact_topic_hook_map(self) -> dict:

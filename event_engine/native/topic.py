@@ -430,97 +430,80 @@ class PyTopic:
             self._hash = hash(topic)
 
     def _parse_topic(self, topic_str: str) -> None:
-        """Parse a topic string into parts."""
+        """Parse a topic string into parts.
+
+        Token-based algorithm mirroring the C parser in
+        ``event_engine/capi/c_topic.h``:
+          - ``.`` separates tokens; empty tokens are dropped.
+          - ``./re/`` (or ``/re/`` at the start) is a pattern part; it must be
+            closed by ``/`` at the end of the string or by ``/.``.
+          - ``+name`` (non-empty name) is an any part; a lone ``+`` is exact.
+          - ``{name}`` (non-empty) is an any part; an unclosed ``{`` is exact.
+          - ``(a|b)`` is a range part (empty options dropped); an unclosed or
+            empty ``()`` is exact.
+
+        Raises:
+            ValueError: on an unclosed pattern (mirrors the C parser failure).
+        """
         if not topic_str:
             return
 
         parts = []
+        n = len(topic_str)
         i = 0
-        current_part = ""
 
-        while i < len(topic_str):
-            char = topic_str[i]
-
-            # Check for pattern delimiter
-            if char == DEFAULT_PATTERN_DELIM:
-                # Find matching closing delimiter
-                j = i + 1
-                while j < len(topic_str) and topic_str[j] != DEFAULT_PATTERN_DELIM:
+        while i < n:
+            # Pattern: "./" at the start, or '.' directly followed by '/'
+            if (i == 0 and topic_str[0] == DEFAULT_PATTERN_DELIM) or (
+                    i + 1 < n and topic_str[i] == DEFAULT_TOPIC_SEP
+                    and topic_str[i + 1] == DEFAULT_PATTERN_DELIM):
+                content_start = i + 2 if topic_str[i] == DEFAULT_TOPIC_SEP else 1
+                j = content_start
+                found_close = False
+                while j < n:
+                    if (j == n - 1 and topic_str[j] == DEFAULT_PATTERN_DELIM) or (
+                            j + 1 < n and topic_str[j] == DEFAULT_PATTERN_DELIM
+                            and topic_str[j + 1] == DEFAULT_TOPIC_SEP):
+                        parts.append(PyTopicPartPattern(topic_str[content_start:j], alloc=True))
+                        self._is_exact = False
+                        i = j + 2  # advance past "/."
+                        found_close = True
+                        break
                     j += 1
-                if j < len(topic_str):
-                    # Extract pattern
-                    pattern = topic_str[i + 1:j]
-                    parts.append(PyTopicPartPattern(pattern, alloc=True))
-                    self._is_exact = False
-                    i = j + 1
-                    if i < len(topic_str) and topic_str[i] == DEFAULT_TOPIC_SEP:
-                        i += 1
-                    continue
-
-            # Check for range (options)
-            elif char == DEFAULT_RANGE_BRACKETS[0]:
-                # Find matching closing bracket
-                j = i + 1
-                depth = 1
-                while j < len(topic_str) and depth > 0:
-                    if topic_str[j] == DEFAULT_RANGE_BRACKETS[0]:
-                        depth += 1
-                    elif topic_str[j] == DEFAULT_RANGE_BRACKETS[1]:
-                        depth -= 1
-                    j += 1
-                if depth == 0:
-                    # Extract options
-                    options_str = topic_str[i + 1:j - 1]
-                    options = [opt for opt in options_str.split(DEFAULT_OPTION_SEP) if opt]
-                    parts.append(PyTopicPartRange(options, alloc=True))
-                    self._is_exact = False
-                    i = j
-                    if i < len(topic_str) and topic_str[i] == DEFAULT_TOPIC_SEP:
-                        i += 1
-                    continue
-
-            # Check for wildcard with brackets {name}
-            elif char == DEFAULT_WILDCARD_BRACKETS[0]:
-                j = i + 1
-                while j < len(topic_str) and topic_str[j] != DEFAULT_WILDCARD_BRACKETS[1]:
-                    j += 1
-                if j < len(topic_str):
-                    name = topic_str[i + 1:j]
-                    parts.append(PyTopicPartAny(name, alloc=True))
-                    self._is_exact = False
-                    i = j + 1
-                    if i < len(topic_str) and topic_str[i] == DEFAULT_TOPIC_SEP:
-                        i += 1
-                    continue
-
-            # Check for wildcard marker +
-            elif char == DEFAULT_WILDCARD_MARKER:
-                # Read the name after +
-                j = i + 1
-                name_start = j
-                while j < len(topic_str) and topic_str[j] != DEFAULT_TOPIC_SEP:
-                    j += 1
-                name = topic_str[name_start:j]
-                parts.append(PyTopicPartAny(name, alloc=True))
-                self._is_exact = False
-                i = j
-                if i < len(topic_str) and topic_str[i] == DEFAULT_TOPIC_SEP:
-                    i += 1
+                if not found_close:
+                    raise ValueError(f'Unclosed pattern in {topic_str!r}')
                 continue
 
-            # Regular part - read until separator
-            elif char == DEFAULT_TOPIC_SEP:
-                if current_part:
-                    parts.append(PyTopicPartExact(current_part, alloc=True))
-                    current_part = ""
+            # Normal token: run up to the next '.' that is not part of "./"
+            token_start = i
+            while i < n:
+                if topic_str[i] == DEFAULT_TOPIC_SEP:
+                    if i + 1 < n and topic_str[i + 1] == DEFAULT_PATTERN_DELIM:
+                        break
+                    break
                 i += 1
-            else:
-                current_part += char
-                i += 1
+            token = topic_str[token_start:i]
 
-        # Add final part
-        if current_part:
-            parts.append(PyTopicPartExact(current_part, alloc=True))
+            if token:
+                if len(token) >= 2 and token[0] == DEFAULT_WILDCARD_MARKER:
+                    parts.append(PyTopicPartAny(token[1:], alloc=True))
+                    self._is_exact = False
+                elif len(token) >= 3 and token[0] == DEFAULT_WILDCARD_BRACKETS[0] \
+                        and token[-1] == DEFAULT_WILDCARD_BRACKETS[1]:
+                    parts.append(PyTopicPartAny(token[1:-1], alloc=True))
+                    self._is_exact = False
+                elif len(token) >= 3 and token[0] == DEFAULT_RANGE_BRACKETS[0] \
+                        and token[-1] == DEFAULT_RANGE_BRACKETS[1]:
+                    options = [opt for opt in token[1:-1].split(DEFAULT_OPTION_SEP) if opt]
+                    parts.append(PyTopicPartRange(options, alloc=True))
+                    self._is_exact = False
+                else:
+                    parts.append(PyTopicPartExact(token, alloc=True))
+
+            # Consume the terminating '.' only if it is not part of "./"
+            if i < n and topic_str[i] == DEFAULT_TOPIC_SEP:
+                if i + 1 >= n or topic_str[i + 1] != DEFAULT_PATTERN_DELIM:
+                    i += 1
 
         # Link parts
         for j in range(len(parts) - 1):
@@ -552,6 +535,10 @@ class PyTopic:
     def __len__(self) -> int:
         """Return the number of parts in the topic."""
         return len(self._parts)
+
+    def __bool__(self) -> bool:
+        """True if the topic has at least one part (mirrors the Cython Topic)."""
+        return len(self._parts) > 0
 
     def __iter__(self) -> Iterator[PyTopicPart]:
         """Iterate over topic parts (yields PyTopicPart subclasses)."""
@@ -717,6 +704,17 @@ class PyTopic:
     def match(self, other: 'PyTopic') -> PyTopicMatchResult:
         """Match this topic against another topic.
 
+        Semantics mirror the Cython ``Topic.match``:
+          - Identical topics (same object, or same non-empty literal) yield a
+            single matched node whose literal is the full topic literal.
+          - Per-part matching: a part matches only when exactly one side is an
+            exact part; the other side must be equal (exact), match the
+            wildcard (any), be one of the options (range), or be matched by the
+            unanchored regex (pattern, POSIX ERE ``regexec`` semantics).
+          - Matching stops at the first failing part (fail-fast).
+          - A length mismatch appends one trailing failed node carrying the
+            residual part on the longer side.
+
         Args:
             other: The topic to match against.
 
@@ -725,86 +723,86 @@ class PyTopic:
         """
         result = PyTopicMatchResult(alloc=True)
 
-        # Simple matching logic: compare parts
+        # Short-circuit: same topic address or same non-empty literal
+        if self is other or (
+                self._value and other._value and self._value == other._value):
+            result._nodes.append({
+                'matched': True,
+                'part_a': self._parts[0] if self._parts else None,
+                'part_b': other._parts[0] if other._parts else None,
+                'literal': self._value,
+            })
+            return result
+
         self_parts = list(self._parts)
         other_parts = list(other._parts)
+        n = min(len(self_parts), len(other_parts))
+        i = 0
 
-        max_len = max(len(self_parts), len(other_parts))
-
-        for i in range(max_len):
-            node: TopicMatchNode = {
-                'matched': False,
-                'part_a': None,
-                'part_b': None,
-                'literal': None
-            }
-
-            if i >= len(self_parts) or i >= len(other_parts):
-                # Length mismatch
-                result._nodes.append(node)
-                continue
-
+        while i < n:
             part_a = self_parts[i]
             part_b = other_parts[i]
-            node['part_a'] = part_a
-            node['part_b'] = part_b
+            node: TopicMatchNode = {
+                'matched': False,
+                'part_a': part_a,
+                'part_b': part_b,
+                'literal': None,
+            }
 
-            # Match logic
-            if part_a.ttype == PyTopicType.TOPIC_PART_EXACT and part_b.ttype == PyTopicType.TOPIC_PART_EXACT:
-                # Exact match - cast to PyTopicPartExact
-                part_a_exact = part_a if isinstance(part_a, PyTopicPartExact) else None
-                part_b_exact = part_b if isinstance(part_b, PyTopicPartExact) else None
-                if part_a_exact and part_b_exact and part_a_exact.part == part_b_exact.part:
-                    node['matched'] = True
-                    node['literal'] = part_a_exact.part
-            elif part_a.ttype == PyTopicType.TOPIC_PART_ANY:
-                # Wildcard matches anything
-                node['matched'] = True
-                if part_b.ttype == PyTopicType.TOPIC_PART_EXACT:
-                    part_b_exact = part_b if isinstance(part_b, PyTopicPartExact) else None
-                    if part_b_exact:
-                        node['literal'] = part_b_exact.part
-            elif part_b.ttype == PyTopicType.TOPIC_PART_ANY:
-                # Wildcard matches anything
-                node['matched'] = True
-                if part_a.ttype == PyTopicType.TOPIC_PART_EXACT:
-                    part_a_exact = part_a if isinstance(part_a, PyTopicPartExact) else None
-                    if part_a_exact:
-                        node['literal'] = part_a_exact.part
-            elif part_a.ttype == PyTopicType.TOPIC_PART_RANGE:
-                # Range match - cast to PyTopicPartRange
-                if part_b.ttype == PyTopicType.TOPIC_PART_EXACT:
-                    part_a_range = part_a if isinstance(part_a, PyTopicPartRange) else None
-                    part_b_exact = part_b if isinstance(part_b, PyTopicPartExact) else None
-                    if part_a_range and part_b_exact and part_b_exact.part in part_a_range._options:
-                        node['matched'] = True
-                        node['literal'] = part_b_exact.part
-            elif part_b.ttype == PyTopicType.TOPIC_PART_RANGE:
-                # Range match (reversed) - cast to PyTopicPartRange
-                if part_a.ttype == PyTopicType.TOPIC_PART_EXACT:
-                    part_a_exact = part_a if isinstance(part_a, PyTopicPartExact) else None
-                    part_b_range = part_b if isinstance(part_b, PyTopicPartRange) else None
-                    if part_a_exact and part_b_range and part_a_exact.part in part_b_range._options:
-                        node['matched'] = True
-                        node['literal'] = part_a_exact.part
-            elif part_a.ttype == PyTopicType.TOPIC_PART_PATTERN:
-                # Pattern match - cast to PyTopicPartPattern
-                if part_b.ttype == PyTopicType.TOPIC_PART_EXACT:
-                    part_a_pattern = part_a if isinstance(part_a, PyTopicPartPattern) else None
-                    part_b_exact = part_b if isinstance(part_b, PyTopicPartExact) else None
-                    if part_a_pattern and part_b_exact and part_a_pattern.regex.match(part_b_exact.part):
-                        node['matched'] = True
-                        node['literal'] = part_b_exact.part
-            elif part_b.ttype == PyTopicType.TOPIC_PART_PATTERN:
-                # Pattern match (reversed) - cast to PyTopicPartPattern
-                if part_a.ttype == PyTopicType.TOPIC_PART_EXACT:
-                    part_a_exact = part_a if isinstance(part_a, PyTopicPartExact) else None
-                    part_b_pattern = part_b if isinstance(part_b, PyTopicPartPattern) else None
-                    if part_a_exact and part_b_pattern and part_b_pattern.regex.match(part_a_exact.part):
-                        node['matched'] = True
-                        node['literal'] = part_a_exact.part
+            # Determine which side is exact (neither → fail-fast)
+            if part_a.ttype == PyTopicType.TOPIC_PART_EXACT:
+                part_exact, part_other = part_a, part_b
+            elif part_b.ttype == PyTopicType.TOPIC_PART_EXACT:
+                part_exact, part_other = part_b, part_a
+            else:
+                result._nodes.append(node)
+                return result
 
+            # Match the non-exact side against the exact literal
+            if part_other.ttype == PyTopicType.TOPIC_PART_EXACT:
+                matched = (
+                    isinstance(part_other, PyTopicPartExact)
+                    and isinstance(part_exact, PyTopicPartExact)
+                    and part_exact.part == part_other.part
+                )
+            elif part_other.ttype == PyTopicType.TOPIC_PART_ANY:
+                matched = True
+            elif part_other.ttype == PyTopicType.TOPIC_PART_RANGE:
+                matched = (
+                    isinstance(part_exact, PyTopicPartExact)
+                    and isinstance(part_other, PyTopicPartRange)
+                    and part_exact.part in part_other._options
+                )
+            elif part_other.ttype == PyTopicType.TOPIC_PART_PATTERN:
+                # POSIX ERE regexec is unanchored → use re.search
+                matched = (
+                    isinstance(part_exact, PyTopicPartExact)
+                    and isinstance(part_other, PyTopicPartPattern)
+                    and part_other.regex.search(part_exact.part) is not None
+                )
+            else:
+                matched = False
+
+            if not matched:
+                result._nodes.append(node)
+                return result
+
+            node['matched'] = True
+            # The C match code sets `literal` for EXACT/ANY/RANGE but not PATTERN.
+            if part_other.ttype != PyTopicType.TOPIC_PART_PATTERN \
+                    and not isinstance(part_other, PyTopicPartPattern):
+                node['literal'] = part_exact.part
             result._nodes.append(node)
+            i += 1
+
+        # Any residual part on either side is considered a mismatch
+        if i < len(self_parts) or i < len(other_parts):
+            result._nodes.append({
+                'matched': False,
+                'part_a': self_parts[i] if i < len(self_parts) else None,
+                'part_b': other_parts[i] if i < len(other_parts) else None,
+                'literal': None,
+            })
 
         return result
 

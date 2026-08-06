@@ -145,7 +145,7 @@ def test_event_hook_retry():
         call_log.append(('called', x))
     
     # Manually add to with_topic list to simulate the retry scenario
-    hook._handlers_with_topic.append(handler_no_topic_param)
+    hook._handlers.append((handler_no_topic_param, True))
     
     msg = PyMessagePayload(alloc=True)
     msg.topic = topic
@@ -205,10 +205,10 @@ def test_event_hook_ex():
     print(f"  ✓ handler1 stats: calls={stats1['calls']}, time={stats1['total_time']:.6f}s")
     print(f"  ✓ handler2 stats: calls={stats2['calls']}, time={stats2['total_time']:.6f}s")
     
-    # Test stats iterator
-    stats_list = list(hook.stats)
+    # Test per-handler stats iterator
+    stats_list = list(hook.handler_stats)
     assert len(stats_list) == 2
-    print(f"  ✓ Stats iterator works, got {len(stats_list)} entries")
+    print(f"  ✓ handler_stats iterator works, got {len(stats_list)} entries")
     
     # Test clear
     hook.clear()
@@ -237,9 +237,10 @@ def test_handlers_property():
     
     handlers = hook.handlers
     assert len(handlers) == 3
-    assert h1 in handlers
-    assert h2 in handlers
-    assert h3 in handlers
+    fns = [h['fn'] for h in handlers]
+    assert h1 in fns
+    assert h2 in fns
+    assert h3 in fns
     print(f"  ✓ handlers property returns all {len(handlers)} handlers")
     
     print("✓ handlers property test passed!\n")

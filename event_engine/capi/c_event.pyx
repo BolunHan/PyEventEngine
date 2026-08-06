@@ -5,6 +5,8 @@ from cpython.exc cimport PyErr_Clear, PyErr_Fetch
 from cpython.method cimport PyMethod_Check, PyMethod_GET_FUNCTION, PyMethod_GET_SELF
 from cpython.ref cimport Py_XDECREF, Py_XINCREF
 from cpython.time cimport perf_counter
+from libc.stdint cimport uintptr_t
+
 from cbase.allocator_protocol.c_allocator_protocol cimport c_ap_alloc, c_ap_free, c_ap_protocol_from_ptr
 
 from ..base.c_allocator_protocol cimport EE_HEAP_ALLOCATOR
@@ -385,3 +387,58 @@ cdef class EventHookEx(EventHook):
                 'elapsed_seconds': self.hook_stats.elapsed_seconds
             }
             return stats
+
+
+cdef class EventTestToolkit:
+    """Relays internal C event-hook state to Python for test validation.
+
+    Exposes the raw ``evt_hook`` counters (callback and watcher arrays) and
+    the ``evt_py_callable`` linked list, which are internal C state not
+    exposed through the public Python API.
+
+    Note:
+        Test-only class. Not declared in any ``.pxd``; not part of the
+        public package API.
+    """
+
+    @staticmethod
+    def get_n_callbacks(EventHook hook) -> size_t:
+        """Number of C callbacks registered on the hook."""
+        return hook.header.n_callbacks
+
+    @staticmethod
+    def get_n_pre_watchers(EventHook hook) -> size_t:
+        """Number of pre-invoked watchers registered on the hook."""
+        return hook.header.n_pre_watchers
+
+    @staticmethod
+    def get_n_post_watchers(EventHook hook) -> size_t:
+        """Number of post-invoked watchers registered on the hook."""
+        return hook.header.n_post_watchers
+
+    @staticmethod
+    def get_callable_count(EventHook hook) -> size_t:
+        """Length of the Python-callable linked list."""
+        cdef evt_py_callable* curr = hook.callables
+        cdef size_t n = 0
+        while curr:
+            n += 1
+            curr = curr.next
+        return n
+
+    @staticmethod
+    def get_callable_with_topic(EventHook hook, size_t idx) -> bint:
+        """Whether the callable at ``idx`` is invoked with the topic kwarg."""
+        cdef evt_py_callable* curr = hook.callables
+        cdef size_t i = 0
+        while curr:
+            if i == idx:
+                return curr.with_topic
+            i += 1
+            curr = curr.next
+        raise IndexError(f'Index {idx} out of range!')
+
+    @staticmethod
+    def get_hook_topic_addr(EventHook hook) -> uintptr_t:
+        """Address of the C topic backing the hook."""
+        return <uintptr_t> hook.header.topic

@@ -578,3 +578,67 @@ class Topic:
     @property
     def is_exact(self) -> bool:
         """bool: True if the topic consists only of exact parts (no wildcards, ranges, or patterns)."""
+
+
+class TopicTestToolkit:
+    """Relays internal C topic state to Python for test validation.
+
+    Note:
+        Test-only class. Not declared in any ``.pxd``; not part of the
+        public package API.
+    """
+
+    @staticmethod
+    def get_n_parts(topic: Topic) -> int:
+        """Number of parts in the topic's C part chain."""
+        ...
+
+    @staticmethod
+    def get_hash(topic: Topic) -> int:
+        """Internalized hash of the topic literal."""
+        ...
+
+    @staticmethod
+    def get_is_exact(topic: Topic) -> bool:
+        """C-level is_exact flag."""
+        ...
+
+    @staticmethod
+    def get_key(topic: Topic) -> str:
+        """The internalized key literal stored on the C topic."""
+        ...
+
+    @staticmethod
+    def get_part_ttype(topic: Topic, idx: int) -> TopicType:
+        """Type of the part at ``idx`` in the C part array."""
+        ...
+
+    @staticmethod
+    def get_part_chain_len(part: TopicPart) -> int:
+        """Length of the C linked chain starting at ``part`` (inclusive)."""
+        ...
+
+    @staticmethod
+    def get_part_addr(part: TopicPart) -> int:
+        """Address of the C header backing ``part``."""
+        ...
+
+    @staticmethod
+    def get_range_options(part: TopicPartRange) -> list[str]:
+        """Option strings of a range part (via the C option array)."""
+        ...
+
+    @staticmethod
+    def get_range_num_options(part: TopicPartRange) -> int:
+        """Number of options stored on a range part."""
+        ...
+
+    @staticmethod
+    def get_internal_map_size() -> int:
+        """Number of entries in the global internal topic map."""
+        ...
+
+    @staticmethod
+    def get_internal_map_has(key: str) -> bool:
+        """Whether the global internal map contains ``key``."""
+        ...

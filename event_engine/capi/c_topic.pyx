@@ -203,6 +203,7 @@ cdef class TopicPartRange(TopicPart):
         self.header.range.options = option_array
         self.header.range.num_options = n_options
         self.header.range.literal = internal
+        self.header.range.literal_len = n_internal
         self.header.header.ttype = evt_topic_type.TOPIC_PART_RANGE
 
     def __dealloc__(self):
@@ -546,21 +547,23 @@ cdef class Topic:
 
         cdef Topic aggregated = Topic.__new__(Topic)
         cdef evt_topic_part_variant* other_part
-        cdef evt_topic_part_variant* tpart = self.header.parts
+        cdef evt_topic_part_variant* node = self.header.parts
         cdef size_t i, n
         if isinstance(topic, Topic):
             other_part = (<Topic> topic).header.parts
-            n = self.header.n
-            for i in range(n):
-                aggregated.c_append(<evt_topic_part_variant*> tpart + i)
-            n = (<Topic> topic).header.n
-            for i in range(n):
-                aggregated.c_append(<evt_topic_part_variant*> other_part + i)
+            while node:
+                aggregated.c_append(node)
+                node = node.header.next
+            node = other_part
+            while node:
+                aggregated.c_append(node)
+                node = node.header.next
         elif isinstance(topic, TopicPart):
             other_part = (<TopicPart> topic).header
-            n = self.header.n
-            for i in range(n):
-                aggregated.c_append(<evt_topic_part_variant*> tpart + i)
+            node = self.header.parts
+            while node:
+                aggregated.c_append(node)
+                node = node.header.next
             aggregated.c_append(other_part)
         else:
             raise TypeError(f'Can not add {topic} to {self}, expected ether a {Topic} or {TopicPart}')
@@ -571,16 +574,14 @@ cdef class Topic:
         if not self.header:
             raise RuntimeError('Not initialized!')
 
-        cdef evt_topic_part_variant* other_part
-        cdef size_t i, n
+        cdef evt_topic_part_variant* node
         if isinstance(topic, Topic):
-            other_part = (<Topic> topic).header.parts
-            n = (<Topic> topic).header.n
-            for i in range(n):
-                self.c_append(<evt_topic_part_variant*> other_part + i)
+            node = (<Topic> topic).header.parts
+            while node:
+                self.c_append(node)
+                node = node.header.next
         elif isinstance(topic, TopicPart):
-            other_part = (<TopicPart> topic).header
-            self.c_append(other_part)
+            self.c_append((<TopicPart> topic).header)
         else:
             raise TypeError(f'Can not add {topic} to {self}, expected ether a {Topic} or {TopicPart}')
         self.c_update_literal()
@@ -723,3 +724,95 @@ cdef class Topic:
             if self.header:
                 return <uintptr_t> self.header
             return 0
+
+
+cdef class TopicTestToolkit:
+    """Relays internal C topic state to Python for test validation.
+
+    The toolkit exposes internal ``evt_topic`` / ``evt_topic_part_variant``
+    fields that are deliberately not part of the public Python API, so that
+    unit tests can verify the C-level layout (part chain length, keys, hash,
+    internal map bookkeeping) without relying on public properties alone.
+
+    Note:
+        Test-only class. Not declared in any ``.pxd``; not part of the
+        public package API.
+    """
+
+    @staticmethod
+    def get_n_parts(Topic topic) -> size_t:
+        """Number of parts in the topic's C part chain."""
+        return topic.header.n
+
+    @staticmethod
+    def get_hash(Topic topic) -> uint64_t:
+        """Internalized hash of the topic literal."""
+        return topic.header.hash
+
+    @staticmethod
+    def get_is_exact(Topic topic) -> bint:
+        """C-level is_exact flag."""
+        return topic.header.is_exact
+
+    @staticmethod
+    def get_key(Topic topic) -> str:
+        """The internalized key literal stored on the C topic."""
+        if topic.header.key:
+            return PyUnicode_FromStringAndSize(topic.header.key, topic.header.key_len)
+        return ''
+
+    @staticmethod
+    def get_part_ttype(Topic topic, size_t idx) -> TopicType:
+        """Type of the part at ``idx`` in the C part linked list."""
+        cdef evt_topic_part_variant* node = topic.header.parts
+        cdef size_t i = 0
+        while node:
+            if i == idx:
+                return TopicType(node.header.ttype)
+            i += 1
+            node = node.header.next
+        raise IndexError(f'Index {idx} out of range!')
+
+    @staticmethod
+    def get_part_chain_len(TopicPart part) -> size_t:
+        """Length of the C linked chain starting at ``part`` (inclusive)."""
+        cdef evt_topic_part_variant* node = part.header
+        cdef size_t n = 0
+        while node:
+            n += 1
+            node = node.header.next
+        return n
+
+    @staticmethod
+    def get_part_addr(TopicPart part) -> uintptr_t:
+        """Address of the C header backing ``part``."""
+        return <uintptr_t> part.header
+
+    @staticmethod
+    def get_range_options(TopicPartRange part) -> list:
+        """Option strings of a range part (via the C option array)."""
+        return list(part.options())
+
+    @staticmethod
+    def get_range_num_options(TopicPartRange part) -> size_t:
+        """Number of options stored on a range part."""
+        return part.header.range.num_options
+
+    @staticmethod
+    def get_internal_map_size() -> size_t:
+        """Number of entries in the global internal topic map."""
+        cdef bytemap_entry* entry = GLOBAL_INTERNAL_MAP.first
+        cdef size_t n = 0
+        while entry:
+            n += 1
+            entry = entry.next
+        return n
+
+    @staticmethod
+    def get_internal_map_has(str key) -> bint:
+        """Whether the global internal map contains ``key``."""
+        cdef Py_ssize_t key_length
+        cdef const char* key_ptr = PyUnicode_AsUTF8AndSize(key, &key_length)
+        cdef evt_topic* topic = NULL
+        cdef int ret_code = c_bytemap_get(GLOBAL_INTERNAL_MAP, key_ptr, key_length, <void**> &topic)
+        return topic != NULL

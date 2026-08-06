@@ -146,16 +146,9 @@ class EventEngine:
         if not topic.is_exact:
             raise ValueError('Topic must be all of exact parts')
 
-        # Create payload
-        payload = MessagePayload(alloc=True)
-        payload.topic = topic
-        payload.args = args
-        payload.kwargs = kwargs
+        # Create payload (the Cython MessagePayload ctor expects topic, args, kwargs)
+        payload = MessagePayload(topic, args, kwargs)
         payload.seq_id = self._seq_id
-
-        # Note: args_owner and kwargs_owner must be False when publishing
-        payload.args_owner = False
-        payload.kwargs_owner = False
 
         with self._not_full:
             if not block:
@@ -275,6 +268,9 @@ class EventEngine:
         """
         Unregister a handler from a topic.
 
+        Mirrors the Cython engine: when no hook is registered for the topic,
+        an error is logged and the call is a no-op (no exception raised).
+
         Args:
             topic: Topic to unregister handler from
             handler: Callable handler to remove
@@ -287,7 +283,8 @@ class EventEngine:
             hook_map = self._generic_topic_hooks
 
         if topic_str not in hook_map:
-            raise KeyError(f'No EventHook registered for {topic_str}')
+            LOGGER.error(f'No EventHook registered for "{topic_str}"')
+            return
 
         hook = hook_map[topic_str]
         hook.remove_handler(handler)
@@ -372,10 +369,6 @@ class EventEngine:
         msg = self._get_message(block=block, timeout=timeout)
         if msg is None:
             raise Empty()
-
-        # When getting, payload must have args_owner = kwargs_owner = True
-        msg.args_owner = True
-        msg.kwargs_owner = True
         return msg
 
     def put(self, topic: Topic, *args, block: bool = True, max_spin: int = DEFAULT_MQ_SPIN_LIMIT, timeout: float = 0.0, **kwargs):
@@ -458,6 +451,45 @@ class EventEngine:
         """
         self._unregister_handler(topic, handler)
 
+    def get_hook(self, topic: Topic) -> EventHook:
+        """
+        Retrieve the ``EventHook`` registered for a topic.
+
+        Args:
+            topic: Topic to look up.
+
+        Returns:
+            The registered ``EventHook``.
+
+        Raises:
+            KeyError: If no hook is registered for the given topic.
+        """
+        topic_str = topic.value
+        hook_map = self._exact_topic_hooks if topic.is_exact else self._generic_topic_hooks
+        if topic_str not in hook_map:
+            raise KeyError(f'No EventHook registered for {topic_str}')
+        return hook_map[topic_str]
+
+    def __getitem__(self, topic: Topic) -> list:
+        """
+        Return all hooks that would receive a message published for ``topic``:
+        the exact-topic hook (if registered) plus every matching generic hook.
+
+        Args:
+            topic: The topic to resolve hooks for.
+
+        Returns:
+            A list of ``EventHook`` instances (possibly empty).
+        """
+        out = []
+        exact = self._exact_topic_hooks.get(topic.value)
+        if exact:
+            out.append(exact)
+        for hook in self._generic_topic_hooks.values():
+            if hook.topic.match(topic).matched:
+                out.append(hook)
+        return out
+
     def event_hooks(self):
         """Iterate over all registered event hooks."""
         yield from self._exact_topic_hooks.values()
@@ -483,6 +515,11 @@ class EventEngine:
         """Get the current number of messages in the queue."""
         with self._lock:
             return len(self._queue)
+
+    @property
+    def seq_id(self) -> int:
+        """Get the sequence ID of the last published message (mirrors the Cython engine)."""
+        return self._seq_id
 
     @property
     def exact_topic_hook_map(self) -> dict:

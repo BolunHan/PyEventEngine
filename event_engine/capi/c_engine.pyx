@@ -3,12 +3,13 @@ from threading import Thread
 from cpython.datetime cimport timedelta
 from cpython.object cimport PyObject
 from cpython.ref cimport Py_INCREF, Py_XDECREF, Py_XINCREF
+from cpython.time cimport perf_counter
 from cpython.unicode cimport PyUnicode_FromStringAndSize
 
 from cbase.bytemap.c_bytemap cimport bytemap_ret_code, bytemap, bytemap_entry, c_bytemap_new, c_bytemap_clear, c_bytemap_free, c_bytemap_get, c_bytemap_set, c_bytemap_pop, c_bytemap_entry_value
 
 from .c_event cimport EMPTY_ARGS, MessagePayload, c_evt_hook_invoke, c_evt_payload_free, c_evt_payload_new, evt_py_payload
-from .c_topic cimport c_topic_match_bool
+from .c_topic cimport Topic, c_topic_match_bool
 from ..base.c_allocator_protocol cimport EE_HEAP_ALLOCATOR
 from ..base import LOGGER
 
@@ -288,7 +289,7 @@ cdef class EventEngine:
         cdef PyObject* hook_ptr = NULL
         cdef EventHook event_hook
 
-        cdef int ret_code = c_bytemap_get(self.exact_topic_hooks, topic.key, topic_ptr.key_len, <void**> &hook_ptr)
+        cdef int ret_code = c_bytemap_get(self.exact_topic_hooks, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
         if hook_ptr:
             event_hook = <EventHook> hook_ptr
             Py_XINCREF(hook_ptr)
@@ -558,3 +559,115 @@ cdef class EventEngineEx(EventEngine):
         for t in self.timer.values():
             t.join(timeout=0)
         self.timer.clear()
+
+
+cdef class EngineTestToolkit:
+    """Relays internal C message-queue / hook-map state to Python for test validation.
+
+    Exposes the raw ``message_queue`` bookkeeping (head/tail/count/capacity),
+    the exact/generic hook bytemap contents, and a raw C message-queue
+    micro-benchmark. These internals are deliberately not part of the public
+    Python API, but are needed to verify queue-state transitions and to
+    measure the C-level hot path without Python overhead.
+
+    Note:
+        Test-only class. Not declared in any ``.pxd``; not part of the
+        public package API.
+    """
+
+    @staticmethod
+    def get_mq_capacity(EventEngine engine) -> size_t:
+        """Capacity of the engine's C message queue."""
+        return engine.mq.capacity
+
+    @staticmethod
+    def get_mq_head(EventEngine engine) -> size_t:
+        """Head index of the engine's C message queue."""
+        return engine.mq.head
+
+    @staticmethod
+    def get_mq_tail(EventEngine engine) -> size_t:
+        """Tail index of the engine's C message queue."""
+        return engine.mq.tail
+
+    @staticmethod
+    def get_mq_count(EventEngine engine) -> size_t:
+        """Occupancy counter of the engine's C message queue."""
+        return engine.mq.count
+
+    @staticmethod
+    def get_exact_hook_map_size(EventEngine engine) -> size_t:
+        """Number of entries in the exact-topic hook bytemap."""
+        cdef bytemap_entry* entry = engine.exact_topic_hooks.first
+        cdef size_t n = 0
+        while entry:
+            n += 1
+            entry = entry.next
+        return n
+
+    @staticmethod
+    def get_generic_hook_map_size(EventEngine engine) -> size_t:
+        """Number of entries in the generic-topic hook bytemap."""
+        cdef bytemap_entry* entry = engine.generic_topic_hooks.first
+        cdef size_t n = 0
+        while entry:
+            n += 1
+            entry = entry.next
+        return n
+
+    @staticmethod
+    def get_exact_hook_map_keys(EventEngine engine) -> list:
+        """Keys of all entries in the exact-topic hook bytemap."""
+        cdef list out = []
+        cdef bytemap_entry* entry = engine.exact_topic_hooks.first
+        while entry:
+            out.append(PyUnicode_FromStringAndSize(entry.key, entry.key_length))
+            entry = entry.next
+        return out
+
+    @staticmethod
+    def get_generic_hook_map_keys(EventEngine engine) -> list:
+        """Keys of all entries in the generic-topic hook bytemap."""
+        cdef list out = []
+        cdef bytemap_entry* entry = engine.generic_topic_hooks.first
+        while entry:
+            out.append(PyUnicode_FromStringAndSize(entry.key, entry.key_length))
+            entry = entry.next
+        return out
+
+    @staticmethod
+    def bench_mq_put_get(size_t n, size_t capacity=DEFAULT_MQ_CAPACITY) -> float:
+        """Average seconds per put/get round trip on a raw C message queue.
+
+        Allocates a standalone ``message_queue`` and a single payload, then
+        times ``n`` put/get cycles on the bare C API — no engine, no Python
+        dispatch, no handler invocation. Returns seconds per operation.
+
+        Args:
+            n: Number of put/get round trips to time.
+            capacity: Capacity of the raw message queue.
+
+        Returns:
+            Average elapsed seconds per round trip.
+        """
+        cdef message_queue* mq = c_mq_new(capacity, NULL, EE_HEAP_ALLOCATOR)
+        if not mq:
+            raise MemoryError('Failed to allocate message queue for benchmark')
+
+        cdef Topic topic = Topic('bench.mq.topic')
+        cdef evt_message_payload* payload = c_evt_payload_new(topic, EMPTY_ARGS, {})
+        if not payload:
+            c_mq_free(mq)
+            raise MemoryError('Failed to allocate payload for benchmark')
+
+        cdef double t0 = perf_counter()
+        cdef size_t i
+        cdef evt_message_payload* out = NULL
+        for i in range(n):
+            c_mq_put(mq, payload)
+            c_mq_get(mq, &out)
+        cdef double elapsed = perf_counter() - t0
+
+        c_evt_payload_free(payload)
+        c_mq_free(mq)
+        return elapsed / n

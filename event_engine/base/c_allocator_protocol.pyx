@@ -1,4 +1,5 @@
 from libc.stdlib cimport calloc
+from libcpp cimport bool as c_bool
 
 from cbase.allocator_protocol.c_heap_allocator cimport c_heap_allocator_new
 from cbase.allocator_protocol.c_shm_comp cimport c_shm_allocator_new, AP_SHM_ALLOCATOR_DEFAULT_REGION_SIZE
@@ -120,3 +121,73 @@ class _RuntimeAllocatorConfig:
 
 
 RUNTIME_ALLOCATOR_CONFIG = _RuntimeAllocatorConfig()
+
+
+cdef class AllocatorTestToolkit:
+    """Relays internal allocator-protocol state to Python for test validation.
+
+    Exposes the live ``EE_CFG_*`` globals, the allocator protocol struct
+    configurations (lock/shm/freelist flags and backing allocator presence),
+    and the ``EEConfigContext`` activation path — all of which are internal
+    C state that the public Python API does not otherwise expose.
+
+    Note:
+        Test-only class. Not declared in any ``.pxd``; not part of the
+        public package API.
+    """
+
+    @staticmethod
+    def get_cfg_locked() -> c_bool:
+        """Live value of the EE_CFG_LOCKED global."""
+        return EE_CFG_LOCKED
+
+    @staticmethod
+    def get_cfg_shared() -> c_bool:
+        """Live value of the EE_CFG_SHARED global."""
+        return EE_CFG_SHARED
+
+    @staticmethod
+    def get_cfg_freelist() -> c_bool:
+        """Live value of the EE_CFG_FREELIST global."""
+        return EE_CFG_FREELIST
+
+    @staticmethod
+    def get_default_allocator_config() -> dict:
+        """Flag/backing configuration of the EE_DEFAULT_ALLOCATOR protocol."""
+        if EE_DEFAULT_ALLOCATOR == NULL:
+            return None
+        return {
+            'with_lock': EE_DEFAULT_ALLOCATOR.with_lock,
+            'with_shm': EE_DEFAULT_ALLOCATOR.with_shm,
+            'with_freelist': EE_DEFAULT_ALLOCATOR.with_freelist,
+            'has_heap': EE_DEFAULT_ALLOCATOR.heap_allocator != NULL,
+            'has_shm': EE_DEFAULT_ALLOCATOR.shm_allocator != NULL,
+        }
+
+    @staticmethod
+    def get_heap_allocator_config() -> dict:
+        """Flag/backing configuration of the EE_HEAP_ALLOCATOR protocol."""
+        if EE_HEAP_ALLOCATOR == NULL:
+            return None
+        return {
+            'with_lock': EE_HEAP_ALLOCATOR.with_lock,
+            'with_shm': EE_HEAP_ALLOCATOR.with_shm,
+            'with_freelist': EE_HEAP_ALLOCATOR.with_freelist,
+            'has_heap': EE_HEAP_ALLOCATOR.heap_allocator != NULL,
+            'has_shm': EE_HEAP_ALLOCATOR.shm_allocator != NULL,
+        }
+
+    @staticmethod
+    def is_shm_available() -> bint:
+        """Whether the shared-memory allocator protocol is configured."""
+        return EE_SHM_ALLOCATOR != NULL
+
+    @staticmethod
+    def activate_context(EEConfigContext ctx) -> None:
+        """Activate an EEConfigContext (relay of the cdef c_activate)."""
+        ctx.c_activate()
+
+    @staticmethod
+    def deactivate_context(EEConfigContext ctx) -> None:
+        """Deactivate an EEConfigContext (relay of the cdef c_deactivate)."""
+        ctx.c_deactivate()

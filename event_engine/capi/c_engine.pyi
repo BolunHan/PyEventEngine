@@ -422,3 +422,57 @@ class EventEngineEx(EventEngine):
         Unregister all event hooks and stop all active timer threads.
         """
         ...
+
+
+class EngineTestToolkit:
+    """Relays internal C message-queue / hook-map state to Python for test validation.
+
+    Note:
+        Test-only class. Not declared in any ``.pxd``; not part of the
+        public package API.
+    """
+
+    @staticmethod
+    def get_mq_capacity(engine: EventEngine) -> int:
+        """Capacity of the engine's C message queue."""
+        ...
+
+    @staticmethod
+    def get_mq_head(engine: EventEngine) -> int:
+        """Head index of the engine's C message queue."""
+        ...
+
+    @staticmethod
+    def get_mq_tail(engine: EventEngine) -> int:
+        """Tail index of the engine's C message queue."""
+        ...
+
+    @staticmethod
+    def get_mq_count(engine: EventEngine) -> int:
+        """Occupancy counter of the engine's C message queue."""
+        ...
+
+    @staticmethod
+    def get_exact_hook_map_size(engine: EventEngine) -> int:
+        """Number of entries in the exact-topic hook bytemap."""
+        ...
+
+    @staticmethod
+    def get_generic_hook_map_size(engine: EventEngine) -> int:
+        """Number of entries in the generic-topic hook bytemap."""
+        ...
+
+    @staticmethod
+    def get_exact_hook_map_keys(engine: EventEngine) -> list[str]:
+        """Keys of all entries in the exact-topic hook bytemap."""
+        ...
+
+    @staticmethod
+    def get_generic_hook_map_keys(engine: EventEngine) -> list[str]:
+        """Keys of all entries in the generic-topic hook bytemap."""
+        ...
+
+    @staticmethod
+    def bench_mq_put_get(n: int, capacity: int = ...) -> float:
+        """Average seconds per put/get round trip on a raw C message queue."""
+        ...

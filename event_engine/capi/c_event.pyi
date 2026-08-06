@@ -224,3 +224,42 @@ class EventHookEx(EventHook):
             A dictionary with total calls and total execution time.
         """
         ...
+
+
+class EventTestToolkit:
+    """Relays internal C event-hook state to Python for test validation.
+
+    Note:
+        Test-only class. Not declared in any ``.pxd``; not part of the
+        public package API.
+    """
+
+    @staticmethod
+    def get_n_callbacks(hook: EventHook) -> int:
+        """Number of C callbacks registered on the hook."""
+        ...
+
+    @staticmethod
+    def get_n_pre_watchers(hook: EventHook) -> int:
+        """Number of pre-invoked watchers registered on the hook."""
+        ...
+
+    @staticmethod
+    def get_n_post_watchers(hook: EventHook) -> int:
+        """Number of post-invoked watchers registered on the hook."""
+        ...
+
+    @staticmethod
+    def get_callable_count(hook: EventHook) -> int:
+        """Length of the Python-callable linked list."""
+        ...
+
+    @staticmethod
+    def get_callable_with_topic(hook: EventHook, idx: int) -> bool:
+        """Whether the callable at ``idx`` is invoked with the topic kwarg."""
+        ...
+
+    @staticmethod
+    def get_hook_topic_addr(hook: EventHook) -> int:
+        """Address of the C topic backing the hook."""
+        ...

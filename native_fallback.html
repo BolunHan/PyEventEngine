@@ -390,9 +390,9 @@ extensions are available:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">event_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">USING_FALLBACK</span>
 
 <span class="k">if</span> <span class="n">USING_FALLBACK</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using pure Python fallback&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Using pure Python fallback"</span><span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using compiled Cython extensions&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Using compiled Cython extensions"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">USING_FALLBACK</span></code> flag is set at import time and reflects the state of
@@ -405,11 +405,11 @@ the top-level <code class="docutils literal notranslate"><span class="pre">event
 <p>The fallback provides <strong>100% API compatibility</strong> with the Cython version.
 All classes, methods, properties, and exceptions have identical signatures:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Works identically on both backends</span>
-<span class="n">topic</span> <span class="o">=</span> <span class="n">Topic</span><span class="p">(</span><span class="s1">&#39;Market.Data.</span><span class="si">{symbol}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="n">formatted</span> <span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">symbol</span><span class="o">=</span><span class="s1">&#39;AAPL&#39;</span><span class="p">)</span>
+<span class="n">topic</span> <span class="o">=</span> <span class="n">Topic</span><span class="p">(</span><span class="s1">'Market.Data.</span><span class="si">{symbol}</span><span class="s1">'</span><span class="p">)</span>
+<span class="n">formatted</span> <span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">symbol</span><span class="o">=</span><span class="s1">'AAPL'</span><span class="p">)</span>
 <span class="n">engine</span> <span class="o">=</span> <span class="n">EventEngine</span><span class="p">(</span><span class="n">capacity</span><span class="o">=</span><span class="mi">8192</span><span class="p">)</span>
 <span class="n">engine</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-<span class="n">engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
+<span class="n">engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="s1">'data'</span><span class="p">)</span>
 <span class="n">engine</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
 </pre></div>
 </div>

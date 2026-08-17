@@ -366,7 +366,7 @@ compile-time macro introspection.</p>
 <h3><code class="docutils literal notranslate"><span class="pre">build.ps1</span></code> (Windows)<a class="headerlink" href="#build-ps1-windows" title="Link to this heading">¶</a></h3>
 <p>PowerShell build script for Windows NT.  Activates a specified venv,
 cleans artifacts, and runs <code class="docutils literal notranslate"><span class="pre">build_ext</span> <span class="pre">--inplace</span> <span class="pre">--verbose</span> <span class="pre">--force</span></code>.</p>
-<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="p">.\</span><span class="n">build</span><span class="p">.</span><span class="n">ps1</span> <span class="n">-VenvPath</span> <span class="s2">&quot;C:\Users\...\venv_313&quot;</span>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="p">.\</span><span class="n">build</span><span class="p">.</span><span class="n">ps1</span> <span class="n">-VenvPath</span> <span class="s2">"C:\Users\...\venv_313"</span>
 </pre></div>
 </div>
 </section>
@@ -473,13 +473,13 @@ brew<span class="w"> </span>install<span class="w"> </span>python
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">event_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span><span class="p">,</span> <span class="n">USING_FALLBACK</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">__version__</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using fallback: </span><span class="si">{</span><span class="n">USING_FALLBACK</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># False if Cython compiled</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Using fallback: </span><span class="si">{</span><span class="n">USING_FALLBACK</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># False if Cython compiled</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">event_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventEngine</span><span class="p">,</span> <span class="n">Topic</span><span class="p">,</span> <span class="n">EventHook</span>
 <span class="n">engine</span> <span class="o">=</span> <span class="n">EventEngine</span><span class="p">()</span>
 <span class="n">engine</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 <span class="n">engine</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;OK&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"OK"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>If <code class="docutils literal notranslate"><span class="pre">USING_FALLBACK</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, the compiled Cython version is active.</p>
@@ -493,8 +493,8 @@ Cython extensions find <code class="docutils literal notranslate"><span class="p
 <span class="kn">import</span><span class="w"> </span><span class="nn">event_engine</span>
 
 <span class="n">ext</span> <span class="o">=</span> <span class="n">Extension</span><span class="p">(</span>
-    <span class="s2">&quot;my_module&quot;</span><span class="p">,</span>
-    <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_module.pyx&quot;</span><span class="p">],</span>
+    <span class="s2">"my_module"</span><span class="p">,</span>
+    <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">"my_module.pyx"</span><span class="p">],</span>
     <span class="n">include_dirs</span><span class="o">=</span><span class="n">event_engine</span><span class="o">.</span><span class="n">get_include</span><span class="p">(),</span>
 <span class="p">)</span>
 <span class="n">setup</span><span class="p">(</span><span class="n">ext_modules</span><span class="o">=</span><span class="n">cythonize</span><span class="p">([</span><span class="n">ext</span><span class="p">]))</span>
@@ -554,7 +554,7 @@ building from source fails, install from PyPI and the pure Python
 fallback will be used automatically:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>PyEventEngine
 
-python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from event_engine import USING_FALLBACK; print(USING_FALLBACK)&quot;</span><span class="w">  </span><span class="c1"># True</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"from event_engine import USING_FALLBACK; print(USING_FALLBACK)"</span><span class="w">  </span><span class="c1"># True</span>
 </pre></div>
 </div>
 <p>All features work identically in the fallback; only throughput is lower.</p>

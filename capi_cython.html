@@ -282,16 +282,16 @@
 
 <span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">Extension</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_package.my_module&quot;</span><span class="p">,</span>
-        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_package/my_module.pyx&quot;</span><span class="p">],</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"my_package.my_module"</span><span class="p">,</span>
+        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">"my_package/my_module.pyx"</span><span class="p">],</span>
         <span class="n">include_dirs</span><span class="o">=</span><span class="p">[</span><span class="n">event_engine</span><span class="o">.</span><span class="n">get_include</span><span class="p">()],</span>
-        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;-O3&quot;</span><span class="p">]</span>
+        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">"-O3"</span><span class="p">]</span>
     <span class="p">)</span>
 <span class="p">]</span>
 
 <span class="n">setup</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_package&quot;</span><span class="p">,</span>
-    <span class="n">ext_modules</span><span class="o">=</span><span class="n">cythonize</span><span class="p">(</span><span class="n">extensions</span><span class="p">,</span> <span class="n">compiler_directives</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;language_level&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">})</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"my_package"</span><span class="p">,</span>
+    <span class="n">ext_modules</span><span class="o">=</span><span class="n">cythonize</span><span class="p">(</span><span class="n">extensions</span><span class="p">,</span> <span class="n">compiler_directives</span><span class="o">=</span><span class="p">{</span><span class="s1">'language_level'</span><span class="p">:</span> <span class="mi">3</span><span class="p">})</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -302,32 +302,32 @@
 
 <span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">Extension</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_package.core.event_handler&quot;</span><span class="p">,</span>
-        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_package/core/event_handler.pyx&quot;</span><span class="p">],</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"my_package.core.event_handler"</span><span class="p">,</span>
+        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">"my_package/core/event_handler.pyx"</span><span class="p">],</span>
         <span class="n">include_dirs</span><span class="o">=</span><span class="p">[</span><span class="n">event_engine</span><span class="o">.</span><span class="n">get_include</span><span class="p">()],</span>
-        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;-O3&quot;</span><span class="p">]</span>
+        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">"-O3"</span><span class="p">]</span>
     <span class="p">),</span>
     <span class="n">Extension</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_package.core.message_processor&quot;</span><span class="p">,</span>
-        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_package/core/message_processor.pyx&quot;</span><span class="p">],</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"my_package.core.message_processor"</span><span class="p">,</span>
+        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">"my_package/core/message_processor.pyx"</span><span class="p">],</span>
         <span class="n">include_dirs</span><span class="o">=</span><span class="p">[</span><span class="n">event_engine</span><span class="o">.</span><span class="n">get_include</span><span class="p">()],</span>
-        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;-O3&quot;</span><span class="p">]</span>
+        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">"-O3"</span><span class="p">]</span>
     <span class="p">),</span>
 <span class="p">]</span>
 
 <span class="n">setup</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_package&quot;</span><span class="p">,</span>
-    <span class="n">version</span><span class="o">=</span><span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"my_package"</span><span class="p">,</span>
+    <span class="n">version</span><span class="o">=</span><span class="s2">"1.0.0"</span><span class="p">,</span>
     <span class="n">packages</span><span class="o">=</span><span class="n">find_packages</span><span class="p">(),</span>
     <span class="n">ext_modules</span><span class="o">=</span><span class="n">cythonize</span><span class="p">(</span>
         <span class="n">extensions</span><span class="p">,</span>
         <span class="n">compiler_directives</span><span class="o">=</span><span class="p">{</span>
-            <span class="s1">&#39;language_level&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-            <span class="s1">&#39;embedsignature&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s1">'language_level'</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+            <span class="s1">'embedsignature'</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
         <span class="p">}</span>
     <span class="p">),</span>
     <span class="n">install_requires</span><span class="o">=</span><span class="p">[</span>
-        <span class="s1">&#39;PyEventEngine&gt;=0.4.4&#39;</span><span class="p">,</span>
+        <span class="s1">'PyEventEngine&gt;=0.4.4'</span><span class="p">,</span>
     <span class="p">],</span>
 <span class="p">)</span>
 </pre></div>
@@ -441,7 +441,7 @@
 </pre></div>
 </div>
 <p>Example usage:</p>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Market.Data.AAPL&quot;</span><span class="p">)</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">"Market.Data.AAPL"</span><span class="p">)</span>
 <span class="k">cdef</span><span class="w"> </span><span class="kt">uint64_t</span> <span class="nv">topic_hash</span><span class="w"> </span><span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">hash_value</span><span class="p">()</span>
 
 <span class="c"># Access parts</span>
@@ -555,11 +555,11 @@
 <h3>Avoiding Python Overhead<a class="headerlink" href="#avoiding-python-overhead" title="Link to this heading">¶</a></h3>
 <p>When possible, use typed Cython code:</p>
 <div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="c"># Slower (Python)</span>
-<span class="n">topic</span> <span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Market.Data.AAPL&quot;</span><span class="p">)</span>
+<span class="n">topic</span> <span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">"Market.Data.AAPL"</span><span class="p">)</span>
 <span class="n">value</span> <span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">value</span>  <span class="c"># Calls Python __get__</span>
 
 <span class="c"># Faster (Cython)</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Market.Data.AAPL&quot;</span><span class="p">)</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">"Market.Data.AAPL"</span><span class="p">)</span>
 <span class="k">cdef</span><span class="w"> </span><span class="kt">str</span> <span class="nv">value</span><span class="w"> </span><span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>  <span class="c"># Direct C call</span>
 </pre></div>
 </div>
@@ -568,7 +568,7 @@
 <h3>Type Declarations<a class="headerlink" href="#type-declarations" title="Link to this heading">¶</a></h3>
 <p>Declare types for best performance:</p>
 <div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">EventEngine</span> <span class="nv">engine</span><span class="w"> </span><span class="o">=</span> <span class="n">EventEngine</span><span class="p">(</span><span class="n">capacity</span><span class="o">=</span><span class="mf">8192</span><span class="p">)</span>
-<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Test.Topic&quot;</span><span class="p">)</span>
+<span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">"Test.Topic"</span><span class="p">)</span>
 <span class="k">cdef</span><span class="w"> </span><span class="kt">PyMessagePayload</span> <span class="nv">msg</span>
 
 <span class="c"># Fast loop</span>
@@ -581,7 +581,7 @@
 <section id="using-static-methods">
 <h3>Using Static Methods<a class="headerlink" href="#using-static-methods" title="Link to this heading">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">c_from_header</span></code> static methods create Python wrappers around existing C structures efficiently:</p>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">Topic</span>* <span class="nv">c_topic</span><span class="w"> </span><span class="o">=</span> <span class="n">topic_parse</span><span class="p">(</span><span class="n">b</span><span class="s">&quot;My.Topic&quot;</span><span class="p">,</span> <span class="mf">8</span><span class="p">)</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">Topic</span>* <span class="nv">c_topic</span><span class="w"> </span><span class="o">=</span> <span class="n">topic_parse</span><span class="p">(</span><span class="n">b</span><span class="s">"My.Topic"</span><span class="p">,</span> <span class="mf">8</span><span class="p">)</span>
 <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">py_topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="o">.</span><span class="n">c_from_header</span><span class="p">(</span><span class="n">c_topic</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -596,7 +596,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">owner=True</span></code>: Python object owns C memory, will free on <code class="docutils literal notranslate"><span class="pre">__dealloc__</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">owner=False</span></code>: Python object is a view, C memory managed elsewhere</p></li>
 </ul>
-<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">owned</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Test&quot;</span><span class="p">)</span>  <span class="c"># owner=True</span>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">owned</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">"Test"</span><span class="p">)</span>  <span class="c"># owner=True</span>
 <span class="c"># Will call topic_free() in __dealloc__</span>
 
 <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">view</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="o">.</span><span class="n">c_from_header</span><span class="p">(</span><span class="n">some_topic</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -625,9 +625,9 @@
 <p>Cython methods can raise Python exceptions:</p>
 <div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span>
 <span class="k">try</span><span class="p">:</span>
-    <span class="n">topic</span> <span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Invalid..{&quot;</span><span class="p">)</span>  <span class="c"># May raise ValueError</span>
+    <span class="n">topic</span> <span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">"Invalid..{"</span><span class="p">)</span>  <span class="c"># May raise ValueError</span>
 <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">&quot;Parse error: {e}&quot;</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"Parse error: {e}"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>For <code class="docutils literal notranslate"><span class="pre">nogil</span></code> functions, exceptions are deferred:</p>
@@ -636,7 +636,7 @@
     <span class="n">result</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">c_publish</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="mf">1000</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
 
 <span class="k">if</span> <span class="n">result</span> <span class="o">!=</span> <span class="mf">0</span><span class="p">:</span>
-    <span class="k">raise</span> <span class="n">Full</span><span class="p">(</span><span class="s">&quot;Queue is full&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">Full</span><span class="p">(</span><span class="s">"Queue is full"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -650,15 +650,15 @@
 
 <span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">Extension</span><span class="p">(</span>
-        <span class="s2">&quot;my_module&quot;</span><span class="p">,</span>
-        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_module.pyx&quot;</span><span class="p">],</span>
+        <span class="s2">"my_module"</span><span class="p">,</span>
+        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">"my_module.pyx"</span><span class="p">],</span>
         <span class="n">include_dirs</span><span class="o">=</span><span class="p">[</span><span class="n">event_engine</span><span class="o">.</span><span class="n">get_include</span><span class="p">()],</span>
-        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;-O3&quot;</span><span class="p">]</span>
+        <span class="n">extra_compile_args</span><span class="o">=</span><span class="p">[</span><span class="s2">"-O3"</span><span class="p">]</span>
     <span class="p">)</span>
 <span class="p">]</span>
 
 <span class="n">setup</span><span class="p">(</span>
-    <span class="n">ext_modules</span><span class="o">=</span><span class="n">cythonize</span><span class="p">(</span><span class="n">extensions</span><span class="p">,</span> <span class="n">compiler_directives</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;language_level&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">})</span>
+    <span class="n">ext_modules</span><span class="o">=</span><span class="n">cythonize</span><span class="p">(</span><span class="n">extensions</span><span class="p">,</span> <span class="n">compiler_directives</span><span class="o">=</span><span class="p">{</span><span class="s1">'language_level'</span><span class="p">:</span> <span class="mi">3</span><span class="p">})</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -669,7 +669,7 @@
 
 <span class="k">cpdef</span><span class="w"> </span><span class="kt">void</span> <span class="nf">my_function</span><span class="p">():</span>
     <span class="k">cdef</span><span class="w"> </span><span class="kt">EventEngine</span> <span class="nv">engine</span><span class="w"> </span><span class="o">=</span> <span class="n">EventEngine</span><span class="p">(</span><span class="n">capacity</span><span class="o">=</span><span class="mf">1024</span><span class="p">)</span>
-    <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">&quot;Test.Topic&quot;</span><span class="p">)</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">PyTopic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">PyTopic</span><span class="p">(</span><span class="s">"Test.Topic"</span><span class="p">)</span>
 
     <span class="n">engine</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
     <span class="n">engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="mf">123</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>

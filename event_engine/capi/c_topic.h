@@ -239,14 +239,14 @@ static inline evt_topic_match* c_topic_match_new(evt_topic_match* prev, allocato
 static inline void c_topic_match_free(evt_topic_match* res);
 
 /*
- * @brief Efficiently match two evt_topics and return 1 if they match, 0 otherwise.
+ * @brief Efficiently match two evt_topics and return true when they match, false otherwise.
  * This function does not allocate or fill match result structures.
  *
  * @param topic_a The first evt_topic to match.
  * @param topic_b The second evt_topic to match.
- * @return 1 if matched, 0 otherwise.
+ * @return true when matched, false otherwise.
  */
-static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b);
+static inline bool c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b);
 
 // --- Implementations ---
 
@@ -936,13 +936,13 @@ static inline void c_topic_match_free(evt_topic_match* res) {
     }
 }
 
-static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) {
+static inline bool c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) {
     if (!topic_a || !topic_b) {
-        return 0;
+        return false;
     }
     // Short-circuit: Same topic address or same topic literal
     if (topic_a == topic_b || (topic_a->key && topic_b->key && topic_a->key_len && topic_a->key_len == topic_b->key_len && !strcmp(topic_a->key, topic_b->key))) {
-        return 1;
+        return true;
     }
     evt_topic_part_variant* part_a = topic_a->parts;
     evt_topic_part_variant* part_b = topic_b->parts;
@@ -960,7 +960,7 @@ static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) {
         }
         else {
             // If neither is exact, match fails
-            return 0;
+            return false;
         }
         // Match exact part against other part
         switch (part_other->header.ttype) {
@@ -970,7 +970,7 @@ static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) {
                     // matched
                 }
                 else {
-                    return 0;
+                    return false;
                 }
                 break;
             case TOPIC_PART_ANY:
@@ -985,7 +985,7 @@ static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) {
                     }
                 }
                 if (!found) {
-                    return 0;
+                    return false;
                 }
                 break;
             }
@@ -993,26 +993,26 @@ static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) {
                 regex_t regex;
                 int     compile_ret = regcomp(&regex, part_other->pattern.pattern, REG_EXTENDED);
                 if (compile_ret) {
-                    return 0;
+                    return false;
                 }
                 int regex_ret = regexec(&regex, part_exact->exact.part, 0, NULL, 0);
                 regfree(&regex);
                 if (regex_ret) {
-                    return 0;
+                    return false;
                 }
                 break;
             }
             default:
-                return 0;
+                return false;
         }
         part_a = part_a->header.next;
         part_b = part_b->header.next;
     }
     // Any residual part is a mismatch
     if (part_a || part_b) {
-        return 0;
+        return false;
     }
-    return 1;
+    return true;
 }
 
 #endif  // C_EVENTENGINE_TOPIC_H

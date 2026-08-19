@@ -1,4 +1,5 @@
 from libc.stdint cimport uint64_t
+from libcpp cimport bool as c_bool
 
 from cbase.allocator_protocol.c_allocator_protocol cimport allocator_protocol
 from cbase.bytemap.c_bytemap cimport bytemap
@@ -80,7 +81,7 @@ cdef extern from "event_engine/capi/c_topic.h":
     evt_topic_match* c_topic_match(evt_topic* topic_a, evt_topic* topic_b, evt_topic_match* out) noexcept nogil
     evt_topic_match* c_topic_match_new(evt_topic_match* prev, allocator_protocol* allocator) noexcept nogil
     void c_topic_match_free(evt_topic_match* res) noexcept nogil
-    int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) noexcept nogil
+    c_bool c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) noexcept nogil
 
 
 cdef class TopicPart:

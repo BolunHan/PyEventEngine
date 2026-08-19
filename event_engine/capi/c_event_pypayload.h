@@ -1,6 +1,7 @@
 #ifndef C_EVENTENGINE_EVENT_PYPAYLOAD_H
 #define C_EVENTENGINE_EVENT_PYPAYLOAD_H
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #include <Python.h>
@@ -41,7 +42,7 @@ typedef struct evt_py_callable {
     PyObject*               fn;
     PyObject*               logger;
     size_t                  idx;
-    int                     with_topic;
+    bool                    with_topic;
     struct evt_py_callable* next;
 } evt_py_callable;
 
@@ -74,7 +75,7 @@ typedef struct evt_py_hook_ex {
 static inline void                 c_evt_pypayload_init_constants(void);
 static inline evt_message_payload* c_evt_pypayload_new(evt_py_topic* py_topic, PyObject* py_args, PyObject* py_kwargs, allocator_protocol* allocator);
 static inline void                 c_evt_pypayload_free(evt_message_payload* payload);
-static inline int                  c_evt_pycallable_same(PyObject* a, PyObject* b);
+static inline bool                 c_evt_pycallable_same(PyObject* a, PyObject* b);
 
 // ========== Utility Functions ==========
 
@@ -206,17 +207,17 @@ static inline void c_evt_pypayload_free(evt_message_payload* payload) {
  *
  * @param a First callable (may be NULL).
  * @param b Second callable (may be NULL).
- * @return Non-zero when a and b refer to the same handler.
+ * @return true when a and b refer to the same handler.
  */
-static inline int c_evt_pycallable_same(PyObject* a, PyObject* b) {
-    if (a == b) return 1;
-    if (!a || !b) return 0;
+static inline bool c_evt_pycallable_same(PyObject* a, PyObject* b) {
+    if (a == b) return true;
+    if (!a || !b) return false;
 
     if (PyMethod_Check(a) && PyMethod_Check(b)) {
         return PyMethod_GET_SELF(a) == PyMethod_GET_SELF(b) &&
                PyMethod_GET_FUNCTION(a) == PyMethod_GET_FUNCTION(b);
     }
-    return 0;
+    return false;
 }
 
 #endif  // C_EVENTENGINE_EVENT_PYPAYLOAD_H

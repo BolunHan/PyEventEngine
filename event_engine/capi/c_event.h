@@ -1,5 +1,5 @@
-#ifndef C_EVENT_H
-#define C_EVENT_H
+#ifndef C_EVENTENGINE_EVENT_H
+#define C_EVENTENGINE_EVENT_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -339,4 +339,4 @@ static inline int c_evt_hook_invoke(evt_hook* hook, evt_message_payload* payload
     return EVT_HOOK_OK;
 }
 
-#endif /* C_EVENT_H */
+#endif  // C_EVENTENGINE_EVENT_H

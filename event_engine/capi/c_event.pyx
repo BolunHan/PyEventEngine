@@ -2,7 +2,6 @@ import inspect
 import traceback
 
 from cpython.exc cimport PyErr_Clear, PyErr_Fetch
-from cpython.method cimport PyMethod_Check, PyMethod_GET_FUNCTION, PyMethod_GET_SELF
 from cpython.ref cimport Py_XDECREF, Py_XINCREF
 from cpython.time cimport perf_counter
 from libc.stdint cimport uintptr_t
@@ -14,49 +13,15 @@ from ..base import LOGGER
 
 LOGGER = LOGGER.getChild('Event')
 
-cdef tuple EMPTY_ARGS = ()
-cdef str TOPIC_FIELD_NAME = 'topic'
+c_evt_pypayload_init_constants()
 
-
-cdef inline evt_message_payload* c_evt_payload_new(Topic topic, tuple args, dict kwargs):
-    cdef size_t payload_size = sizeof(evt_message_payload) + sizeof(evt_py_payload)
-    cdef evt_message_payload* c_payload = <evt_message_payload*> c_ap_alloc(payload_size, EE_HEAP_ALLOCATOR)
-    if not c_payload:
-        return NULL
-
-    cdef evt_py_payload* py_payload = <evt_py_payload*> (c_payload + 1)
-    cdef PyObject* kwargs_aggregated = PyDict_Copy(<PyObject*> kwargs)
-    PyDict_SetDefault(kwargs_aggregated, <PyObject*> TOPIC_FIELD_NAME, <PyObject*> topic)
-
-    py_payload.py_topic = <PyObject*> topic
-    py_payload.py_args = <PyObject*> args
-    py_payload.py_kwargs = <PyObject*> kwargs
-    py_payload.py_kwargs_aggregated = kwargs_aggregated
-
-    Py_XINCREF(<PyObject*> topic)
-    Py_XINCREF(<PyObject*> args)
-    Py_XINCREF(<PyObject*> kwargs)
-    # Py_XINCREF(<PyObject*> kwargs_aggregated)
-
-    c_payload.args = py_payload
-    c_payload.topic = topic.header
-    return c_payload
-
-
-cdef inline void c_evt_payload_free(evt_message_payload* payload):
-    cdef evt_py_payload* py_payload = <evt_py_payload*> (payload + 1)
-
-    Py_XDECREF(py_payload.py_topic)
-    Py_XDECREF(py_payload.py_args)
-    Py_XDECREF(py_payload.py_kwargs)
-    Py_XDECREF(py_payload.py_kwargs_aggregated)
-
-    c_ap_free(payload)
+cdef str TOPIC_FIELD_NAME = <str> PY_TOPIC_FIELD_NAME
 
 
 cdef class MessagePayload:
     def __init__(self, Topic topic, tuple args, dict kwargs):
-        self.header = c_evt_payload_new(topic, args, kwargs)
+        cdef PyObject* py_topic = <PyObject*> topic
+        self.header = c_evt_pypayload_new(<evt_py_topic*> py_topic, <PyObject*> args, <PyObject*> kwargs, EE_HEAP_ALLOCATOR)
         if not self.header:
             raise MemoryError('Failed to allocate memory for evt_message_payload')
         self.owner = True
@@ -66,7 +31,7 @@ cdef class MessagePayload:
             return
 
         if self.header:
-            c_evt_payload_free(self.header)
+            c_evt_pypayload_free(self.header)
 
     @staticmethod
     cdef MessagePayload c_from_header(evt_message_payload* payload, bint owner=False):
@@ -89,7 +54,7 @@ cdef class MessagePayload:
             if not self.header.args:
                 raise RuntimeError('Uninitialized python payload')
             cdef evt_py_payload* py_payload = <evt_py_payload*> self.header.args
-            cdef PyObject* py_topic = py_payload.py_topic
+            cdef PyObject* py_topic = <PyObject*> py_payload.py_topic
             if py_topic:
                 Py_XINCREF(py_topic)
                 return <Topic> py_topic
@@ -149,18 +114,6 @@ cdef class MessagePayload:
             self.header.seq_id = seq_id
 
 
-cdef inline bint py_callable_same(PyObject* a, PyObject* b):
-    if a == b:
-        return True
-
-    # Both are bound methods
-    cdef object fn_a = <object> a
-    cdef object fn_b = <object> b
-    if PyMethod_Check(fn_a) and PyMethod_Check(fn_b):
-        return PyMethod_GET_SELF(fn_a) == PyMethod_GET_SELF(fn_b) and PyMethod_GET_FUNCTION(fn_a) == PyMethod_GET_FUNCTION(fn_b)
-    return False
-
-
 cdef class EventHook:
     def __cinit__(self, Topic topic, object logger=None):
         self.header = c_evt_hook_new(topic.header, EE_HEAP_ALLOCATOR)
@@ -214,7 +167,7 @@ cdef class EventHook:
         # Walk list to detect duplicates and position at tail
         cdef evt_py_callable* tail = NULL
         while callable_frame:
-            if py_callable_same(callable_frame.fn, py_callable):
+            if c_evt_pycallable_same(callable_frame.fn, py_callable):
                 if deduplicate:
                     return callable_frame
                 else:
@@ -254,7 +207,7 @@ cdef class EventHook:
         cdef evt_py_callable* prior = NULL
 
         while curr:
-            if py_callable_same(curr.fn, py_callable):
+            if c_evt_pycallable_same(curr.fn, py_callable):
                 Py_XDECREF(curr.fn)
                 Py_XDECREF(curr.logger)
                 if prior:
@@ -276,7 +229,7 @@ cdef class EventHook:
         cdef evt_py_callable* curr = self.callables
 
         while curr:
-            if py_callable_same(curr.fn, py_callable):
+            if c_evt_pycallable_same(curr.fn, py_callable):
                 return True
             curr = curr.next
         return False

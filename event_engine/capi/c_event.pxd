@@ -93,19 +93,51 @@ cdef extern from "event_engine/capi/c_event.h":
     int c_evt_hook_pop_callback(evt_hook* hook, size_t idx) noexcept nogil
     int c_evt_hook_invoke(evt_hook* hook, evt_message_payload* payload) noexcept nogil
 
-cdef struct evt_py_payload:
-    PyObject* py_topic
-    PyObject* py_args
-    PyObject* py_kwargs
-    PyObject* py_kwargs_aggregated
+cdef extern from "event_engine/capi/c_event_pypayload.h":
+    ctypedef struct evt_py_topic:
+        pass
 
-cdef tuple EMPTY_ARGS
+    ctypedef struct evt_py_payload:
+        evt_py_topic* py_topic
+        PyObject*     py_args
+        PyObject*     py_kwargs
+        PyObject*     py_kwargs_aggregated
 
-cdef str TOPIC_FIELD_NAME
+    ctypedef struct evt_py_callable:
+        PyObject*       fn
+        PyObject*       logger
+        size_t          idx
+        int             with_topic
+        evt_py_callable* next
 
-cdef evt_message_payload* c_evt_payload_new(Topic topic, tuple args, dict kwargs)
+    ctypedef struct evt_hook_stats:
+        size_t n_calls
+        double ts_call_start
+        double ts_call_complete
+        double elapsed_seconds
 
-cdef void c_evt_payload_free(evt_message_payload* payload)
+    ctypedef struct evt_py_hook:
+        PyObject         py_base
+        void*            cy_vtab
+        evt_hook*        header
+        evt_py_callable* callables
+        evt_py_topic*    topic
+        PyObject*        logger
+
+    ctypedef struct evt_py_hook_ex:
+        evt_py_hook    py_hook
+        evt_hook_stats hook_stats
+
+    PyObject* PY_TOPIC_FIELD_NAME
+    PyObject* PY_EMPTY_ARGS
+    PyObject* PY_EMPTY_KWARGS
+
+    # Actually everything in this header requires GIL, but we can still declare them as nogil to avoid accidental GIL usage in the Cython code.
+    void c_evt_pypayload_init_constants() noexcept nogil
+
+    evt_message_payload* c_evt_pypayload_new(evt_py_topic* py_topic, PyObject* py_args, PyObject* py_kwargs, allocator_protocol* allocator) noexcept nogil
+    void c_evt_pypayload_free(evt_message_payload* payload) noexcept nogil
+    int c_evt_pycallable_same(PyObject* a, PyObject* b)
 
 
 cdef class MessagePayload:
@@ -114,14 +146,6 @@ cdef class MessagePayload:
 
     @staticmethod
     cdef MessagePayload c_from_header(evt_message_payload* header, bint owner=?)
-
-
-cdef struct evt_py_callable:
-    PyObject* fn
-    PyObject* logger
-    size_t idx
-    bint with_topic
-    evt_py_callable* next
 
 
 cdef class EventHook:
@@ -140,13 +164,6 @@ cdef class EventHook:
     cdef inline bint c_contains_py_callable(self, PyObject* py_callable)
 
     cdef void c_free_py_callable(self)
-
-
-cdef struct evt_hook_stats:
-    size_t n_calls
-    double ts_call_start
-    double ts_call_complete
-    double elapsed_seconds
 
 
 cdef void c_hook_enter(evt_hook* hook, evt_hook_watcher_type watcher_type, evt_message_payload* payload, void* user_data) noexcept nogil

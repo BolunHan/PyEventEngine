@@ -99,10 +99,10 @@ cdef extern from "event_engine/capi/c_event_pypayload.h":
         PyObject*     py_kwargs_aggregated
 
     ctypedef struct evt_py_callable:
-        PyObject*       fn
-        PyObject*       logger
-        size_t          idx
-        c_bool          with_topic
+        PyObject*        fn
+        PyObject*        logger
+        size_t           idx
+        c_bool           with_topic
         evt_py_callable* next
 
     ctypedef struct evt_hook_stats:

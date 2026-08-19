@@ -139,7 +139,7 @@ cdef class EventEngine:
 
         # Step 2: Match generic_topic_hooks
         cdef bytemap_entry* entry = self.generic_topic_hooks.first
-        cdef int is_matched
+        cdef bint is_matched
         while entry:
             hook_ptr = <PyObject*> c_bytemap_entry_value(entry)
             if not hook_ptr:
@@ -300,7 +300,7 @@ cdef class EventEngine:
             out.append(event_hook)
 
         cdef bytemap_entry* entry = self.generic_topic_hooks.first
-        cdef int is_matched
+        cdef bint is_matched
         while entry:
             hook_ptr = <PyObject*> c_bytemap_entry_value(entry)
             if not hook_ptr:

@@ -124,11 +124,25 @@ cdef class EventHook:
         self.callables = NULL
         self.topic = topic
         self.logger = LOGGER.getChild(f'EventHook.{topic}') if logger is None else logger
+        self.owner = True
 
     def __dealloc__(self):
+        if not self.owner:
+            return
+
         self.c_free_py_callable()
         if self.header:
             c_evt_hook_free(self.header)
+
+    @staticmethod
+    cdef EventHook c_from_header(evt_hook* header, bint owner=False):
+        cdef EventHook instance = EventHook.__new__(EventHook)
+        instance.header = header
+        instance.callables = NULL
+        instance.topic = Topic.c_from_header(header.topic, False)
+        instance.logger = LOGGER.getChild(f'EventHook.{instance.topic}')
+        instance.owner = owner
+        return instance
 
     @staticmethod
     cdef inline void c_invoke_py_callable(evt_message_payload* payload, void* user_data) with gil:

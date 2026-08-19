@@ -1,5 +1,6 @@
 from cpython.object cimport PyObject
 from libc.stdint cimport uint64_t
+from libcpp cimport bool as c_bool
 
 from cbase.allocator_protocol.c_allocator_protocol cimport allocator_protocol
 
@@ -83,7 +84,7 @@ cdef extern from "event_engine/capi/c_event.h":
     evt_hook* c_evt_hook_new(evt_topic* topic, allocator_protocol* allocator) noexcept nogil
     void c_evt_hook_free(evt_hook* hook) noexcept nogil
     int c_evt_hook_add_watcher(evt_hook* hook, evt_hook_watcher_fn fn, void* user_data, evt_hook_watcher_type type) noexcept nogil
-    int c_evt_hook_register_callback(evt_hook* hook, const void* fn, evt_callback_type ftype, void* user_data, int deduplicate) noexcept nogil
+    int c_evt_hook_register_callback(evt_hook* hook, const void* fn, evt_callback_type ftype, void* user_data, c_bool deduplicate) noexcept nogil
     int c_evt_hook_pop_callback(evt_hook* hook, size_t idx) noexcept nogil
     int c_evt_hook_invoke(evt_hook* hook, evt_message_payload* payload) noexcept nogil
 
@@ -101,7 +102,7 @@ cdef extern from "event_engine/capi/c_event_pypayload.h":
         PyObject*       fn
         PyObject*       logger
         size_t          idx
-        int             with_topic
+        c_bool          with_topic
         evt_py_callable* next
 
     ctypedef struct evt_hook_stats:
@@ -131,7 +132,7 @@ cdef extern from "event_engine/capi/c_event_pypayload.h":
 
     evt_message_payload* c_evt_pypayload_new(evt_py_topic* py_topic, PyObject* py_args, PyObject* py_kwargs, allocator_protocol* allocator) noexcept nogil
     void c_evt_pypayload_free(evt_message_payload* payload) noexcept nogil
-    int c_evt_pycallable_same(PyObject* a, PyObject* b)
+    c_bool c_evt_pycallable_same(PyObject* a, PyObject* b)
 
 
 cdef str TOPIC_FIELD_NAME
@@ -152,9 +153,13 @@ cdef class EventHook:
     cdef evt_py_callable* callables
     cdef readonly Topic topic
     cdef readonly object logger
+    cdef readonly bint owner
 
     @staticmethod
     cdef inline void c_invoke_py_callable(evt_message_payload* payload, void* user_data) with gil
+
+    @staticmethod
+    cdef EventHook c_from_header(evt_hook* header, bint owner=?)
 
     cdef inline evt_py_callable* c_add_py_callable(self, PyObject* py_callable, PyObject* logger, bint with_topic, bint deduplicate)
 

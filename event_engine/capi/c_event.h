@@ -190,50 +190,17 @@ static inline int c_evt_hook_add_watcher(evt_hook* hook, evt_hook_watcher_fn fn,
     return EVT_RET_ERR_INVALID_INPUT;
 }
 
-static inline int c_evt_hook_register_callback(evt_hook* hook, const void* fn, evt_callback_type ftype, void* user_data, int deduplicate) {
+static inline int c_evt_hook_register_callback(evt_hook* hook, const void* fn, evt_callback_type ftype, void* user_data, bool deduplicate) {
     if (!hook || !fn) return EVT_RET_ERR_INVALID_INPUT;
 
-    /* Deduplication check: compare function pointer and type */
+    /* Deduplication check: compare function pointer and type. Every union
+       variant stores the function pointer at the same address, so the stored
+       pointer can be read directly without type dispatch. */
     if (hook->callbacks && deduplicate) {
         for (size_t i = 0; i < hook->n_callbacks; ++i) {
             const evt_callback* callback = &hook->callbacks[i];
             if (callback->type != ftype) continue;
-            const void* existing = NULL;
-            switch (callback->type) {
-                case EVT_CALLBACK_WITH_TOPIC:
-                    existing = (const void*) callback->fn.with_topic;
-                    break;
-                case EVT_CALLBACK_WITH_ARGS:
-                    existing = (const void*) callback->fn.with_args;
-                    break;
-                case EVT_CALLBACK_WITH_USERDATA:
-                    existing = (const void*) callback->fn.with_userdata;
-                    break;
-                case EVT_CALLBACK_WITH_ARGS_TOPIC:
-                    existing = (const void*) callback->fn.with_args_topic;
-                    break;
-                case EVT_CALLBACK_WITH_ARGS_USERDATA:
-                    existing = (const void*) callback->fn.with_args_userdata;
-                    break;
-                case EVT_CALLBACK_WITH_TOPIC_USERDATA:
-                    existing = (const void*) callback->fn.with_topic_userdata;
-                    break;
-                case EVT_CALLBACK_WITH_ARGS_TOPIC_USERDATA:
-                    existing = (const void*) callback->fn.with_args_topic_userdata;
-                    break;
-                case EVT_CALLBACK_WITH_PAYLOAD:
-                    existing = (const void*) callback->fn.with_payload;
-                    break;
-                case EVT_CALLBACK_WITH_PAYLOAD_USERDATA:
-                    existing = (const void*) callback->fn.with_payload_userdata;
-                    break;
-                case EVT_CALLBACK_BARE:
-                    existing = (const void*) callback->fn.bare;
-                    break;
-                default:
-                    break;
-            }
-            if (existing == fn && callback->user_data == user_data) {
+            if ((const void*) callback->fn.bare == fn && callback->user_data == user_data) {
                 return EVT_RET_ERR_DUPLICATE; /* duplicate ignored */
             }
         }

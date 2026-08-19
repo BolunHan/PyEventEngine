@@ -8,12 +8,14 @@ from cpython.unicode cimport PyUnicode_FromStringAndSize
 
 from cbase.bytemap.c_bytemap cimport bytemap_ret_code, bytemap, bytemap_entry, c_bytemap_new, c_bytemap_clear, c_bytemap_free, c_bytemap_get, c_bytemap_set, c_bytemap_pop, c_bytemap_entry_value
 
-from .c_event cimport EMPTY_ARGS, MessagePayload, c_evt_hook_invoke, c_evt_payload_free, c_evt_payload_new, evt_py_payload
+from .c_event cimport MessagePayload, PY_EMPTY_ARGS, c_evt_hook_invoke, c_evt_pypayload_free, c_evt_pypayload_new, evt_py_topic, evt_py_payload
 from .c_topic cimport Topic, c_topic_match_bool
 from ..base.c_allocator_protocol cimport EE_HEAP_ALLOCATOR
 from ..base import LOGGER
 
 LOGGER = LOGGER.getChild('Engine')
+
+cdef tuple EMPTY_ARGS = <tuple> PY_EMPTY_ARGS
 
 
 class Full(Exception):
@@ -81,7 +83,7 @@ cdef class EventEngine:
             self.c_trigger(msg)
 
             # Clean up the message payload
-            c_evt_payload_free(msg)
+            c_evt_pypayload_free(msg)
 
     cdef inline evt_message_payload* c_get(self, bint block, size_t max_spin, double timeout):
         cdef evt_message_payload* msg = NULL
@@ -100,7 +102,10 @@ cdef class EventEngine:
             raise ValueError('Topic must be all of exact parts')
 
         # Step 0: Request payload buffer (MUST be done with GIL held - allocator is NOT thread-safe)
-        cdef evt_message_payload* payload = c_evt_payload_new(topic, args, kwargs)
+        cdef PyObject* py_topic = <PyObject*> topic
+        cdef evt_message_payload* payload = c_evt_pypayload_new(<evt_py_topic*> py_topic, <PyObject*> args, <PyObject*> kwargs, EE_HEAP_ALLOCATOR)
+        if not payload:
+            raise MemoryError('Failed to allocate message payload')
 
         # Step 1: Assembling payload (MUST be done with GIL held - touching Python objects)
         payload.seq_id = self.seq_id
@@ -119,7 +124,7 @@ cdef class EventEngine:
             return ret_code
 
         self.seq_id -= 1
-        c_evt_payload_free(payload)
+        c_evt_pypayload_free(payload)
         return ret_code
 
     cdef inline void c_trigger(self, evt_message_payload* msg):
@@ -655,7 +660,8 @@ cdef class EngineTestToolkit:
             raise MemoryError('Failed to allocate message queue for benchmark')
 
         cdef Topic topic = Topic('bench.mq.topic')
-        cdef evt_message_payload* payload = c_evt_payload_new(topic, EMPTY_ARGS, {})
+        cdef PyObject* py_topic = <PyObject*> topic
+        cdef evt_message_payload* payload = c_evt_pypayload_new(<evt_py_topic*> py_topic, NULL, NULL, EE_HEAP_ALLOCATOR)
         if not payload:
             c_mq_free(mq)
             raise MemoryError('Failed to allocate payload for benchmark')
@@ -668,6 +674,6 @@ cdef class EngineTestToolkit:
             c_mq_get(mq, &out)
         cdef double elapsed = perf_counter() - t0
 
-        c_evt_payload_free(payload)
+        c_evt_pypayload_free(payload)
         c_mq_free(mq)
         return elapsed / n

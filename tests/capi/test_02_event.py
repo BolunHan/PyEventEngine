@@ -6,6 +6,7 @@ Covers MessagePayload, EventHook and EventHookEx. Internal C state
 """
 
 import logging
+import sys
 import time
 import unittest
 
@@ -65,6 +66,71 @@ class TestMessagePayload(unittest.TestCase):
         payload, _ = make_payload(kwargs=original)
         _ = payload.kwargs_with_topic
         self.assertEqual(original, {"x": 1})
+
+    def test_06_type_validation(self) -> None:
+        """Non-tuple args or non-dict kwargs raise TypeError (C-level validation)."""
+        topic = Topic("unit.type")
+        with self.assertRaises(TypeError):
+            MessagePayload(topic, [1, 2], {})
+        with self.assertRaises(TypeError):
+            MessagePayload(topic, (1,), [("a", 1)])
+
+    def test_07_refcount_ownership(self) -> None:
+        """Payload owns references to topic/args/kwargs; released on free.
+
+        topic is held twice: in the payload tail and as the value injected
+        into the aggregated kwargs dict. args/kwargs are held once each.
+        """
+        topic = Topic("unit.owned")
+        args = (1, "x")
+        kwargs = {"k": "v"}
+        topic_before = sys.getrefcount(topic)
+        args_before = sys.getrefcount(args)
+        kwargs_before = sys.getrefcount(kwargs)
+
+        payload = MessagePayload(topic, args, kwargs)
+        self.assertEqual(sys.getrefcount(topic), topic_before + 2)
+        self.assertEqual(sys.getrefcount(args), args_before + 1)
+        self.assertEqual(sys.getrefcount(kwargs), kwargs_before + 1)
+
+        del payload
+        self.assertEqual(sys.getrefcount(topic), topic_before)
+        self.assertEqual(sys.getrefcount(args), args_before)
+        self.assertEqual(sys.getrefcount(kwargs), kwargs_before)
+
+    def test_08_kwargs_topic_key_preserved(self) -> None:
+        """A user-supplied 'topic' key in kwargs is preserved (SetDefault semantics)."""
+        user_topic = Topic("user.given")
+        payload, real_topic = make_payload(kwargs={"topic": user_topic})
+        aggregated = payload.kwargs_with_topic
+        self.assertIs(aggregated["topic"], user_topic)
+        self.assertIsNot(aggregated["topic"], real_topic)
+
+    def test_09_bulk_lifecycle_refcount_stability(self) -> None:
+        """Repeated create/free cycles leave no refcount drift."""
+        topic = Topic("unit.bulk")
+        args = (1, "x")
+        kwargs = {"k": "v"}
+        topic_before = sys.getrefcount(topic)
+        args_before = sys.getrefcount(args)
+        kwargs_before = sys.getrefcount(kwargs)
+
+        for _ in range(1000):
+            MessagePayload(topic, args, kwargs)
+
+        self.assertEqual(sys.getrefcount(topic), topic_before)
+        self.assertEqual(sys.getrefcount(args), args_before)
+        self.assertEqual(sys.getrefcount(kwargs), kwargs_before)
+
+    def test_10_null_args_kwargs_treated_as_empty(self) -> None:
+        """NULL args/kwargs are substituted with shared empty tuple/dict."""
+        topic = Topic("unit.empty")
+        payload = MessagePayload(topic, None, None)
+        self.assertEqual(payload.args, ())
+        self.assertEqual(payload.kwargs, {})
+        aggregated = payload.kwargs_with_topic
+        self.assertEqual(set(aggregated), {"topic"})
+        self.assertEqual(aggregated["topic"].value, topic.value)
 
 
 class TestEventHookBasics(unittest.TestCase):

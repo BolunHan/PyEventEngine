@@ -16,6 +16,8 @@ LOGGER = LOGGER.getChild('Event')
 c_evt_pypayload_init_constants()
 
 cdef str TOPIC_FIELD_NAME = <str> PY_TOPIC_FIELD_NAME
+cdef tuple EMPTY_ARGS = <tuple> PY_EMPTY_ARGS
+cdef dict EMPTY_KWARGS = <dict> PY_EMPTY_KWARGS
 
 
 cdef class MessagePayload:
@@ -355,22 +357,22 @@ cdef class EventTestToolkit:
     """
 
     @staticmethod
-    def get_n_callbacks(EventHook hook) -> size_t:
+    def get_n_callbacks(EventHook hook):
         """Number of C callbacks registered on the hook."""
         return hook.header.n_callbacks
 
     @staticmethod
-    def get_n_pre_watchers(EventHook hook) -> size_t:
+    def get_n_pre_watchers(EventHook hook):
         """Number of pre-invoked watchers registered on the hook."""
         return hook.header.n_pre_watchers
 
     @staticmethod
-    def get_n_post_watchers(EventHook hook) -> size_t:
+    def get_n_post_watchers(EventHook hook):
         """Number of post-invoked watchers registered on the hook."""
         return hook.header.n_post_watchers
 
     @staticmethod
-    def get_callable_count(EventHook hook) -> size_t:
+    def get_callable_count(EventHook hook):
         """Length of the Python-callable linked list."""
         cdef evt_py_callable* curr = hook.callables
         cdef size_t n = 0
@@ -380,7 +382,7 @@ cdef class EventTestToolkit:
         return n
 
     @staticmethod
-    def get_callable_with_topic(EventHook hook, size_t idx) -> bint:
+    def get_callable_with_topic(EventHook hook, size_t idx):
         """Whether the callable at ``idx`` is invoked with the topic kwarg."""
         cdef evt_py_callable* curr = hook.callables
         cdef size_t i = 0

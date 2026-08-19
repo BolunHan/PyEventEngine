@@ -140,6 +140,11 @@ cdef extern from "event_engine/capi/c_event_pypayload.h":
     int c_evt_pycallable_same(PyObject* a, PyObject* b)
 
 
+cdef str TOPIC_FIELD_NAME
+cdef tuple EMPTY_ARGS
+cdef dict EMPTY_KWARGS
+
+
 cdef class MessagePayload:
     cdef evt_message_payload* header
     cdef readonly bint owner

@@ -69,7 +69,10 @@ from .c_event cimport (
     c_evt_hook_register_callback,
     c_evt_hook_pop_callback,
     c_evt_hook_invoke,
-    evt_hook_ret_code,
+)
+
+from .c_ret_code cimport (
+    evt_ret_code,
 )
 
 from .c_engine cimport (
@@ -162,7 +165,7 @@ __all__ = [
     'c_evt_hook_register_callback',
     'c_evt_hook_pop_callback',
     'c_evt_hook_invoke',
-    'evt_hook_ret_code',
+    'evt_ret_code',
 
     'DEFAULT_MQ_CAPACITY',
     'DEFAULT_MQ_SPIN_LIMIT',

@@ -178,7 +178,7 @@ cdef class AllocatorTestToolkit:
         }
 
     @staticmethod
-    def is_shm_available() -> bint:
+    def is_shm_available():
         """Whether the shared-memory allocator protocol is configured."""
         return EE_SHM_ALLOCATOR != NULL
 

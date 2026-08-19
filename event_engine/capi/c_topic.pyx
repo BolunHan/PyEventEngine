@@ -403,7 +403,7 @@ cdef class TopicMatchResult:
         return out
 
     property length:
-        def __get__(self) -> size_t:
+        def __get__(self):
             if not self.header:
                 raise RuntimeError('Not initialized!')
             cdef size_t i = 0
@@ -414,7 +414,7 @@ cdef class TopicMatchResult:
             return i
 
     property matched:
-        def __get__(self) -> bint:
+        def __get__(self):
             if not self.header:
                 raise RuntimeError('Not initialized!')
 
@@ -714,7 +714,7 @@ cdef class Topic:
                 raise ValueError(f'Failed to assign topic "{value}", check if syntax is correct!')
 
     property is_exact:
-        def __get__(self) -> bint:
+        def __get__(self):
             if not self.header:
                 raise RuntimeError('Not initialized!')
             return self.header.is_exact
@@ -740,7 +740,7 @@ cdef class TopicTestToolkit:
     """
 
     @staticmethod
-    def get_n_parts(Topic topic) -> size_t:
+    def get_n_parts(Topic topic):
         """Number of parts in the topic's C part chain."""
         return topic.header.n
 
@@ -750,7 +750,7 @@ cdef class TopicTestToolkit:
         return topic.header.hash
 
     @staticmethod
-    def get_is_exact(Topic topic) -> bint:
+    def get_is_exact(Topic topic):
         """C-level is_exact flag."""
         return topic.header.is_exact
 
@@ -774,7 +774,7 @@ cdef class TopicTestToolkit:
         raise IndexError(f'Index {idx} out of range!')
 
     @staticmethod
-    def get_part_chain_len(TopicPart part) -> size_t:
+    def get_part_chain_len(TopicPart part):
         """Length of the C linked chain starting at ``part`` (inclusive)."""
         cdef evt_topic_part_variant* node = part.header
         cdef size_t n = 0
@@ -794,12 +794,12 @@ cdef class TopicTestToolkit:
         return list(part.options())
 
     @staticmethod
-    def get_range_num_options(TopicPartRange part) -> size_t:
+    def get_range_num_options(TopicPartRange part):
         """Number of options stored on a range part."""
         return part.header.range.num_options
 
     @staticmethod
-    def get_internal_map_size() -> size_t:
+    def get_internal_map_size():
         """Number of entries in the global internal topic map."""
         cdef bytemap_entry* entry = GLOBAL_INTERNAL_MAP.first
         cdef size_t n = 0
@@ -809,7 +809,7 @@ cdef class TopicTestToolkit:
         return n
 
     @staticmethod
-    def get_internal_map_has(str key) -> bint:
+    def get_internal_map_has(str key):
         """Whether the global internal map contains ``key``."""
         cdef Py_ssize_t key_length
         cdef const char* key_ptr = PyUnicode_AsUTF8AndSize(key, &key_length)

@@ -70,12 +70,6 @@ cdef extern from "event_engine/capi/c_event.h":
         evt_hook_watcher_fn fn
         void* user_data
 
-    ctypedef enum evt_hook_ret_code:
-        EVT_HOOK_OK
-        EVT_HOOK_ERR_INVALID_INPUT
-        EVT_HOOK_ERR_OOM
-        EVT_HOOK_ERR_DUPLICATE
-
     ctypedef struct evt_hook:
         evt_topic* topic
         evt_callback* callbacks

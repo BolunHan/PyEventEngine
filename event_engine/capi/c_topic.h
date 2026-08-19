@@ -1,5 +1,5 @@
-#ifndef C_TOPIC_H
-#define C_TOPIC_H
+#ifndef C_EVENTENGINE_TOPIC_H
+#define C_EVENTENGINE_TOPIC_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -16,6 +16,8 @@
 #include <cbase/allocator_protocol/c_allocator_protocol.h>
 #include <cbase/bytemap/c_bytemap.h>
 #include <cbase/bytemap/xxh3.h>
+
+#include <event_engine/capi/c_ret_code.h>
 
 #ifndef DEFAULT_TOPIC_SEP
 #define DEFAULT_TOPIC_SEP '.'
@@ -160,7 +162,7 @@ static inline void c_topic_free(evt_topic* topic);
  * @param topic The evt_topic to internalize.
  * @param key The topic key string.
  * @param key_len The length of the key string.
- * @return 0 on success, -1 on failure.
+ * @return EVT_RET_OK on success, error code otherwise.
  */
 static inline int c_topic_internalize(evt_topic* topic, const char* key, size_t key_len);
 
@@ -173,7 +175,7 @@ static inline int c_topic_internalize(evt_topic* topic, const char* key, size_t 
  * @param s The part string.
  * @param len The length of the part string. If 0, the length is determined using strlen.
  * @param ttype The evt_topic_type of the part.
- * @return 0 on success, -1 on failure.
+ * @return EVT_RET_OK on success, error code otherwise.
  */
 static inline int c_topic_append(evt_topic* topic, const char* s, size_t len, evt_topic_type ttype);
 
@@ -185,7 +187,7 @@ static inline int c_topic_append(evt_topic* topic, const char* s, size_t len, ev
  * @param topic The evt_topic to populate.
  * @param key The topic key string.
  * @param key_len The length of the key string. If 0, the length is determined using strlen.
- * @return 0 on success, -1 on failure.
+ * @return EVT_RET_OK on success, error code otherwise.
  */
 static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_len);
 
@@ -196,7 +198,7 @@ static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_le
  * @param topic The evt_topic to assign to.
  * @param key The new topic key string.
  * @param key_len The length of the key string. If 0, the length is determined using strlen.
- * @return 0 on success, -1 on failure.
+ * @return EVT_RET_OK on success, error code otherwise.
  */
 static inline int c_topic_assign(evt_topic* topic, const char* key, size_t key_len);
 
@@ -205,7 +207,7 @@ static inline int c_topic_assign(evt_topic* topic, const char* key, size_t key_l
  * Useful after manual modifications to the parts.
  *
  * @param topic The evt_topic to update.
- * @return 0 on success, -1 on failure.
+ * @return EVT_RET_OK on success, error code otherwise.
  */
 static inline int c_topic_update_literal(evt_topic* topic);
 
@@ -276,14 +278,14 @@ static inline evt_topic* c_topic_new(const char* key, size_t key_len, allocator_
     // If no key provided, return empty topic and not internalized
     if (!key || key_len == 0) return topic;
 
-    if (c_topic_parse(topic, key, key_len) != 0) {
+    if (c_topic_parse(topic, key, key_len) != EVT_RET_OK) {
         c_topic_free(topic);
         topic = NULL;
         return NULL;
     }
 
     // Assign and internalize key
-    if (c_topic_internalize(topic, key, key_len) != 0) {
+    if (c_topic_internalize(topic, key, key_len) != EVT_RET_OK) {
         c_topic_free(topic);
         topic = NULL;
     }
@@ -350,10 +352,10 @@ static inline void c_topic_free(evt_topic* topic) {
 }
 
 static inline int c_topic_internalize(evt_topic* topic, const char* key, size_t key_len) {
-    if (!topic || !key) return -1;
+    if (!topic || !key) return EVT_RET_ERR_INVALID_INPUT;
 
     allocator_protocol* allocator = c_ap_protocol_from_ptr(topic);
-    int                 ret_code = -1;
+    int                 ret_code = EVT_RET_ERR_OOM;
 
     // Step 1: Get global internal map
     if (!GLOBAL_INTERNAL_MAP) {
@@ -384,19 +386,19 @@ static inline int c_topic_internalize(evt_topic* topic, const char* key, size_t 
     topic->hash = entry->hash;
 
     // Already internalized
-    ret_code = 0;
+    ret_code = EVT_RET_OK;
 
 exit:
     return ret_code;
 }
 
 static inline int c_topic_append(evt_topic* topic, const char* s, size_t len, evt_topic_type ttype) {
-    if (!topic || !s) return -1;
+    if (!topic || !s) return EVT_RET_ERR_INVALID_INPUT;
     if (len == 0) len = strlen(s);
-    if (!len) return -1;
+    if (!len) return EVT_RET_ERR_INVALID_INPUT;
 
     allocator_protocol* allocator = c_ap_protocol_from_ptr(topic);
-    int                 ret_code = -1;
+    int                 ret_code = EVT_RET_ERR_OOM;
     char*               internal = (char*) c_ap_alloc(len + 1, allocator);
 
     if (!internal) goto exit;
@@ -507,18 +509,18 @@ static inline int c_topic_append(evt_topic* topic, const char* s, size_t len, ev
 
     topic->n += 1;
     if (ttype != TOPIC_PART_EXACT) topic->is_exact = 0;
-    ret_code = 0;
+    ret_code = EVT_RET_OK;
 
 exit:
     return ret_code;
 }
 
 static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_len) {
-    if (!topic || !key) return -1;
+    if (!topic || !key) return EVT_RET_ERR_INVALID_INPUT;
     if (key_len == 0) key_len = strlen(key);
-    if (key_len == 0) return -1;
+    if (key_len == 0) return EVT_RET_ERR_INVALID_INPUT;
 
-    int    ret_code = -1;
+    int    ret_code = EVT_RET_ERR_INVALID_INPUT;
 
     size_t i = 0;
     while (i < key_len) {
@@ -535,7 +537,8 @@ static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_le
                     (j + 1 < key_len && key[j] == DEFAULT_PATTERN_DELIM && key[j + 1] == DEFAULT_TOPIC_SEP)) {
                     /* Found closing "/." */
                     size_t content_len = j - content_start;
-                    if (c_topic_append(topic, key + content_start, content_len, TOPIC_PART_PATTERN) != 0) {
+                    ret_code = c_topic_append(topic, key + content_start, content_len, TOPIC_PART_PATTERN);
+                    if (ret_code != EVT_RET_OK) {
                         goto exit;
                     }
                     i = j + 2; /* advance past "/." */
@@ -546,6 +549,7 @@ static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_le
             }
 
             if (!found_close) {
+                ret_code = EVT_RET_ERR_INVALID_INPUT;
                 goto exit; /* unclosed pattern */
             }
             continue;
@@ -574,22 +578,26 @@ static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_le
 
             if (token_len >= 2 &&
                 tok[0] == DEFAULT_WILDCARD_MARKER) {
-                if (c_topic_append(topic, tok + 1, token_len - 1, TOPIC_PART_ANY) != 0) {
+                ret_code = c_topic_append(topic, tok + 1, token_len - 1, TOPIC_PART_ANY);
+                if (ret_code != EVT_RET_OK) {
                     goto exit;
                 }
             }
             else if (token_len >= 3 && tok[0] == DEFAULT_WILDCARD_BRACKETS[0] && tok[token_len - 1] == DEFAULT_WILDCARD_BRACKETS[1]) {
-                if (c_topic_append(topic, tok + 1, token_len - 2, TOPIC_PART_ANY) != 0) {
+                ret_code = c_topic_append(topic, tok + 1, token_len - 2, TOPIC_PART_ANY);
+                if (ret_code != EVT_RET_OK) {
                     goto exit;
                 }
             }
             else if (token_len >= 3 && tok[0] == DEFAULT_RANGE_BRACKETS[0] && tok[token_len - 1] == DEFAULT_RANGE_BRACKETS[1]) {
-                if (c_topic_append(topic, tok + 1, token_len - 2, TOPIC_PART_RANGE) != 0) {
+                ret_code = c_topic_append(topic, tok + 1, token_len - 2, TOPIC_PART_RANGE);
+                if (ret_code != EVT_RET_OK) {
                     goto exit;
                 }
             }
             else {
-                if (c_topic_append(topic, tok, token_len, TOPIC_PART_EXACT) != 0) {
+                ret_code = c_topic_append(topic, tok, token_len, TOPIC_PART_EXACT);
+                if (ret_code != EVT_RET_OK) {
                     goto exit;
                 }
             }
@@ -603,16 +611,16 @@ static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_le
             /* else: leave i at '.' so next loop sees "./" */
         }
     }
-    ret_code = 0;
+    ret_code = EVT_RET_OK;
 
 exit:
     return ret_code;
 }
 
 static inline int c_topic_assign(evt_topic* topic, const char* key, size_t key_len) {
-    if (!topic || !key) return -1;
+    if (!topic || !key) return EVT_RET_ERR_INVALID_INPUT;
 
-    int ret_code = -1;
+    int ret_code = EVT_RET_ERR_INVALID_INPUT;
 
     // Free existing parts
     c_topic_clear(topic);
@@ -624,21 +632,23 @@ static inline int c_topic_assign(evt_topic* topic, const char* key, size_t key_l
     topic->key_len = 0;
 
     // Parse new key
-    if (c_topic_parse(topic, key, key_len) != 0) goto exit;
+    ret_code = c_topic_parse(topic, key, key_len);
+    if (ret_code != EVT_RET_OK) goto exit;
 
     // Internalize new key
-    if (c_topic_internalize(topic, key, key_len) != 0) goto exit;
-    ret_code = 0;
+    ret_code = c_topic_internalize(topic, key, key_len);
+    if (ret_code != EVT_RET_OK) goto exit;
+    ret_code = EVT_RET_OK;
 
 exit:
     return ret_code;
 }
 
 static inline int c_topic_update_literal(evt_topic* topic) {
-    if (!topic) return -1;
+    if (!topic) return EVT_RET_ERR_INVALID_INPUT;
 
     allocator_protocol* allocator = c_ap_protocol_from_ptr(topic);
-    int                 ret_code = -1;
+    int                 ret_code = EVT_RET_ERR_OOM;
 
     // Reconstruct key literal from parts
     size_t                  total_len = 0;
@@ -713,14 +723,15 @@ static inline int c_topic_update_literal(evt_topic* topic) {
     key_literal[pos] = '\0';
 
     // Internalize new key, the temp key_literal must be freed afterwards
-    if (c_topic_internalize(topic, key_literal, total_len) != 0) {
+    ret_code = c_topic_internalize(topic, key_literal, total_len);
+    if (ret_code != EVT_RET_OK) {
         c_ap_free(key_literal);
         goto exit;
     }
     // c_topic_internalize will always create a copy in the global map for safety,
     // so we can free the temporary key_literal here.
     c_ap_free(key_literal);
-    ret_code = 0;
+    ret_code = EVT_RET_OK;
 
 exit:
     return ret_code;
@@ -1004,4 +1015,4 @@ static inline int c_topic_match_bool(evt_topic* topic_a, evt_topic* topic_b) {
     return 1;
 }
 
-#endif  // C_TOPIC_H
+#endif  // C_EVENTENGINE_TOPIC_H

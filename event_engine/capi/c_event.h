@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include <cbase/allocator_protocol/c_allocator_protocol.h>
+#include <event_engine/capi/c_ret_code.h>
 #include <event_engine/capi/c_topic.h>
 
 /* @brief Message payload stored in the queue
@@ -89,13 +90,6 @@ typedef struct evt_hook_watcher {
     void*               user_data;
 } evt_hook_watcher;
 
-typedef enum evt_hook_ret_code {
-    EVT_HOOK_OK = 0,
-    EVT_HOOK_ERR_INVALID_INPUT = -1,
-    EVT_HOOK_ERR_OOM = -2,
-    EVT_HOOK_ERR_DUPLICATE = -3,
-} evt_hook_ret_code;
-
 typedef struct evt_hook {
     evt_topic*        topic;
     evt_callback*     callbacks;
@@ -171,33 +165,33 @@ static inline void c_evt_hook_free(evt_hook* hook) {
 }
 
 static inline int c_evt_hook_add_watcher(evt_hook* hook, evt_hook_watcher_fn fn, void* user_data, evt_hook_watcher_type type) {
-    if (!hook || !fn) return EVT_HOOK_ERR_INVALID_INPUT;
+    if (!hook || !fn) return EVT_RET_ERR_INVALID_INPUT;
 
     if (type == EVT_HOOK_WATCHER_PRE_INVOKED) {
         const size_t      new_count = hook->n_pre_watchers + 1;
         evt_hook_watcher* grown = (evt_hook_watcher*) realloc(hook->pre_watchers, new_count * sizeof(evt_hook_watcher));
-        if (!grown) return EVT_HOOK_ERR_OOM;
+        if (!grown) return EVT_RET_ERR_OOM;
         hook->pre_watchers = grown;
         hook->pre_watchers[hook->n_pre_watchers].fn = fn;
         hook->pre_watchers[hook->n_pre_watchers].user_data = user_data;
         hook->n_pre_watchers = new_count;
-        return EVT_HOOK_OK;
+        return EVT_RET_OK;
     }
     else if (type == EVT_HOOK_WATCHER_POST_INVOKED) {
         const size_t      new_count = hook->n_post_watchers + 1;
         evt_hook_watcher* grown = (evt_hook_watcher*) realloc(hook->post_watchers, new_count * sizeof(evt_hook_watcher));
-        if (!grown) return EVT_HOOK_ERR_OOM;
+        if (!grown) return EVT_RET_ERR_OOM;
         hook->post_watchers = grown;
         hook->post_watchers[hook->n_post_watchers].fn = fn;
         hook->post_watchers[hook->n_post_watchers].user_data = user_data;
         hook->n_post_watchers = new_count;
-        return EVT_HOOK_OK;
+        return EVT_RET_OK;
     }
-    return EVT_HOOK_ERR_INVALID_INPUT;
+    return EVT_RET_ERR_INVALID_INPUT;
 }
 
 static inline int c_evt_hook_register_callback(evt_hook* hook, const void* fn, evt_callback_type ftype, void* user_data, int deduplicate) {
-    if (!hook || !fn) return EVT_HOOK_ERR_INVALID_INPUT;
+    if (!hook || !fn) return EVT_RET_ERR_INVALID_INPUT;
 
     /* Deduplication check: compare function pointer and type */
     if (hook->callbacks && deduplicate) {
@@ -240,14 +234,14 @@ static inline int c_evt_hook_register_callback(evt_hook* hook, const void* fn, e
                     break;
             }
             if (existing == fn && callback->user_data == user_data) {
-                return EVT_HOOK_ERR_DUPLICATE; /* duplicate ignored */
+                return EVT_RET_ERR_DUPLICATE; /* duplicate ignored */
             }
         }
     }
 
     const size_t  new_count = hook->n_callbacks + 1;
     evt_callback* grown = (evt_callback*) realloc(hook->callbacks, new_count * sizeof(evt_callback));
-    if (!grown) return EVT_HOOK_ERR_OOM;
+    if (!grown) return EVT_RET_ERR_OOM;
     hook->callbacks = grown;
 
     evt_callback* cb = hook->callbacks + hook->n_callbacks;
@@ -291,12 +285,12 @@ static inline int c_evt_hook_register_callback(evt_hook* hook, const void* fn, e
     }
 
     hook->n_callbacks = new_count;
-    return EVT_HOOK_OK;
+    return EVT_RET_OK;
 }
 
 static inline int c_evt_hook_pop_callback(evt_hook* hook, size_t idx) {
-    if (!hook) return EVT_HOOK_ERR_INVALID_INPUT;
-    if (idx >= hook->n_callbacks) return EVT_HOOK_ERR_INVALID_INPUT;
+    if (!hook) return EVT_RET_ERR_INVALID_INPUT;
+    if (idx >= hook->n_callbacks) return EVT_RET_ERR_INVALID_INPUT;
 
     /* shift left to fill the gap */
     for (size_t i = idx + 1; i < hook->n_callbacks; ++i) {
@@ -315,11 +309,11 @@ static inline int c_evt_hook_pop_callback(evt_hook* hook, size_t idx) {
         if (shrunk) hook->callbacks = shrunk;
     }
 
-    return EVT_HOOK_OK;
+    return EVT_RET_OK;
 }
 
 static inline int c_evt_hook_invoke(evt_hook* hook, evt_message_payload* payload) {
-    if (!hook) return EVT_HOOK_ERR_INVALID_INPUT;
+    if (!hook) return EVT_RET_ERR_INVALID_INPUT;
 
     evt_hook_watcher* watcher = hook->pre_watchers;
     for (size_t i = 0; i < hook->n_pre_watchers; ++i) {
@@ -336,7 +330,7 @@ static inline int c_evt_hook_invoke(evt_hook* hook, evt_message_payload* payload
         watcher->fn(hook, EVT_HOOK_WATCHER_POST_INVOKED, payload, watcher->user_data);
         watcher++;
     }
-    return EVT_HOOK_OK;
+    return EVT_RET_OK;
 }
 
 #endif  // C_EVENTENGINE_EVENT_H

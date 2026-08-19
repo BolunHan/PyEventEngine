@@ -18,6 +18,7 @@
 
 #include <cbase/allocator_protocol/c_allocator_protocol.h>
 #include <event_engine/capi/c_event.h>
+#include <event_engine/capi/c_ret_code.h>
 #include <event_engine/capi/c_topic.h>
 
 /* Default capacity if not provided elsewhere */
@@ -74,7 +75,7 @@ static inline message_queue* c_mq_new(size_t capacity, evt_topic* topic, allocat
 /**
  * @brief Destroy a message queue.
  * @param mq pointer to message_queue to destroy
- * @return 0 on success, -1 on invalid argument
+ * @return EVT_RET_OK on success, EVT_RET_ERR_INVALID_INPUT on invalid argument
  *
  * Note: does not free evt_message_payload pointers still present in the buffer;
  * caller is responsible for draining/freeing them before calling.
@@ -85,7 +86,8 @@ static inline int c_mq_free(message_queue* mq);
  * @brief Non-blocking put into the queue.
  * @param mq queue pointer
  * @param msg pointer to evt_message_payload (caller-owned)
- * @return 0 on success, -1 on full/invalid args
+ * @return EVT_RET_OK on success, EVT_RET_ERR_FULL when full,
+ *         EVT_RET_ERR_INVALID_INPUT on invalid args
  */
 static inline int c_mq_put(message_queue* mq, evt_message_payload* msg);
 
@@ -93,7 +95,8 @@ static inline int c_mq_put(message_queue* mq, evt_message_payload* msg);
  * @brief Non-blocking get from the queue.
  * @param mq queue pointer
  * @param out_msg out parameter to receive evt_message_payload*
- * @return 0 on success, -1 on empty/invalid args
+ * @return EVT_RET_OK on success, EVT_RET_ERR_EMPTY when empty,
+ *         EVT_RET_ERR_INVALID_INPUT on invalid args
  */
 static inline int c_mq_get(message_queue* mq, evt_message_payload** out_msg);
 
@@ -102,7 +105,8 @@ static inline int c_mq_get(message_queue* mq, evt_message_payload** out_msg);
  * @param mq queue pointer
  * @param msg pointer to evt_message_payload
  * @param timeout_seconds maximum seconds to wait (<=0 means wait forever)
- * @return 0 on success, -1 on timeout/invalid args or error
+ * @return EVT_RET_OK on success, EVT_RET_ERR_TIMEOUT on timeout or wait failure,
+ *         EVT_RET_ERR_INVALID_INPUT on invalid args
  */
 static inline int c_mq_put_await(message_queue* mq, evt_message_payload* msg, double timeout_seconds);
 
@@ -111,7 +115,8 @@ static inline int c_mq_put_await(message_queue* mq, evt_message_payload* msg, do
  * @param mq queue pointer
  * @param out_msg out parameter to receive evt_message_payload*
  * @param timeout_seconds maximum seconds to wait (<=0 means wait forever)
- * @return 0 on success, -1 on timeout/invalid args or error
+ * @return EVT_RET_OK on success, EVT_RET_ERR_TIMEOUT on timeout or wait failure,
+ *         EVT_RET_ERR_INVALID_INPUT on invalid args
  */
 static inline int c_mq_get_await(message_queue* mq, evt_message_payload** out_msg, double timeout_seconds);
 
@@ -120,7 +125,8 @@ static inline int c_mq_get_await(message_queue* mq, evt_message_payload** out_ms
  * @param mq queue pointer
  * @param msg pointer to evt_message_payload
  * @param max_spin maximum spin attempts before giving up
- * @return 0 on success, -1 on full/invalid args or if max_spin reached
+ * @return EVT_RET_OK on success, EVT_RET_ERR_FULL when full or max_spin reached,
+ *         EVT_RET_ERR_INVALID_INPUT on invalid args
  */
 static inline int c_mq_put_busy(message_queue* mq, evt_message_payload* msg, size_t max_spin);
 
@@ -129,7 +135,8 @@ static inline int c_mq_put_busy(message_queue* mq, evt_message_payload* msg, siz
  * @param mq queue pointer
  * @param out_msg out parameter to receive evt_message_payload*
  * @param max_spin maximum spin attempts before giving up
- * @return 0 on success, -1 on empty/invalid args or if max_spin reached
+ * @return EVT_RET_OK on success, EVT_RET_ERR_EMPTY when empty or max_spin reached,
+ *         EVT_RET_ERR_INVALID_INPUT on invalid args
  */
 static inline int c_mq_get_busy(message_queue* mq, evt_message_payload** out_msg, size_t max_spin);
 
@@ -138,7 +145,8 @@ static inline int c_mq_get_busy(message_queue* mq, evt_message_payload** out_msg
  * @param mq queue pointer
  * @param msg pointer to evt_message_payload
  * @param timeout_seconds maximum seconds to wait in blocking phase (<=0 means wait forever)
- * @return 0 on success, -1 on timeout/invalid args or error
+ * @return EVT_RET_OK on success, EVT_RET_ERR_TIMEOUT on timeout or wait failure,
+ *         EVT_RET_ERR_INVALID_INPUT on invalid args
  */
 static inline int c_mq_put_hybrid(message_queue* mq, evt_message_payload* msg, size_t max_spin, double timeout_seconds);
 
@@ -147,7 +155,8 @@ static inline int c_mq_put_hybrid(message_queue* mq, evt_message_payload* msg, s
  * @param mq queue pointer
  * @param out_msg out parameter to receive evt_message_payload*
  * @param timeout_seconds maximum seconds to wait in blocking phase (<=0 means wait forever)
- * @return 0 on success, -1 on timeout/invalid args or error
+ * @return EVT_RET_OK on success, EVT_RET_ERR_TIMEOUT on timeout or wait failure,
+ *         EVT_RET_ERR_INVALID_INPUT on invalid args
  */
 static inline int c_mq_get_hybrid(message_queue* mq, evt_message_payload** out_msg, size_t max_spin, double timeout_seconds);
 
@@ -204,7 +213,7 @@ static inline message_queue* c_mq_new(size_t capacity, evt_topic* topic, allocat
 
 /* Destroy queue. Does not free message payloads pointed to by entries. */
 static inline int c_mq_free(message_queue* mq) {
-    if (!mq) return -1;
+    if (!mq) return EVT_RET_ERR_INVALID_INPUT;
 
     pthread_mutex_lock(&mq->mutex);
     pthread_mutex_unlock(&mq->mutex);
@@ -213,35 +222,35 @@ static inline int c_mq_free(message_queue* mq) {
     pthread_mutex_destroy(&mq->mutex);
 
     c_ap_free(mq);
-    return 0;
+    return EVT_RET_OK;
 }
 
-/* Non-blocking put. Returns 0 on success, -1 on full/invalid args. */
+/* Non-blocking put. */
 static inline int c_mq_put(message_queue* mq, evt_message_payload* msg) {
-    if (!mq || !msg) return -1;
-    int ret = -1;
+    if (!mq || !msg) return EVT_RET_ERR_INVALID_INPUT;
+    int ret = EVT_RET_ERR_FULL;
     pthread_mutex_lock(&mq->mutex);
     if (mq->count == mq->capacity) {
-        ret = -1; /* full */
+        ret = EVT_RET_ERR_FULL; /* full */
     }
     else {
         mq->buf[mq->tail] = msg;
         mq->tail = (mq->tail + 1) % mq->capacity;
         mq->count++;
         pthread_cond_signal(&mq->not_empty);
-        ret = 0;
+        ret = EVT_RET_OK;
     }
     pthread_mutex_unlock(&mq->mutex);
     return ret;
 }
 
-/* Non-blocking get. On success *out_msg is set and returns 0. Returns -1 if empty/invalid args. */
+/* Non-blocking get. On success *out_msg is set. */
 static inline int c_mq_get(message_queue* mq, evt_message_payload** out_msg) {
-    if (!mq || !out_msg) return -1;
-    int ret = -1;
+    if (!mq || !out_msg) return EVT_RET_ERR_INVALID_INPUT;
+    int ret = EVT_RET_ERR_EMPTY;
     pthread_mutex_lock(&mq->mutex);
     if (mq->count == 0) {
-        ret = -1; /* empty */
+        ret = EVT_RET_ERR_EMPTY; /* empty */
     }
     else {
         *out_msg = mq->buf[mq->head];
@@ -249,15 +258,15 @@ static inline int c_mq_get(message_queue* mq, evt_message_payload** out_msg) {
         mq->head = (mq->head + 1) % mq->capacity;
         mq->count--;
         pthread_cond_signal(&mq->not_full);
-        ret = 0;
+        ret = EVT_RET_OK;
     }
     pthread_mutex_unlock(&mq->mutex);
     return ret;
 }
 
-/* Blocking put. Waits until space is available. Returns 0 on success, -1 on error. */
+/* Blocking put. Waits until space is available. */
 static inline int c_mq_put_await(message_queue* mq, evt_message_payload* msg, double timeout_seconds) {
-    if (!mq || !msg) return -1;
+    if (!mq || !msg) return EVT_RET_ERR_INVALID_INPUT;
     pthread_mutex_lock(&mq->mutex);
     struct timespec ts;
     if (timeout_seconds > 0) {
@@ -269,11 +278,11 @@ static inline int c_mq_put_await(message_queue* mq, evt_message_payload* msg, do
             int rc = pthread_cond_timedwait(&mq->not_full, &mq->mutex, &ts);
             if (rc == ETIMEDOUT) {
                 pthread_mutex_unlock(&mq->mutex);
-                return -1;
+                return EVT_RET_ERR_TIMEOUT;
             }
             if (rc != 0 && rc != EINTR) {
                 pthread_mutex_unlock(&mq->mutex);
-                return -1;
+                return EVT_RET_ERR_TIMEOUT;
             }
         }
         else {
@@ -285,12 +294,12 @@ static inline int c_mq_put_await(message_queue* mq, evt_message_payload* msg, do
     mq->count++;
     pthread_cond_signal(&mq->not_empty);
     pthread_mutex_unlock(&mq->mutex);
-    return 0;
+    return EVT_RET_OK;
 }
 
-/* Blocking get. Waits until an item is available. Returns 0 on success, -1 on error. */
+/* Blocking get. Waits until an item is available. */
 static inline int c_mq_get_await(message_queue* mq, evt_message_payload** out_msg, double timeout_seconds) {
-    if (!mq || !out_msg) return -1;
+    if (!mq || !out_msg) return EVT_RET_ERR_INVALID_INPUT;
     pthread_mutex_lock(&mq->mutex);
     struct timespec ts;
     if (timeout_seconds > 0) {
@@ -302,11 +311,11 @@ static inline int c_mq_get_await(message_queue* mq, evt_message_payload** out_ms
             int rc = pthread_cond_timedwait(&mq->not_empty, &mq->mutex, &ts);
             if (rc == ETIMEDOUT) {
                 pthread_mutex_unlock(&mq->mutex);
-                return -1;
+                return EVT_RET_ERR_TIMEOUT;
             }
             if (rc != 0 && rc != EINTR) {
                 pthread_mutex_unlock(&mq->mutex);
-                return -1;
+                return EVT_RET_ERR_TIMEOUT;
             }
         }
         else {
@@ -319,12 +328,12 @@ static inline int c_mq_get_await(message_queue* mq, evt_message_payload** out_ms
     mq->count--;
     pthread_cond_signal(&mq->not_full);
     pthread_mutex_unlock(&mq->mutex);
-    return 0;
+    return EVT_RET_OK;
 }
 
 /* Busy-looping put (spin up to max_spin times until space). */
 static inline int c_mq_put_busy(message_queue* mq, evt_message_payload* msg, size_t max_spin) {
-    if (!mq || !msg) return -1;
+    if (!mq || !msg) return EVT_RET_ERR_INVALID_INPUT;
     for (size_t i = 0; i < max_spin; ++i) {
         pthread_mutex_lock(&mq->mutex);
         if (mq->count < mq->capacity) {
@@ -333,17 +342,17 @@ static inline int c_mq_put_busy(message_queue* mq, evt_message_payload* msg, siz
             mq->count++;
             pthread_cond_signal(&mq->not_empty);
             pthread_mutex_unlock(&mq->mutex);
-            return 0;
+            return EVT_RET_OK;
         }
         pthread_mutex_unlock(&mq->mutex);
         sched_yield();
     }
-    return -1;
+    return EVT_RET_ERR_FULL;
 }
 
 /* Busy-looping get (spin up to max_spin times until item). */
 static inline int c_mq_get_busy(message_queue* mq, evt_message_payload** out_msg, size_t max_spin) {
-    if (!mq || !out_msg) return -1;
+    if (!mq || !out_msg) return EVT_RET_ERR_INVALID_INPUT;
     for (size_t i = 0; i < max_spin; ++i) {
         pthread_mutex_lock(&mq->mutex);
         if (mq->count > 0) {
@@ -353,19 +362,19 @@ static inline int c_mq_get_busy(message_queue* mq, evt_message_payload** out_msg
             mq->count--;
             pthread_cond_signal(&mq->not_full);
             pthread_mutex_unlock(&mq->mutex);
-            return 0;
+            return EVT_RET_OK;
         }
         pthread_mutex_unlock(&mq->mutex);
         sched_yield();
     }
-    return -1;
+    return EVT_RET_ERR_EMPTY;
 }
 
 /* Hybrid put: busy-spin for max_spin iterations then block */
 static inline int c_mq_put_hybrid(message_queue* mq, evt_message_payload* msg, size_t max_spin, double timeout_seconds) {
-    if (!mq || !msg) return -1;
-    if (c_mq_put_busy(mq, msg, max_spin) == 0) {
-        return 0;
+    if (!mq || !msg) return EVT_RET_ERR_INVALID_INPUT;
+    if (c_mq_put_busy(mq, msg, max_spin) == EVT_RET_OK) {
+        return EVT_RET_OK;
     }
     // After spinning, fallback to blocking with timeout (timeout does not include spin time)
     return c_mq_put_await(mq, msg, timeout_seconds);
@@ -373,9 +382,9 @@ static inline int c_mq_put_hybrid(message_queue* mq, evt_message_payload* msg, s
 
 /* Hybrid get: busy-spin for max_spin iterations then block */
 static inline int c_mq_get_hybrid(message_queue* mq, evt_message_payload** out_msg, size_t max_spin, double timeout_seconds) {
-    if (!mq || !out_msg) return -1;
-    if (c_mq_get_busy(mq, out_msg, max_spin) == 0) {
-        return 0;
+    if (!mq || !out_msg) return EVT_RET_ERR_INVALID_INPUT;
+    if (c_mq_get_busy(mq, out_msg, max_spin) == EVT_RET_OK) {
+        return EVT_RET_OK;
     }
     // After spinning, fallback to blocking with timeout (timeout does not include spin time)
     return c_mq_get_await(mq, out_msg, timeout_seconds);

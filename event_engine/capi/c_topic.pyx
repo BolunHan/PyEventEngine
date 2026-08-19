@@ -10,6 +10,7 @@ from cbase.allocator_protocol.c_allocator_protocol cimport c_ap_alloc, c_ap_free
 from cbase.bytemap.c_bytemap cimport bytemap_entry, c_bytemap_entry_value, c_bytemap_get, c_bytemap_new
 
 from event_engine.base.c_allocator_protocol cimport EE_DEFAULT_ALLOCATOR, EE_HEAP_ALLOCATOR
+from event_engine.capi.c_ret_code cimport evt_ret_code
 
 
 class TopicType(enum.IntEnum):
@@ -710,7 +711,7 @@ cdef class Topic:
             cdef Py_ssize_t topic_length
             cdef const char* topic_ptr = PyUnicode_AsUTF8AndSize(value, &topic_length)
             cdef int assign_ret = c_topic_assign(self.header, topic_ptr, topic_length)
-            if assign_ret:
+            if assign_ret != evt_ret_code.EVT_RET_OK:
                 raise ValueError(f'Failed to assign topic "{value}", check if syntax is correct!')
 
     property is_exact:

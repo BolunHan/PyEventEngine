@@ -9,6 +9,7 @@ from cpython.unicode cimport PyUnicode_FromStringAndSize
 from cbase.bytemap.c_bytemap cimport bytemap_ret_code, bytemap, bytemap_entry, c_bytemap_new, c_bytemap_clear, c_bytemap_free, c_bytemap_get, c_bytemap_set, c_bytemap_pop, c_bytemap_entry_value
 
 from .c_event cimport EMPTY_ARGS, MessagePayload, c_evt_hook_invoke, c_evt_pypayload_init_constants, c_evt_pypayload_free, c_evt_pypayload_new, evt_py_topic, evt_py_payload
+from .c_ret_code cimport evt_ret_code
 from .c_topic cimport Topic, c_topic_match_bool
 from ..base.c_allocator_protocol cimport EE_HEAP_ALLOCATOR
 from ..base import LOGGER
@@ -74,7 +75,7 @@ cdef class EventEngine:
             # Step 1: Await message
             with nogil:
                 ret_code = c_mq_get_hybrid(mq, &msg, DEFAULT_MQ_SPIN_LIMIT, DEFAULT_MQ_TIMEOUT_SECONDS)
-                if ret_code != 0:
+                if ret_code != evt_ret_code.EVT_RET_OK:
                     continue
 
             # Trigger message callbacks
@@ -91,7 +92,7 @@ cdef class EventEngine:
         else:
             ret_code = c_mq_get(self.mq, &msg)
 
-        if ret_code != 0:
+        if ret_code != evt_ret_code.EVT_RET_OK:
             return NULL
         return msg
 
@@ -118,7 +119,7 @@ cdef class EventEngine:
                 ret_code = c_mq_put(self.mq, payload)
 
         # Step 4: Handle failure case (undo increfs and free payload)
-        if not ret_code:
+        if ret_code == evt_ret_code.EVT_RET_OK:
             return ret_code
 
         self.seq_id -= 1

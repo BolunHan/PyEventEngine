@@ -1,5 +1,5 @@
-#ifndef C_ENGINE_H
-#define C_ENGINE_H
+#ifndef C_EVENTENGINE_MQUEUE_H
+#define C_EVENTENGINE_MQUEUE_H
 
 #include <errno.h>
 #include <stdatomic.h>
@@ -390,4 +390,4 @@ static inline size_t c_mq_occupied(message_queue* mq) {
     return n;
 }
 
-#endif /* C_ENGINE_H */
+#endif  // C_EVENTENGINE_MQUEUE_H

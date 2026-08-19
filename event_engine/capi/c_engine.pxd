@@ -8,7 +8,7 @@ from .c_event cimport EventHook, evt_message_payload
 from .c_topic cimport Topic, evt_topic
 
 
-cdef extern from "event_engine/capi/c_engine.h":
+cdef extern from "event_engine/capi/c_mqueue.h":
     const size_t DEFAULT_MQ_CAPACITY
     const size_t DEFAULT_MQ_SPIN_LIMIT
     const double DEFAULT_MQ_TIMEOUT_SECONDS

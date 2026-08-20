@@ -211,38 +211,45 @@ cython_extension.extend([
         include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
+    Extension(
+        name="event_engine.capi.c_engine_ex",
+        sources=["event_engine/capi/c_engine_ex.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
 ])
 
-BuildExtWithConfig.remove_pxd()
+if __name__ == "__main__":
+    BuildExtWithConfig.remove_pxd()
 
-try:
-    ext_modules.extend(
-        cythonize(
-            cython_extension,
-            annotate=WITH_ANNOTATION,
-            compiler_directives={
-                "language_level": "3",
-                'embedsignature': True
-            },
-            force="--force" in sys.argv,
-            nthreads=N_THREADS,
+    try:
+        ext_modules.extend(
+            cythonize(
+                cython_extension,
+                annotate=WITH_ANNOTATION,
+                compiler_directives={
+                    "language_level": "3",
+                    'embedsignature': True
+                },
+                force="--force" in sys.argv,
+                nthreads=N_THREADS,
+            )
         )
+    finally:
+        BuildExtWithConfig.restore_pxd()
+
+    # =============================
+    # Define C Extensions
+    # =============================
+
+    ext_modules.extend(c_extensions)
+
+    # =============================
+    # Setup Function
+    # =============================
+
+    setup(
+        name=PACKAGE_NAME,
+        ext_modules=ext_modules,
+        cmdclass={"build_ext": BuildExtWithConfig}
     )
-finally:
-    BuildExtWithConfig.restore_pxd()
-
-# =============================
-# Define C Extensions
-# =============================
-
-ext_modules.extend(c_extensions)
-
-# =============================
-# Setup Function
-# =============================
-
-setup(
-    name=PACKAGE_NAME,
-    ext_modules=ext_modules,
-    cmdclass={"build_ext": BuildExtWithConfig}
-)

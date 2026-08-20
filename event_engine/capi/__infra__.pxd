@@ -186,3 +186,27 @@ __all__ = [
 
     'EventEngine', 'EventEngineEx'
 ]
+
+from .c_engine_ex cimport (
+    evt_engine_task,
+    evt_engine_timer_ctx,
+    evt_engine,
+
+    c_evt_engine_new,
+    c_evt_engine_free,
+    c_evt_engine_get,
+    c_evt_engine_trigger,
+    c_evt_engine_is_active,
+    c_evt_engine_set_active,
+    c_evt_engine_get_seq_id,
+    c_evt_engine_register_timer,
+    c_evt_engine_unregister_timer,
+    c_evt_engine_set_timer_active,
+    c_evt_engine_loop_gil,
+    c_evt_engine_publish_gil,
+
+    C_EVENT_ENGINE, EVENT_ENGINE,
+
+    EventHookMap,
+    EventEngineEx as CEventEngineEx,
+)

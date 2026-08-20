@@ -387,7 +387,8 @@ static inline int c_mq_get_hybrid(message_queue* mq, evt_message_payload** out_m
         return EVT_RET_OK;
     }
     // After spinning, fallback to blocking with timeout (timeout does not include spin time)
-    return c_mq_get_await(mq, out_msg, timeout_seconds);
+    int ret_code = c_mq_get_await(mq, out_msg, timeout_seconds);
+    return ret_code;
 }
 
 /* Get current occupied count */

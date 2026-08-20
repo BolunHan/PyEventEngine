@@ -8,17 +8,22 @@
 #include <event_engine/capi/c_ret_code.h>
 #include <event_engine/capi/c_topic.h>
 
+typedef struct evt_message_payload evt_message_payload;
+
+typedef void (*evt_payload_dealloc)(evt_message_payload* payload);
+
 /* @brief Message payload stored in the queue
  *
  * This structure holds the message data along with optional
  * metadata such as topic pointer, Python-compatible args/kwargs,
  * and a sequence identifier.
  */
-typedef struct evt_message_payload {
-    void*      args;    // optional user data pointer
-    evt_topic* topic;   // optional Topic borrowed pointer
-    uint64_t   seq_id;  // optional sequence id (0 if unused)
-} evt_message_payload;
+struct evt_message_payload {
+    void*               args;        // optional user data pointer
+    evt_topic*          topic;       // optional Topic borrowed pointer
+    uint64_t            seq_id;      // optional sequence id (0 if unused)
+    evt_payload_dealloc fn_dealloc;  // optional deallocation function for the payload
+};
 
 typedef void (*evt_callback_bare)(void);
 

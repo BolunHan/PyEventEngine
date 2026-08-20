@@ -174,6 +174,7 @@ static inline evt_message_payload* c_evt_pypayload_new(evt_py_topic* py_topic, P
 
     c_payload->args = py_payload;
     c_payload->topic = py_topic->header;
+    c_payload->fn_dealloc = c_evt_pypayload_free;
 
     return c_payload;
 }

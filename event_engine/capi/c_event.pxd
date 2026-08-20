@@ -16,10 +16,13 @@ cdef extern from "Python.h":
 
 
 cdef extern from "event_engine/capi/c_event.h":
+    ctypedef void (*evt_payload_dealloc)(evt_message_payload* payload)
+
     ctypedef struct evt_message_payload:
         void* args
         evt_topic* topic
         uint64_t seq_id
+        evt_payload_dealloc fn_dealloc
 
     ctypedef void (*evt_callback_bare)()
     ctypedef void (*evt_callback_with_args)(void* args)

@@ -16,6 +16,10 @@ from ..base import LOGGER
 
 LOGGER = LOGGER.getChild('Engine')
 
+# Process-wide default engine C pointer. Set when the default EVENT_ENGINE
+# singleton is created; declared in c_engine_ex.pxd for downstream cimport.
+cdef evt_engine* C_EVENT_ENGINE = NULL
+
 
 class Full(Exception):
     pass
@@ -58,39 +62,39 @@ cdef class EventEngineEx:
     def __cinit__(self, size_t capacity=DEFAULT_MQ_CAPACITY, object logger=None):
         self.logger = LOGGER.getChild(f'EventEngineEx') if logger is None else logger
 
-        self.engine_c = c_evt_engine_new(EE_HEAP_ALLOCATOR)
-        if not self.engine_c:
+        self.header = c_evt_engine_new(EE_HEAP_ALLOCATOR)
+        if not self.header:
             raise MemoryError(f'Failed to allocate engine for {self.__class__.__name__}.')
 
         if capacity != DEFAULT_MQ_CAPACITY:
-            c_mq_free(self.engine_c.mq)
-            self.engine_c.mq = c_mq_new(capacity, NULL, EE_HEAP_ALLOCATOR)
-            if not self.engine_c.mq:
-                c_evt_engine_free(self.engine_c)
-                self.engine_c = NULL
+            c_mq_free(self.header.mq)
+            self.header.mq = c_mq_new(capacity, NULL, EE_HEAP_ALLOCATOR)
+            if not self.header.mq:
+                c_evt_engine_free(self.header)
+                self.header = NULL
                 raise MemoryError(f'Failed to allocate MessageQueue for {self.__class__.__name__}.')
 
-        self.exact_hook_map = EventHookMap.c_from_header(self.engine_c.exact_topic_hooks, False)
-        self.generic_hook_map = EventHookMap.c_from_header(self.engine_c.generic_topic_hooks, False)
+        self.exact_hook_map = EventHookMap.c_from_header(self.header.exact_topic_hooks, False)
+        self.generic_hook_map = EventHookMap.c_from_header(self.header.generic_topic_hooks, False)
         self.timer = {}
         self.timer_payloads = {}
 
     def __dealloc__(self):
-        if self.engine_c:
-            c_evt_engine_free(self.engine_c)
-            self.engine_c = NULL
+        if self.header:
+            c_evt_engine_free(self.header)
+            self.header = NULL
 
     cdef inline void c_loop(self):
-        if not self.engine_c:
+        if not self.header:
             raise RuntimeError('Not initialized!')
 
         # GIL-aware loop — runs with the GIL held; the C layer releases it
         # only around the blocking queue wait, so every dispatch runs under
         # the GIL.
-        c_evt_engine_loop_gil(self.engine_c)
+        c_evt_engine_loop_gil(self.header)
 
     cdef inline evt_message_payload* c_get(self, bint block, size_t max_spin, double timeout):
-        return c_evt_engine_get(self.engine_c, block, max_spin, timeout)
+        return c_evt_engine_get(self.header, block, max_spin, timeout)
 
     cdef inline int c_publish(self, Topic topic, tuple args, dict kwargs, bint block, size_t max_spin, double timeout):
         if not topic.header.is_exact:
@@ -108,7 +112,7 @@ cdef class EventEngineEx:
             raise MemoryError('Failed to allocate message payload')
 
         # The C engine assigns seq_id and frees the payload on failure
-        return c_evt_engine_publish_gil(self.engine_c, payload, block, max_spin, timeout)
+        return c_evt_engine_publish_gil(self.header, payload, block, max_spin, timeout)
 
     # --- Python Interfaces (Engine Core) ---
 
@@ -116,7 +120,7 @@ cdef class EventEngineEx:
         return len(self.exact_hook_map) + len(self.generic_hook_map)
 
     def __repr__(self):
-        return f'<{self.__class__.__name__} {"active" if c_evt_engine_is_active(self.engine_c) else "idle"}>(capacity={self.capacity}, timers={list(self.timer.keys())})'
+        return f'<{self.__class__.__name__} {"active" if c_evt_engine_is_active(self.header) else "idle"}>(capacity={self.capacity}, timers={list(self.timer.keys())})'
 
     def __getitem__(self, Topic topic) -> list[EventHook]:
         cdef list out = []
@@ -131,40 +135,40 @@ cdef class EventEngineEx:
         return out
 
     def activate(self):
-        c_evt_engine_set_active(self.engine_c, True)
+        c_evt_engine_set_active(self.header, True)
 
     def deactivate(self):
-        c_evt_engine_set_active(self.engine_c, False)
+        c_evt_engine_set_active(self.header, False)
 
     def run(self):
         self.c_loop()
 
     def start(self):
-        if c_evt_engine_is_active(self.engine_c):
+        if c_evt_engine_is_active(self.header):
             self.logger.warning(f'{self} already started!')
             return
-        c_evt_engine_set_active(self.engine_c, True)
+        c_evt_engine_set_active(self.header, True)
         self.engine = Thread(target=self.run, name='EventEngine')
         self.engine.start()
         self.logger.info(f'{self} started.')
 
     def stop(self) -> None:
-        if not c_evt_engine_is_active(self.engine_c):
+        if not c_evt_engine_is_active(self.header):
             self.logger.warning('EventEngine already stopped!')
             return
 
-        c_evt_engine_set_active(self.engine_c, False)
+        c_evt_engine_set_active(self.header, False)
         self.engine.join()
 
     def clear(self) -> None:
-        if c_evt_engine_is_active(self.engine_c):
+        if c_evt_engine_is_active(self.header):
             self.logger.error('EventEngine must be stopped before cleared!')
             return
 
         # Unregister the engine timer tasks and release the py payload wrappers
         cdef Topic timer_topic
         for timer_topic in list(self.timer.values()):
-            c_evt_engine_unregister_timer(self.engine_c, timer_topic.header)
+            c_evt_engine_unregister_timer(self.header, timer_topic.header)
         self.timer_payloads.clear()
         self.timer.clear()
 
@@ -277,19 +281,19 @@ cdef class EventEngineEx:
 
     property capacity:
         def __get__(self):
-            return self.engine_c.mq.capacity
+            return self.header.mq.capacity
 
     property occupied:
         def __get__(self):
-            return c_mq_occupied(self.engine_c.mq)
+            return c_mq_occupied(self.header.mq)
 
     property seq_id:
         def __get__(self):
-            return c_evt_engine_get_seq_id(self.engine_c)
+            return c_evt_engine_get_seq_id(self.header)
 
     property active:
         def __get__(self):
-            return c_evt_engine_is_active(self.engine_c)
+            return c_evt_engine_is_active(self.header)
 
     property exact_topic_hooks:
         def __get__(self):
@@ -324,7 +328,7 @@ cdef class EventEngineEx:
         cdef datetime trigger_time
         cdef int ret_code
 
-        if not c_evt_engine_is_active(self.engine_c):
+        if not c_evt_engine_is_active(self.header):
             raise RuntimeError('EventEngine must be started before getting timer!')
 
         if interval in self.timer:
@@ -335,7 +339,7 @@ cdef class EventEngineEx:
         # A different interval replaces the previous timer task
         if self.timer:
             for old_topic in list(self.timer.values()):
-                c_evt_engine_unregister_timer(self.engine_c, old_topic.header)
+                c_evt_engine_unregister_timer(self.header, old_topic.header)
             self.timer_payloads.clear()
             self.timer.clear()
 
@@ -362,7 +366,7 @@ cdef class EventEngineEx:
         payload.fn_dealloc = NULL
 
         # 3. Register through the C interface.
-        ret_code = c_evt_engine_register_timer(self.engine_c, topic.header, interval, payload.args)
+        ret_code = c_evt_engine_register_timer(self.header, topic.header, interval, payload.args)
         if ret_code != evt_ret_code.EVT_RET_OK:
             c_evt_pypayload_free(payload)
             raise RuntimeError(f'Failed to register timer with interval [{timedelta(seconds=interval)}]')
@@ -384,22 +388,22 @@ cdef class EngineTestToolkit:
     @staticmethod
     def get_mq_capacity(EventEngineEx engine):
         """Capacity of the engine's C message queue."""
-        return engine.engine_c.mq.capacity
+        return engine.header.mq.capacity
 
     @staticmethod
     def get_mq_head(EventEngineEx engine):
         """Head index of the engine's C message queue."""
-        return engine.engine_c.mq.head
+        return engine.header.mq.head
 
     @staticmethod
     def get_mq_tail(EventEngineEx engine):
         """Tail index of the engine's C message queue."""
-        return engine.engine_c.mq.tail
+        return engine.header.mq.tail
 
     @staticmethod
     def get_mq_count(EventEngineEx engine):
         """Occupancy counter of the engine's C message queue."""
-        return engine.engine_c.mq.count
+        return engine.header.mq.count
 
     @staticmethod
     def get_exact_hook_map_size(EventEngineEx engine):
@@ -424,15 +428,15 @@ cdef class EngineTestToolkit:
     @staticmethod
     def get_timer_interval(EventEngineEx engine):
         """Interval of the head timer ctx, 0 when none."""
-        if not engine.engine_c.timer:
+        if not engine.header.timer:
             return 0
-        return engine.engine_c.timer.interval_seconds
+        return engine.header.timer.interval_seconds
 
     @staticmethod
     def get_timer_intervals(EventEngineEx engine) -> list:
         """Intervals of all timer ctxs, in next-due (linked list) order."""
         cdef list out = []
-        cdef evt_engine_timer_ctx* ctx = engine.engine_c.timer
+        cdef evt_engine_timer_ctx* ctx = engine.header.timer
         while ctx:
             out.append(ctx.interval_seconds)
             ctx = ctx.next
@@ -441,14 +445,14 @@ cdef class EngineTestToolkit:
     @staticmethod
     def get_timer_task_count(EventEngineEx engine):
         """Number of registered C timer tasks."""
-        return engine.engine_c.n_timer
+        return engine.header.n_timer
 
     @staticmethod
     def get_timer_payload_topic(EventEngineEx engine):
         """Topic of the first registered C timer task payload, None when none."""
-        if not engine.engine_c.timer or not engine.engine_c.n_timer:
+        if not engine.header.timer or not engine.header.n_timer:
             return None
-        return Topic.c_from_header(engine.engine_c.timer.task[0].payload.topic, False)
+        return Topic.c_from_header(engine.header.timer.task[0].payload.topic, False)
 
     @staticmethod
     def register_raw_timer(EventEngineEx engine, Topic topic, double interval) -> MessagePayload:
@@ -467,7 +471,7 @@ cdef class EngineTestToolkit:
             raise MemoryError('Failed to allocate raw timer payload')
 
         payload.fn_dealloc = NULL
-        cdef int ret_code = c_evt_engine_register_timer(engine.engine_c, topic.header, interval, payload.args)
+        cdef int ret_code = c_evt_engine_register_timer(engine.header, topic.header, interval, payload.args)
         if ret_code != evt_ret_code.EVT_RET_OK:
             c_evt_pypayload_free(payload)
             return None
@@ -498,3 +502,8 @@ cdef class EngineTestToolkit:
         c_evt_pypayload_free(payload)
         c_mq_free(mq)
         return elapsed / n
+
+
+cdef EventEngineEx EVENT_ENGINE = EventEngineEx()
+globals()['EVENT_ENGINE'] = EVENT_ENGINE
+cdef evt_engine* C_EVENT_ENGINE = EVENT_ENGINE.header

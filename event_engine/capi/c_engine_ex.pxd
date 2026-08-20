@@ -48,8 +48,6 @@ cdef extern from "event_engine/capi/c_engine.h":
 
 
 cdef extern from "event_engine/capi/c_engine_gil.h":
-    # GIL-aware variants — must be entered with the GIL held; the GIL is
-    # released only around blocking queue waits.
     int c_evt_engine_loop_gil(evt_engine* engine)
     int c_evt_engine_publish_gil(evt_engine* engine, evt_message_payload* payload, c_bool block, size_t max_spin, double timeout)
 
@@ -60,7 +58,7 @@ cdef class EventHookMap(BoundByteMap):
 
 
 cdef class EventEngineEx:
-    cdef evt_engine* engine_c
+    cdef evt_engine* header
     cdef EventHookMap exact_hook_map
     cdef EventHookMap generic_hook_map
 
@@ -74,3 +72,7 @@ cdef class EventEngineEx:
     cdef inline evt_message_payload* c_get(self, bint block, size_t max_spin, double timeout)
 
     cdef inline int c_publish(self, Topic topic, tuple args, dict kwargs, bint block, size_t max_spin, double timeout)
+
+
+cdef EventEngineEx EVENT_ENGINE
+cdef evt_engine* C_EVENT_ENGINE

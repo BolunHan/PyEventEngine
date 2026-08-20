@@ -56,7 +56,7 @@ class BuildExtWithConfig(build_ext):
 
     def build_extensions(self):
         macros = []
-        for macro in ["DEBUG", "TICKER_SIZE", "BOOK_SIZE", "ID_SIZE", "MAX_WORKERS"]:
+        for macro in ["DEBUG", "TICKER_SIZE", "BOOK_SIZE", "ID_SIZE", "MAX_WORKERS", "EE_LOOP_CPU"]:
             val = os.environ.get(macro)
             if val:
                 print(f'[build_py] Compile-time variable {macro} overridden with value {val}')

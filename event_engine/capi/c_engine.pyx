@@ -81,8 +81,9 @@ cdef class EventEngine:
             # Trigger message callbacks
             self.c_trigger(msg)
 
-            # Clean up the message payload
-            c_evt_pypayload_free(msg)
+            # Clean up the message payload via its self-destruct hook
+            if msg.fn_dealloc:
+                msg.fn_dealloc(msg)
 
     cdef inline evt_message_payload* c_get(self, bint block, size_t max_spin, double timeout):
         cdef evt_message_payload* msg = NULL

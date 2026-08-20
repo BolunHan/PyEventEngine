@@ -14,6 +14,8 @@ from .topic import (
 from .event import PyMessagePayload, EventHook as EventHookBase, EventHookEx
 from .engine import Full, Empty, EventEngine as EventEngineBase, EventEngineEx
 
+EVENT_ENGINE = EventEngineEx()
+
 
 def set_logger(logger: logging.Logger):
     """Set the root EventEngine logger and propagate to native submodules."""
@@ -55,6 +57,6 @@ __all__ = [
     'TopicMatchResult', 'Topic',
     'init_internal_map', 'clear_internal_map', 'get_internal_topic', 'get_internal_map', 'init_allocator',
     'MessagePayload', 'EventHookBase', 'EventHook',
-    'Full', 'Empty', 'EventEngineBase', 'EventEngine', 'USING_FALLBACK',
+    'Full', 'Empty', 'EventEngineBase', 'EventEngine', 'EVENT_ENGINE', 'USING_FALLBACK',
     'set_logger'
 ]

@@ -3,7 +3,7 @@ from datetime import datetime
 from logging import Logger
 from typing import Any
 
-from ..base.c_strmap import StrMap
+from cbase.bytemap import ByteMap
 from .c_event import MessagePayload, EventHook
 from .c_topic import Topic
 
@@ -24,7 +24,7 @@ class EventEngine:
     based on topic matching rules. Internally, it uses the following C components:
       - A pthread-based event loop that consumes messages and triggers callbacks.
       - A custom payload allocator to avoid frequent ``malloc``/``free`` in performance-critical paths.
-      - Two ``StrMap`` instances:
+      - Two ``ByteMap`` instances:
           * One for **exact** topic matches (literal key equality).
           * One for **generic** topic matches (pattern-based, handled by ``Topic``).
 
@@ -68,7 +68,7 @@ class EventEngine:
         Allocates the following internal C resources:
           - A fixed-capacity message queue.
           - A high-performance payload allocator.
-          - Two ``StrMap`` instances for exact and generic topic routing.
+          - Two ``ByteMap`` instances for exact and generic topic routing.
 
         It is recommended to use singleton instances to minimize resource overhead.
 
@@ -316,15 +316,15 @@ class EventEngine:
         ...
 
     @property
-    def exact_topic_hook_map(self) -> StrMap | dict[Topic, EventHook]:
+    def exact_topic_hook_map(self) -> ByteMap | dict[Topic, EventHook]:
         """
-        StrMap of exact topic to ``EventHook`` mappings.
+        ByteMap of exact topic to ``EventHook`` mappings.
         """
 
     @property
-    def generic_topic_hook_map(self) -> StrMap | dict[Topic, EventHook]:
+    def generic_topic_hook_map(self) -> ByteMap | dict[Topic, EventHook]:
         """
-        StrMap of generic topic to ``EventHook`` mappings.
+        ByteMap of generic topic to ``EventHook`` mappings.
         """
         ...
 
@@ -335,6 +335,14 @@ class EventEngineEx(EventEngine):
 
     Timer events are published periodically to specified topics, enabling time-driven workflows
     (e.g., heartbeats, scheduled tasks).
+
+    Notes:
+        This is the Python-side subclass variant (one ``threading.Thread``
+        per timer interval) defined in ``c_engine.pyx``. Since the C-backed
+        engine was introduced, the ``event_engine.capi.EventEngineEx`` export
+        (and the default ``EVENT_ENGINE`` singleton) refers to the standalone
+        C-engine-backed class in ``c_engine_ex`` — see ``c_engine_ex.pyi``.
+        Use this class only when the thread-based timer variant is intended.
 
     Attributes:
         capacity (int): Capacity of the internal message queue.

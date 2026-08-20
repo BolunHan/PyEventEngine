@@ -65,6 +65,29 @@ event_engine.capi.c_engine
    The pure Python fallback (``event_engine.native.engine``) provides the same API.
    See :doc:`native_fallback` for details.
 
+event_engine.capi.c_engine_ex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: event_engine.capi.c_engine_ex
+   :members: EventEngineEx, EventHookMap, Full, Empty, EVENT_ENGINE
+   :undoc-members:
+   :show-inheritance:
+
+.. note::
+   The C-backed engine (loop, dispatch and timers in C via ``evt_engine`` in
+   ``c_engine.h`` / ``c_engine_gil.h``). The process-wide default
+   ``EVENT_ENGINE`` singleton is an instance of this class; downstream
+   Cython modules can cimport its C pointer as ``C_EVENT_ENGINE``
+   (see :doc:`capi_cython`). The loop thread is pinned to the CPU selected by
+   the ``EE_LOOP_CPU`` compile-time macro (default 0, ``-1`` disables).
+
+Top-Level Default Engine
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+``event_engine.EVENT_ENGINE`` is the process-wide default engine singleton,
+backed by :class:`event_engine.capi.c_engine_ex.EventEngineEx` when the
+Cython extension is available (falling back to the pure-Python engine).
+
 Fallback Engine
 ---------------
 
@@ -84,6 +107,7 @@ The package includes complete type stubs (``.pyi`` files) for the Cython modules
 - ``event_engine/capi/c_topic.pyi``
 - ``event_engine/capi/c_event.pyi``
 - ``event_engine/capi/c_engine.pyi``
+- ``event_engine/capi/c_engine_ex.pyi``
 
 These provide full type information for IDEs and type checkers like mypy.
 

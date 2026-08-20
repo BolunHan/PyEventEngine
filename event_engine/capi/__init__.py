@@ -2,7 +2,6 @@ import logging
 
 LOGGER = None
 
-
 from .c_topic import (
     TopicType,
     TopicPart, TopicPartExact, TopicPartAny, TopicPartRange, TopicPartPattern,
@@ -11,13 +10,14 @@ from .c_topic import (
 )
 
 from .c_event import MessagePayload, EventHook, EventHookEx
+from .exc import Full, Empty
 
 # Try to import the Cython implementation first, fall back to pure Python if unavailable
 USING_FALLBACK = False
 
 try:
     assert not USING_FALLBACK
-    from .c_engine import Full, Empty, EventEngine
+    from .c_engine import EventEngine
     from .c_engine_ex import EventEngineEx, EVENT_ENGINE
 
     USING_FALLBACK = False
@@ -87,6 +87,7 @@ __all__ = [
     'TopicMatchResult', 'Topic',
     'get_internal_topic', 'get_internal_map',
     'MessagePayload', 'EventHook', 'EventHookEx',
-    'Full', 'Empty', 'EventEngine', 'EventEngineEx', 'EVENT_ENGINE', 'USING_FALLBACK',
+    'Full', 'Empty',
+    'EventEngine', 'EventEngineEx', 'EVENT_ENGINE', 'USING_FALLBACK',
     'set_logger'
 ]

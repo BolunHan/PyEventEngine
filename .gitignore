@@ -12,6 +12,7 @@ dist/
 
 # Cython-generated C files
 event_engine/**/c_*.c
+event_engine/config_view.c
 
 # Build
 build/
@@ -25,7 +26,7 @@ event_engine/includes/
 .vscode/
 
 # Test Artifacts
-test/*/artifacts/
+tests/**/artifacts/**
 
 # Macro Probing Cache
 macros.json

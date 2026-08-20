@@ -12,6 +12,11 @@ Known, documented divergences (asserted as such, not aligned):
     - ``owner`` flags (C memory ownership has no Python equivalent).
     - exception type for unclosed-pattern parse errors (both raise).
     - ``repr`` strings (class names differ: ``Topic`` vs ``PyTopic``).
+    - ``EventEngineEx`` timer surface: the C-backed capi engine (the
+      ``event_engine.capi.EventEngineEx`` export) exposes only ``get_timer``
+      (C timer tasks with replacement semantics); the blocking
+      ``run_timer``/``minute_timer``/``second_timer`` loops are
+      thread-based-subclass/native-only. Only the shared surface is aligned.
 """
 
 import inspect
@@ -590,11 +595,16 @@ class TestSignatureAlignment(unittest.TestCase):
             native_engine.clear()
 
     def test_03_engine_ex_signatures(self) -> None:
-        """EventEngineEx timer methods expose identical parameter names."""
+        """EventEngineEx timer methods expose identical parameter names.
+
+        Only the shared timer surface is aligned — the C-backed capi engine
+        has no blocking run_timer/minute_timer/second_timer loops (see the
+        module docstring for the documented divergence).
+        """
         capi_engine = capi_pkg.EventEngineEx()
         native_engine = native_pkg.EventEngineEx()
         try:
-            for method in ["get_timer", "run_timer", "minute_timer", "second_timer"]:
+            for method in ["get_timer"]:
                 with self.subTest(method=method):
                     self.assertEqual(
                         self._param_names(capi_engine, method),

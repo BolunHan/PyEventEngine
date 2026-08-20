@@ -122,7 +122,7 @@ class TestEngineRegistry(unittest.TestCase):
         engine = EventEngineEx()
         from event_engine import base
 
-        with self.assertLogs(base.LOGGER.getChild("Engine"), level="ERROR") as cm:
+        with self.assertLogs(base.LOGGER.getChild("EngineEx"), level="ERROR") as cm:
             engine.unregister_handler(Topic("registry.none"), lambda a: None)
         self.assertTrue(any("No EventHook registered" in m for m in cm.output))
         engine.clear()

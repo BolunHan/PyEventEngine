@@ -10,8 +10,8 @@ import time
 import unittest
 from datetime import datetime, timedelta
 
-from event_engine.capi import Empty, EventEngine, EventEngineEx, Full, MessagePayload, Topic
-from event_engine.capi.c_engine import EngineTestToolkit
+from event_engine.capi import Empty, EventEngine, Full, MessagePayload, Topic
+from event_engine.capi.c_engine import EngineTestToolkit, EventEngineEx
 
 
 class TestEngineRegistry(unittest.TestCase):

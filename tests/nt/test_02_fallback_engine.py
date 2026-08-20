@@ -10,8 +10,8 @@ import threading
 import time
 import unittest
 
-from event_engine.capi import EventEngineEx, Topic
-from event_engine.capi.fallback_engine import Empty, Full, EventEngine
+from event_engine.capi import Topic
+from event_engine.capi.fallback_engine import Empty, EventEngine, EventEngineEx, Full
 
 
 class TestFallbackEngineRegistry(unittest.TestCase):

@@ -35,6 +35,8 @@ static inline int c_evt_engine_loop_gil(evt_engine* engine) {
     if (!engine) return EVT_RET_ERR_INVALID_INPUT;
     if (!engine->mq) return EVT_RET_ERR_UNINITIALIZED;
 
+    c_evt_engine_pin_cpu();
+
     size_t               max_spin = engine->mq_spin_limit;
     evt_message_payload* msg = NULL;
 

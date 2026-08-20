@@ -1,16 +1,35 @@
 #ifndef C_EVENTENGINE_ENGINE_H
 #define C_EVENTENGINE_ENGINE_H
 
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 #include <math.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <string.h>
+
+#if defined(__linux__)
+#include <pthread.h>
+#include <sched.h>
+#elif defined(_WIN32)
+#include <windows.h>
+#endif
 
 #include <cbase/allocator_protocol/c_allocator_protocol.h>
 #include <event_engine/capi/c_event.h>
 #include <event_engine/capi/c_mqueue.h>
 #include <event_engine/capi/c_ret_code.h>
 #include <event_engine/capi/c_topic.h>
+
+// ========== Constants ==========
+
+/* CPU index the engine loop thread is pinned to. -1 disables affinity.
+   Override at build time with: EE_LOOP_CPU=2 make build */
+#ifndef EE_LOOP_CPU
+#define EE_LOOP_CPU 0
+#endif
 
 // ========== Structs ==========
 
@@ -52,6 +71,7 @@ typedef struct evt_engine {
 
 // ========== Forward Declaration ==========
 
+static inline void                 c_evt_engine_pin_cpu(void);
 static inline evt_engine*          c_evt_engine_new(allocator_protocol* allocator);
 static inline int                  c_evt_engine_init(evt_engine* engine, allocator_protocol* allocator);
 static inline void                 c_evt_engine_free(evt_engine* engine);
@@ -70,6 +90,29 @@ static inline uint64_t             c_evt_engine_get_seq_id(const evt_engine* eng
 static inline int                  c_evt_engine_register_timer(evt_engine* engine, evt_topic* topic, double interval_seconds, const void* payload_args);
 static inline int                  c_evt_engine_unregister_timer(evt_engine* engine, evt_topic* topic);
 static inline void                 c_evt_engine_set_timer_active(evt_engine* engine, bool active);
+
+// ========== Utility Functions ==========
+
+/**
+ * @brief Pin the calling thread to the loop CPU selected by EE_LOOP_CPU.
+ *
+ * Called once at the top of the engine loop entry points so that both the
+ * pure-C loop (c_evt_engine_loop) and the GIL-aware loop
+ * (c_evt_engine_loop_gil) run their dispatch thread on a fixed core.
+ * No-op when EE_LOOP_CPU is -1 or on platforms without thread affinity.
+ */
+static inline void c_evt_engine_pin_cpu(void) {
+#if EE_LOOP_CPU >= 0
+#if defined(__linux__)
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(EE_LOOP_CPU, &set);
+    pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &set);
+#elif defined(_WIN32)
+    SetThreadAffinityMask(GetCurrentThread(), (DWORD_PTR) 1 << EE_LOOP_CPU);
+#endif
+#endif
+}
 
 // ========== Public APIs (Lifecycle Management) ==========
 
@@ -487,6 +530,8 @@ static inline double c_evt_engine_mq_wait_seconds(const evt_engine* engine) {
 static inline int c_evt_engine_loop(evt_engine* engine) {
     if (!engine) return EVT_RET_ERR_INVALID_INPUT;
     if (!engine->mq) return EVT_RET_ERR_UNINITIALIZED;
+
+    c_evt_engine_pin_cpu();
 
     size_t               max_spin = engine->mq_spin_limit;
     evt_message_payload* msg = NULL;

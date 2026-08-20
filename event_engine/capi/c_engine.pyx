@@ -6,23 +6,17 @@ from cpython.ref cimport Py_INCREF, Py_XDECREF, Py_XINCREF
 from cpython.time cimport perf_counter
 from cpython.unicode cimport PyUnicode_FromStringAndSize
 
-from cbase.bytemap.c_bytemap cimport bytemap_ret_code, bytemap, bytemap_entry, c_bytemap_new, c_bytemap_clear, c_bytemap_free, c_bytemap_get, c_bytemap_set, c_bytemap_pop, c_bytemap_entry_value
+from cbase.bytemap.c_bytemap cimport bytemap, bytemap_entry, bytemap_ret_code, c_bytemap_clear, c_bytemap_entry_value, c_bytemap_free, c_bytemap_get, c_bytemap_new, c_bytemap_pop, c_bytemap_set
 
-from .c_event cimport EMPTY_ARGS, MessagePayload, c_evt_hook_invoke, c_evt_pypayload_init_constants, c_evt_pypayload_free, c_evt_pypayload_new, evt_py_topic, evt_py_payload
+from event_engine.base import LOGGER
+from event_engine.base.c_allocator_protocol cimport EE_HEAP_ALLOCATOR
+
+from .c_event cimport EMPTY_ARGS, MessagePayload, c_evt_hook_invoke, c_evt_pypayload_free, c_evt_pypayload_new, evt_py_payload, evt_py_topic
 from .c_ret_code cimport evt_ret_code
 from .c_topic cimport Topic, c_topic_match_bool
-from ..base.c_allocator_protocol cimport EE_HEAP_ALLOCATOR
-from ..base import LOGGER
+from .exc import Empty, Full
 
 LOGGER = LOGGER.getChild('Engine')
-
-
-class Full(Exception):
-    pass
-
-
-class Empty(Exception):
-    pass
 
 
 cdef class EventEngine:

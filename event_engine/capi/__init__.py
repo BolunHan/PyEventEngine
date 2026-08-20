@@ -17,7 +17,8 @@ USING_FALLBACK = False
 
 try:
     assert not USING_FALLBACK
-    from .c_engine import Full, Empty, EventEngine, EventEngineEx
+    from .c_engine import Full, Empty, EventEngine
+    from .c_engine_ex import EventEngineEx, EVENT_ENGINE
 
     USING_FALLBACK = False
 except (ImportError, AssertionError) as e:
@@ -66,6 +67,13 @@ def set_logger(logger: logging.Logger):
     except Exception:
         pass
 
+    # Try to update c_engine_ex module logger
+    try:
+        from . import c_engine_ex as _c_engine_ex
+        _c_engine_ex.LOGGER = logger.getChild('Engine')
+    except Exception:
+        pass
+
     # If capi is using fallback engine internally, update its module logger as well
     try:
         from . import fallback_engine as _c_engine_fallback
@@ -79,6 +87,6 @@ __all__ = [
     'TopicMatchResult', 'Topic',
     'get_internal_topic', 'get_internal_map',
     'MessagePayload', 'EventHook', 'EventHookEx',
-    'Full', 'Empty', 'EventEngine', 'EventEngineEx', 'USING_FALLBACK',
+    'Full', 'Empty', 'EventEngine', 'EventEngineEx', 'EVENT_ENGINE', 'USING_FALLBACK',
     'set_logger'
 ]

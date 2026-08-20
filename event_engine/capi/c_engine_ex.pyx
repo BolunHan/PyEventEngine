@@ -2,31 +2,20 @@ from threading import Thread
 
 from cpython.datetime cimport datetime, timedelta
 from cpython.object cimport PyObject
-from cpython.ref cimport Py_INCREF, Py_XDECREF
 from cpython.time cimport perf_counter
 
 from cbase.bytemap.c_bytemap cimport BoundByteMap, bytemap, c_bytemap_gen_seq_id
 
-from .c_engine cimport DEFAULT_MQ_CAPACITY, DEFAULT_MQ_SPIN_LIMIT, DEFAULT_MQ_TIMEOUT_SECONDS, message_queue, c_mq_free, c_mq_get, c_mq_new, c_mq_occupied, c_mq_put
-from .c_event cimport EMPTY_ARGS, MessagePayload, EventHook, c_evt_pypayload_free, c_evt_pypayload_new, evt_hook, evt_message_payload, evt_py_payload, evt_py_topic
+from event_engine.base import LOGGER
+from event_engine.base.c_allocator_protocol cimport EE_HEAP_ALLOCATOR
+
+from .c_engine cimport DEFAULT_MQ_CAPACITY, DEFAULT_MQ_SPIN_LIMIT, c_mq_free, c_mq_get, c_mq_new, c_mq_occupied, c_mq_put, message_queue
+from .c_event cimport EventHook, MessagePayload, c_evt_pypayload_free, c_evt_pypayload_new, evt_hook, evt_message_payload, evt_py_topic
 from .c_ret_code cimport evt_ret_code
 from .c_topic cimport Topic, c_topic_match_bool
-from ..base.c_allocator_protocol cimport EE_HEAP_ALLOCATOR
-from ..base import LOGGER
+from .exc import Empty, Full
 
-LOGGER = LOGGER.getChild('Engine')
-
-# Process-wide default engine C pointer. Set when the default EVENT_ENGINE
-# singleton is created; declared in c_engine_ex.pxd for downstream cimport.
-cdef evt_engine* C_EVENT_ENGINE = NULL
-
-
-class Full(Exception):
-    pass
-
-
-class Empty(Exception):
-    pass
+LOGGER = LOGGER.getChild('EngineEx')
 
 
 cdef class EventHookMap(BoundByteMap):

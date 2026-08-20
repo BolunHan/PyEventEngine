@@ -398,6 +398,30 @@ Extended engine with timer support:
 - Multiple calls to ``get_timer()`` with same interval return the same topic
 - Timers stop when engine stops
 
+Default Engine
+--------------
+
+``event_engine.EVENT_ENGINE`` is the process-wide default engine singleton.
+It is an instance of the C-backed ``c_engine_ex.EventEngineEx`` (loop,
+dispatch and timers in C) when the Cython extension is available, and of the
+pure-Python ``native`` engine otherwise. It is created idle at import time:
+
+.. code-block:: python
+
+   from event_engine import EVENT_ENGINE, Topic
+
+   def on_tick(**kwargs):
+       print(kwargs)
+
+   EVENT_ENGINE.register_handler(Topic('Market.Data'), on_tick)
+   EVENT_ENGINE.start()
+   EVENT_ENGINE.put(Topic('Market.Data'), price=42.0)
+   EVENT_ENGINE.stop()
+
+The default engine's loop thread is pinned to CPU 0 by default (compile-time
+macro ``EE_LOOP_CPU``; ``-1`` disables). Downstream Cython modules can
+access its C pointer directly via ``C_EVENT_ENGINE`` — see :doc:`capi_cython`.
+
 Exceptions
 ----------
 

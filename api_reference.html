@@ -292,6 +292,24 @@ See <a class="reference internal" href="native_fallback.html"><span class="doc">
 See <a class="reference internal" href="native_fallback.html"><span class="doc">Native Python Fallback</span></a> for details.</p>
 </div>
 </section>
+<section id="event-engine-capi-c-engine-ex">
+<h3>event_engine.capi.c_engine_ex<a class="headerlink" href="#event-engine-capi-c-engine-ex" title="Link to this heading">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The C-backed engine (loop, dispatch and timers in C via <code class="docutils literal notranslate"><span class="pre">evt_engine</span></code> in
+<code class="docutils literal notranslate"><span class="pre">c_engine.h</span></code> / <code class="docutils literal notranslate"><span class="pre">c_engine_gil.h</span></code>). The process-wide default
+<code class="docutils literal notranslate"><span class="pre">EVENT_ENGINE</span></code> singleton is an instance of this class; downstream
+Cython modules can cimport its C pointer as <code class="docutils literal notranslate"><span class="pre">C_EVENT_ENGINE</span></code>
+(see <a class="reference internal" href="capi_cython.html"><span class="doc">Cython API Reference</span></a>). The loop thread is pinned to the CPU selected by
+the <code class="docutils literal notranslate"><span class="pre">EE_LOOP_CPU</span></code> compile-time macro (default 0, <code class="docutils literal notranslate"><span class="pre">-1</span></code> disables).</p>
+</div>
+</section>
+<section id="top-level-default-engine">
+<h3>Top-Level Default Engine<a class="headerlink" href="#top-level-default-engine" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">event_engine.EVENT_ENGINE</span></code> is the process-wide default engine singleton,
+backed by <code class="xref py py-class docutils literal notranslate"><span class="pre">event_engine.capi.c_engine_ex.EventEngineEx</span></code> when the
+Cython extension is available (falling back to the pure-Python engine).</p>
+</section>
 </section>
 <section id="fallback-engine">
 <h2>Fallback Engine<a class="headerlink" href="#fallback-engine" title="Link to this heading">¶</a></h2>
@@ -306,6 +324,7 @@ See <a class="reference internal" href="native_fallback.html"><span class="doc">
 <li><p><code class="docutils literal notranslate"><span class="pre">event_engine/capi/c_topic.pyi</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">event_engine/capi/c_event.pyi</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">event_engine/capi/c_engine.pyi</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">event_engine/capi/c_engine_ex.pyi</span></code></p></li>
 </ul>
 <p>These provide full type information for IDEs and type checkers like mypy.</p>
 <p>Example mypy usage:</p>
@@ -384,6 +403,8 @@ See <a class="reference internal" href="native_fallback.html"><span class="doc">
 </li>
 <li><a class="reference internal" href="#engine-classes">Engine Classes</a><ul>
 <li><a class="reference internal" href="#event-engine-capi-c-engine">event_engine.capi.c_engine</a></li>
+<li><a class="reference internal" href="#event-engine-capi-c-engine-ex">event_engine.capi.c_engine_ex</a></li>
+<li><a class="reference internal" href="#top-level-default-engine">Top-Level Default Engine</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#fallback-engine">Fallback Engine</a><ul>

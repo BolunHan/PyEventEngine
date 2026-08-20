@@ -549,6 +549,61 @@
 <p>This allows other Python threads to run concurrently with the engine.</p>
 </section>
 </section>
+<section id="c-backed-engine-c-engine-ex-pyx">
+<h2>C-Backed Engine (c_engine_ex.pyx)<a class="headerlink" href="#c-backed-engine-c-engine-ex-pyx" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">EventEngineEx</span></code> in <code class="docutils literal notranslate"><span class="pre">event_engine.capi.c_engine_ex</span></code> is the standalone
+C-backed engine: the loop, dispatch, sequence counter and timers live in the
+<code class="docutils literal notranslate"><span class="pre">evt_engine</span></code> structure (<code class="docutils literal notranslate"><span class="pre">c_engine.h</span></code> / <code class="docutils literal notranslate"><span class="pre">c_engine_gil.h</span></code>) instead of
+Cython. It is <strong>not</strong> a subclass of <code class="docutils literal notranslate"><span class="pre">c_engine.EventEngine</span></code>.</p>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">from</span><span class="w"> </span><span class="nn">event_engine.capi.c_engine_ex</span><span class="w"> </span><span class="k">cimport</span> <span class="n">EventEngineEx</span><span class="p">,</span> <span class="n">EventHookMap</span><span class="p">,</span> <span class="n">C_EVENT_ENGINE</span>
+
+<span class="k">cdef</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyService</span><span class="p">:</span>
+    <span class="k">cdef</span><span class="w"> </span><span class="kt">EventEngineEx</span> <span class="nv">engine</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">EventEngineEx</span><span class="p">(</span><span class="n">capacity</span><span class="o">=</span><span class="mf">8192</span><span class="p">)</span>
+
+    <span class="k">cpdef</span><span class="w"> </span><span class="kt">void</span> <span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">str</span> <span class="n">topic_str</span><span class="p">,</span> <span class="nb">object</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">cdef</span><span class="w"> </span><span class="kt">Topic</span> <span class="nv">topic</span><span class="w"> </span><span class="o">=</span> <span class="n">Topic</span><span class="p">(</span><span class="n">topic_str</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Key differences from <code class="docutils literal notranslate"><span class="pre">c_engine.EventEngine</span></code>:</p>
+<ul class="simple">
+<li><p>Hook registries are <code class="xref py py-class docutils literal notranslate"><span class="pre">EventHookMap</span></code> instances (<code class="docutils literal notranslate"><span class="pre">BoundByteMap</span></code>
+subclasses bound to the C bytemaps), typed as <code class="docutils literal notranslate"><span class="pre">dict[str,</span> <span class="pre">EventHook]</span></code>.</p></li>
+<li><p>Timers are C <code class="docutils literal notranslate"><span class="pre">evt_engine_timer_ctx</span></code> tasks polled by the loop; a
+different interval replaces the previous timer task (the
+<code class="docutils literal notranslate"><span class="pre">c_engine.EventEngineEx</span></code> subclass keeps one Python thread per interval).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">seq_id</span></code> is an atomic counter in C; <code class="docutils literal notranslate"><span class="pre">active</span></code> is an atomic flag.</p></li>
+</ul>
+<section id="default-engine-and-c-pointer">
+<h3>Default engine and C pointer<a class="headerlink" href="#default-engine-and-c-pointer" title="Link to this heading">¶</a></h3>
+<p>The process-wide default engine is <code class="docutils literal notranslate"><span class="pre">event_engine.EVENT_ENGINE</span></code> (an
+instance of the C-backed <code class="docutils literal notranslate"><span class="pre">EventEngineEx</span></code>, created idle at import time).
+Its C pointer is exposed for downstream Cython modules:</p>
+<div class="highlight-cython notranslate"><div class="highlight"><pre><span></span><span class="k">from</span><span class="w"> </span><span class="nn">event_engine.capi.c_engine_ex</span><span class="w"> </span><span class="k">cimport</span> <span class="n">C_EVENT_ENGINE</span>
+<span class="c"># or, after importing everything:</span>
+<span class="c"># from event_engine.capi.__infra__ cimport C_EVENT_ENGINE, CEventEngineEx</span>
+
+<span class="k">cdef</span><span class="w"> </span><span class="kt">evt_engine</span>* <span class="nv">engine</span><span class="w"> </span><span class="o">=</span> <span class="n">C_EVENT_ENGINE</span>   <span class="c"># non-NULL once event_engine is imported</span>
+</pre></div>
+</div>
+<p>The pointer stays valid as long as the Python singleton <code class="docutils literal notranslate"><span class="pre">EVENT_ENGINE</span></code> is
+kept alive (it is module-global, so effectively for the process lifetime).</p>
+</section>
+<section id="cpu-affinity">
+<h3>CPU affinity<a class="headerlink" href="#cpu-affinity" title="Link to this heading">¶</a></h3>
+<p>The engine loop thread is pinned to a fixed core by default. The target CPU
+is selected by the <code class="docutils literal notranslate"><span class="pre">EE_LOOP_CPU</span></code> compile-time macro (default <code class="docutils literal notranslate"><span class="pre">0</span></code>; <code class="docutils literal notranslate"><span class="pre">-1</span></code>
+disables affinity). Override at build time:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">EE_LOOP_CPU</span><span class="o">=</span><span class="m">2</span><span class="w"> </span>make<span class="w"> </span>build<span class="w">          </span><span class="c1"># or: EE_LOOP_CPU=2 python setup.py build_ext --inplace</span>
+</pre></div>
+</div>
+<p>Both loop entry points pin the calling thread: <code class="docutils literal notranslate"><span class="pre">c_evt_engine_loop</span></code>
+(pure C) and <code class="docutils literal notranslate"><span class="pre">c_evt_engine_loop_gil</span></code> (GIL-aware).</p>
+</section>
+</section>
 <section id="performance-tips">
 <h2>Performance Tips<a class="headerlink" href="#performance-tips" title="Link to this heading">¶</a></h2>
 <section id="avoiding-python-overhead">
@@ -770,6 +825,11 @@
 <li><a class="reference internal" href="#engine-classes-c-engine-pyx">Engine Classes (c_engine.pyx)</a><ul>
 <li><a class="reference internal" href="#eventengine">EventEngine</a></li>
 <li><a class="reference internal" href="#nogil-methods"><code class="docutils literal notranslate"><span class="pre">nogil</span></code> Methods</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#c-backed-engine-c-engine-ex-pyx">C-Backed Engine (c_engine_ex.pyx)</a><ul>
+<li><a class="reference internal" href="#default-engine-and-c-pointer">Default engine and C pointer</a></li>
+<li><a class="reference internal" href="#cpu-affinity">CPU affinity</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#performance-tips">Performance Tips</a><ul>

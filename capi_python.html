@@ -604,6 +604,27 @@
 </ul>
 </section>
 </section>
+<section id="default-engine">
+<h2>Default Engine<a class="headerlink" href="#default-engine" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">event_engine.EVENT_ENGINE</span></code> is the process-wide default engine singleton.
+It is an instance of the C-backed <code class="docutils literal notranslate"><span class="pre">c_engine_ex.EventEngineEx</span></code> (loop,
+dispatch and timers in C) when the Cython extension is available, and of the
+pure-Python <code class="docutils literal notranslate"><span class="pre">native</span></code> engine otherwise. It is created idle at import time:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">event_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">EVENT_ENGINE</span><span class="p">,</span> <span class="n">Topic</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_tick</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="n">EVENT_ENGINE</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span><span class="n">Topic</span><span class="p">(</span><span class="s1">'Market.Data'</span><span class="p">),</span> <span class="n">on_tick</span><span class="p">)</span>
+<span class="n">EVENT_ENGINE</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<span class="n">EVENT_ENGINE</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">Topic</span><span class="p">(</span><span class="s1">'Market.Data'</span><span class="p">),</span> <span class="n">price</span><span class="o">=</span><span class="mf">42.0</span><span class="p">)</span>
+<span class="n">EVENT_ENGINE</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The default engine’s loop thread is pinned to CPU 0 by default (compile-time
+macro <code class="docutils literal notranslate"><span class="pre">EE_LOOP_CPU</span></code>; <code class="docutils literal notranslate"><span class="pre">-1</span></code> disables). Downstream Cython modules can
+access its C pointer directly via <code class="docutils literal notranslate"><span class="pre">C_EVENT_ENGINE</span></code> — see <a class="reference internal" href="capi_cython.html"><span class="doc">Cython API Reference</span></a>.</p>
+</section>
 <section id="exceptions">
 <h2>Exceptions<a class="headerlink" href="#exceptions" title="Link to this heading">¶</a></h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">Full</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -714,6 +735,7 @@
 <li><a class="reference internal" href="#eventengineex">EventEngineEx</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#default-engine">Default Engine</a></li>
 <li><a class="reference internal" href="#exceptions">Exceptions</a></li>
 <li><a class="reference internal" href="#module-functions">Module Functions</a></li>
 <li><a class="reference internal" href="#see-also">See Also</a></li>

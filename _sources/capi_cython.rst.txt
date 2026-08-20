@@ -335,6 +335,69 @@ Several performance-critical methods release the GIL:
 
 This allows other Python threads to run concurrently with the engine.
 
+C-Backed Engine (c_engine_ex.pyx)
+---------------------------------
+
+``EventEngineEx`` in ``event_engine.capi.c_engine_ex`` is the standalone
+C-backed engine: the loop, dispatch, sequence counter and timers live in the
+``evt_engine`` structure (``c_engine.h`` / ``c_engine_gil.h``) instead of
+Cython. It is **not** a subclass of ``c_engine.EventEngine``.
+
+.. code-block:: cython
+
+   from event_engine.capi.c_engine_ex cimport EventEngineEx, EventHookMap, C_EVENT_ENGINE
+
+   cdef class MyService:
+       cdef EventEngineEx engine
+
+       def __init__(self):
+           self.engine = EventEngineEx(capacity=8192)
+
+       cpdef void publish(self, str topic_str, object data):
+           cdef Topic topic = Topic(topic_str)
+           self.engine.put(topic, data, block=True)
+
+Key differences from ``c_engine.EventEngine``:
+
+- Hook registries are :class:`EventHookMap` instances (``BoundByteMap``
+  subclasses bound to the C bytemaps), typed as ``dict[str, EventHook]``.
+- Timers are C ``evt_engine_timer_ctx`` tasks polled by the loop; a
+  different interval replaces the previous timer task (the
+  ``c_engine.EventEngineEx`` subclass keeps one Python thread per interval).
+- ``seq_id`` is an atomic counter in C; ``active`` is an atomic flag.
+
+Default engine and C pointer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The process-wide default engine is ``event_engine.EVENT_ENGINE`` (an
+instance of the C-backed ``EventEngineEx``, created idle at import time).
+Its C pointer is exposed for downstream Cython modules:
+
+.. code-block:: cython
+
+   from event_engine.capi.c_engine_ex cimport C_EVENT_ENGINE
+   # or, after importing everything:
+   # from event_engine.capi.__infra__ cimport C_EVENT_ENGINE, CEventEngineEx
+
+   cdef evt_engine* engine = C_EVENT_ENGINE   # non-NULL once event_engine is imported
+
+The pointer stays valid as long as the Python singleton ``EVENT_ENGINE`` is
+kept alive (it is module-global, so effectively for the process lifetime).
+
+CPU affinity
+~~~~~~~~~~~~
+
+The engine loop thread is pinned to a fixed core by default. The target CPU
+is selected by the ``EE_LOOP_CPU`` compile-time macro (default ``0``; ``-1``
+disables affinity). Override at build time:
+
+.. code-block:: bash
+
+   EE_LOOP_CPU=2 make build          # or: EE_LOOP_CPU=2 python setup.py build_ext --inplace
+
+Both loop entry points pin the calling thread: ``c_evt_engine_loop``
+(pure C) and ``c_evt_engine_loop_gil`` (GIL-aware).
+
 Performance Tips
 ----------------
 

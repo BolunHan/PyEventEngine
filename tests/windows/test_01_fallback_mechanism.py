@@ -99,14 +99,12 @@ def _run_python(script: str) -> subprocess.CompletedProcess:
 class TestFallbackMechanism(unittest.TestCase):
     """Contract: the package degrades gracefully when capi is unavailable."""
 
-    @unittest.skipUnless(sys.platform == "win32", "subprocess blocker only works on Windows (no .so linkage)")
     def test_00_top_level_falls_back_to_native(self) -> None:
         """event_engine imports native when event_engine.capi is blocked."""
         result = _run_python(_BLOCK_CAPI_SCRIPT)
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertIn("FALLBACK_OK", result.stdout)
 
-    @unittest.skipUnless(sys.platform == "win32", "subprocess blocker only works on Windows (no .so linkage)")
     def test_01_capi_falls_back_to_fallback_engine(self) -> None:
         """event_engine.capi uses fallback_engine when c_engine is blocked."""
         result = _run_python(_BLOCK_C_ENGINE_SCRIPT)

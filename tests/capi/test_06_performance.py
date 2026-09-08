@@ -15,7 +15,7 @@ Environment variables:
     PEE_PERF_TIMEOUT     consumer timeout in seconds (default 20)
     PEE_MIN_SPEEDUP      minimum required capi/native engine speedup (default 1.5)
     PEE_MATCH_MIN_SPEEDUP  minimum required capi/native match speedup (default 1.0)
-    PEE_MQ_MAX_US        maximum allowed raw MQ seconds per op in µs (default 20)
+    PEE_MQ_MAX_US        maximum allowed raw MQ seconds per op in us (default 20)
 """
 
 import json
@@ -73,8 +73,8 @@ class TestEnginePerformance(unittest.TestCase):
         n = min(_PERF_MSGS, 200_000)
         seconds_per_op = EngineTestToolkit.bench_mq_put_get(n)
         us_per_op = seconds_per_op * 1e6
-        print(f"\n[Perf-Raw-MQ] {n} put/get cycles, {us_per_op:.3f} µs/op")
-        self.assertLess(us_per_op, _MQ_MAX_US, f"raw MQ {us_per_op:.3f}µs/op exceeds budget {_MQ_MAX_US}µs")
+        print(f"\n[Perf-Raw-MQ] {n} put/get cycles, {us_per_op:.3f} us/op")
+        self.assertLess(us_per_op, _MQ_MAX_US, f"raw MQ {us_per_op:.3f}us/op exceeds budget {_MQ_MAX_US}us")
 
 
 class TestCapiVsNativeSpeedup(unittest.TestCase):

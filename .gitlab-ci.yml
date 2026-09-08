@@ -63,8 +63,10 @@ docs:build:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   script:
     - python -m pip install --upgrade pip setuptools
+    - pip install cython setuptools wheel PyCyBase
+    - python setup.py build_ext --inplace --verbose --force
+    - pip install -U . --no-build-isolation
     - pip install sphinx furo sphinx-autodoc-typehints
-    - pip install .
     - cd docs && sphinx-build -M html . _build
 
 pages:
@@ -78,8 +80,10 @@ pages:
     - when: on_success
   script:
     - python -m pip install --upgrade pip setuptools
+    - pip install cython setuptools wheel PyCyBase
+    - python setup.py build_ext --inplace --verbose --force
+    - pip install -U . --no-build-isolation
     - pip install sphinx furo sphinx-autodoc-typehints
-    - pip install .
     - cd docs && sphinx-build -M html . _build
     - cd .. && mv docs/_build/html public
   artifacts:

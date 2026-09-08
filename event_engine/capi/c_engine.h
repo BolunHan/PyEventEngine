@@ -264,9 +264,21 @@ static inline uint64_t c_evt_engine_get_seq_id(const evt_engine* engine) {
 
 /* Monotonic seconds since an arbitrary epoch, for drift-free scheduling. */
 static inline double c_evt_engine_monotonic_seconds(void) {
+#if defined(_WIN32)
+    /* QueryPerformanceCounter: the true monotonic clock on Windows. The
+       frequency is constant per boot, so cache it after the first call. */
+    static LARGE_INTEGER qpc_freq = {0};
+    if (qpc_freq.QuadPart == 0) {
+        QueryPerformanceFrequency(&qpc_freq);
+    }
+    LARGE_INTEGER counter;
+    QueryPerformanceCounter(&counter);
+    return (double) counter.QuadPart / (double) qpc_freq.QuadPart;
+#else
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (double) ts.tv_sec + (double) ts.tv_nsec * 1e-9;
+#endif
 }
 
 /* Next interval-aligned tick: the smallest multiple of interval strictly

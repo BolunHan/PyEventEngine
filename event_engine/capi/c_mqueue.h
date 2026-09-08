@@ -36,6 +36,17 @@
 #define DEFAULT_MQ_TIMEOUT_SECONDS 1.0
 #endif
 
+/* Time budget (seconds) for the busy phase of the hybrid waits. The busy
+   loops are capped by max_spin AND by this elapsed-time deadline, so an idle
+   wait cannot burn CPU proportional to wake frequency: sched_yield cost
+   varies widely across hosts/OSes (an idle 20 Hz timer loop used to pay a
+   full 65535-yield spin per wake, i.e. up to ~30 ms of CPU each). A message
+   present at lock time is still picked up on the first iteration, so the
+   hot path is unaffected. */
+#ifndef MQ_SPIN_BUDGET_SECONDS
+#define MQ_SPIN_BUDGET_SECONDS 0.0002
+#endif
+
 /* @brief In-memory ring-buffer message queue
  *
  * The buffer is a flexible array member placed last so the whole queue + buffer
@@ -170,6 +181,26 @@ static inline size_t c_mq_occupied(message_queue* mq);
 /* ----------------------------------------------------------------------
  * Implementations
  * --------------------------------------------------------------------*/
+
+/* Monotonic seconds since an arbitrary epoch, for the hybrid spin budget.
+   QPC on Windows (the true monotonic clock — cbase's nt compat layer maps
+   clock_gettime to wall time and defines no CLOCK_MONOTONIC); CLOCK_MONOTONIC
+   elsewhere. */
+static inline double c_mq_monotonic_seconds(void) {
+#if defined(_WIN32)
+    static LARGE_INTEGER qpc_freq = {0};
+    if (qpc_freq.QuadPart == 0) {
+        QueryPerformanceFrequency(&qpc_freq);
+    }
+    LARGE_INTEGER counter;
+    QueryPerformanceCounter(&counter);
+    return (double) counter.QuadPart / (double) qpc_freq.QuadPart;
+#else
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double) ts.tv_sec + (double) ts.tv_nsec * 1e-9;
+#endif
+}
 
 /* Helper: add seconds (fractional allowed) to timespec */
 static inline void timespec_add_seconds(struct timespec* ts, double seconds) {
@@ -334,6 +365,7 @@ static inline int c_mq_get_await(message_queue* mq, evt_message_payload** out_ms
 /* Busy-looping put (spin up to max_spin times until space). */
 static inline int c_mq_put_busy(message_queue* mq, evt_message_payload* msg, size_t max_spin) {
     if (!mq || !msg) return EVT_RET_ERR_INVALID_INPUT;
+    const double spin_deadline = c_mq_monotonic_seconds() + MQ_SPIN_BUDGET_SECONDS;
     for (size_t i = 0; i < max_spin; ++i) {
         pthread_mutex_lock(&mq->mutex);
         if (mq->count < mq->capacity) {
@@ -345,6 +377,7 @@ static inline int c_mq_put_busy(message_queue* mq, evt_message_payload* msg, siz
             return EVT_RET_OK;
         }
         pthread_mutex_unlock(&mq->mutex);
+        if (c_mq_monotonic_seconds() >= spin_deadline) break;
         sched_yield();
     }
     return EVT_RET_ERR_FULL;
@@ -353,6 +386,7 @@ static inline int c_mq_put_busy(message_queue* mq, evt_message_payload* msg, siz
 /* Busy-looping get (spin up to max_spin times until item). */
 static inline int c_mq_get_busy(message_queue* mq, evt_message_payload** out_msg, size_t max_spin) {
     if (!mq || !out_msg) return EVT_RET_ERR_INVALID_INPUT;
+    const double spin_deadline = c_mq_monotonic_seconds() + MQ_SPIN_BUDGET_SECONDS;
     for (size_t i = 0; i < max_spin; ++i) {
         pthread_mutex_lock(&mq->mutex);
         if (mq->count > 0) {
@@ -365,6 +399,7 @@ static inline int c_mq_get_busy(message_queue* mq, evt_message_payload** out_msg
             return EVT_RET_OK;
         }
         pthread_mutex_unlock(&mq->mutex);
+        if (c_mq_monotonic_seconds() >= spin_deadline) break;
         sched_yield();
     }
     return EVT_RET_ERR_EMPTY;

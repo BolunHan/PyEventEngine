@@ -297,8 +297,10 @@ class TestEventHookAlignment(unittest.TestCase):
             hook.add_handler(failing)
             hook.add_handler(ok)
 
-        capi_hook.trigger(capi_payload)  # must not raise
-        native_hook.trigger(native_payload)  # must not raise
+        with self.assertLogs(capi_hook.logger, level="ERROR") as cm:
+            capi_hook.trigger(capi_payload)  # must not raise
+            native_hook.trigger(native_payload)  # must not raise
+        self.assertIn("ValueError: boom", "\n".join(cm.output))
         self.assertEqual(capi_ran, [1])
         self.assertEqual(native_ran, [1])
 
@@ -315,10 +317,12 @@ class TestEventHookAlignment(unittest.TestCase):
 
         capi_hook.add_handler(capi_slow)
         native_hook.add_handler(native_slow)
-        capi_hook.trigger(capi_payload)
-        capi_hook.trigger(capi_payload)
-        native_hook.trigger(native_payload)
-        native_hook.trigger(native_payload)
+        with self.assertLogs(capi_hook.logger, level="ERROR") as cm:
+            capi_hook.trigger(capi_payload)
+            capi_hook.trigger(capi_payload)
+            native_hook.trigger(native_payload)
+            native_hook.trigger(native_payload)
+        self.assertIn("missing 1 required positional argument", "\n".join(cm.output))
 
         self.assertEqual(set(capi_hook.stats.keys()), set(native_hook.stats.keys()))
         self.assertEqual(capi_hook.stats["n_calls"], native_hook.stats["n_calls"])

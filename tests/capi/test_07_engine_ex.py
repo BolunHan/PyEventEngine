@@ -529,8 +529,10 @@ class TestEngineLoop(unittest.TestCase):
         engine.register_handler(topic, normal)
         try:
             engine.start()
-            engine.put(topic, 42)
-            self._wait_for(done)
+            with self.assertLogs(engine.logger, level="ERROR") as cm:
+                engine.put(topic, 42)
+                self._wait_for(done)
+            self.assertIn("ValueError: engine test", "\n".join(cm.output))
             engine.stop()
             self.assertEqual(ran, [42])
         finally:

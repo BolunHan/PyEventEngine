@@ -2,16 +2,30 @@ __version__ = '1.0.2'
 
 import functools
 import pathlib
+import warnings
 from collections.abc import Mapping
 
-from .config_view import CONFIG_VIEW
 from .base import LOGGER
+
+try:
+    # Compiled registry - source of truth for the C build configuration.
+    from .config_view import CONFIG_VIEW
+except Exception as e:
+    # config_view is a Cython extension whose module init imports the capi
+    # extensions; on source checkouts without a Cython build (or when capi
+    # is blocked/unavailable) it cannot load. Keep `import event_engine`
+    # working so the capi -> native fallback below can engage - the native
+    # defaults mirror the documented compile-time values.
+    warnings.warn(
+        f"Compiled config_view unavailable ({e!r}); using native config defaults.",
+        ImportWarning,
+        stacklevel=2,
+    )
+    from ._config_view_native import CONFIG_VIEW
 
 try:
     from .capi import *  # noqa: F401,F403
 except Exception as e:
-    import warnings
-
     warnings.warn(
         f"Failed to import event_engine.capi ({e!r}); falling back to event_engine.native.",
         ImportWarning,

@@ -19,7 +19,7 @@ LOGGER = LOGGER.getChild('EngineEx')
 
 
 cdef class EventHookMap(BoundByteMap):
-    """Synchronized topic → EventHook mapping backed by a C bytemap.
+    """Synchronized topic -> EventHook mapping backed by a C bytemap.
 
     The C bytemap stores the raw ``evt_hook*`` pointer as the value, so the
     C engine's trigger can dispatch entries directly while this dict keeps
@@ -77,7 +77,7 @@ cdef class EventEngineEx:
         if not self.header:
             raise RuntimeError('Not initialized!')
 
-        # GIL-aware loop — runs with the GIL held; the C layer releases it
+        # GIL-aware loop - runs with the GIL held; the C layer releases it
         # only around the blocking queue wait, so every dispatch runs under
         # the GIL.
         c_evt_engine_loop_gil(self.header)
@@ -351,7 +351,7 @@ cdef class EventEngineEx:
         if not payload:
             raise MemoryError('Failed to allocate timer payload')
 
-        # 2. Remove the self-destruct hook — the C engine must not free it.
+        # 2. Remove the self-destruct hook - the C engine must not free it.
         payload.fn_dealloc = NULL
 
         # 3. Register through the C interface.
@@ -449,7 +449,7 @@ cdef class EngineTestToolkit:
 
         Test-only: unlike ``get_timer`` this does not replace existing timer
         tasks, enabling multi-timer scenarios. Follows the same pypayload flow
-        as ``get_timer`` — on success the returned wrapper keeps the payload
+        as ``get_timer`` - on success the returned wrapper keeps the payload
         alive on the Python side (the C task borrows it, fn_dealloc removed);
         on rejection (e.g. duplicate topic) the payload is freed and None
         returned.

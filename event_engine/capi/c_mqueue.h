@@ -183,7 +183,7 @@ static inline size_t c_mq_occupied(message_queue* mq);
  * --------------------------------------------------------------------*/
 
 /* Monotonic seconds since an arbitrary epoch, for the hybrid spin budget.
-   QPC on Windows (the true monotonic clock — cbase's nt compat layer maps
+   QPC on Windows (the true monotonic clock - cbase's nt compat layer maps
    clock_gettime to wall time and defines no CLOCK_MONOTONIC); CLOCK_MONOTONIC
    elsewhere. */
 static inline double c_mq_monotonic_seconds(void) {

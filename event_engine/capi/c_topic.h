@@ -54,7 +54,7 @@ typedef enum evt_topic_type {
 
 union evt_topic_part_variant;
 
-// Common header — must be first in every variant
+// Common header - must be first in every variant
 typedef struct evt_topic_part {
     evt_topic_type                ttype;
     union evt_topic_part_variant* next;
@@ -561,7 +561,7 @@ static inline int c_topic_parse(evt_topic* topic, const char* key, size_t key_le
 
         while (i < key_len) {
             if (key[i] == DEFAULT_TOPIC_SEP) {
-                /* If next char is '/', this '.' is part of "./" → stop here */
+                /* If next char is '/', this '.' is part of "./" -> stop here */
                 if (i + 1 < key_len && key[i + 1] == DEFAULT_PATTERN_DELIM) {
                     break;
                 }

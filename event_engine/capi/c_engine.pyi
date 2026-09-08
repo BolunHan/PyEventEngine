@@ -18,7 +18,7 @@ class Empty(Exception):
 
 class EventEngine:
     """
-    High‑performance, topic‑driven event dispatcher backed by a lock–aware C implementation.
+    High-performance, topic-driven event dispatcher backed by a lock-aware C implementation.
 
     The engine manages an internal message queue and dispatches events to registered handlers
     based on topic matching rules. Internally, it uses the following C components:
@@ -31,7 +31,7 @@ class EventEngine:
     These C structures are allocated during initialization and are managed automatically.
 
     **Matching priority**: exact topic matches take precedence over generic matches.
-    Exact matches are based on the topic’s internal literal key (not its string representation).
+    Exact matches are based on the topic's internal literal key (not its string representation).
     Generic matches are evaluated by testing whether the published topic matches a registered pattern.
 
     Notes:
@@ -47,7 +47,7 @@ class EventEngine:
         If both were somehow registered (which the Python API prevents), only one hook would be triggered,
         with undefined selection priority.
 
-        Topic construction validity is the user’s responsibility. Use a ``TopicSet`` for robust topic management.
+        Topic construction validity is the user's responsibility. Use a ``TopicSet`` for robust topic management.
 
     Attributes:
         capacity (int): Maximum number of messages the internal queue can hold.
@@ -341,7 +341,7 @@ class EventEngineEx(EventEngine):
         per timer interval) defined in ``c_engine.pyx``. Since the C-backed
         engine was introduced, the ``event_engine.capi.EventEngineEx`` export
         (and the default ``EVENT_ENGINE`` singleton) refers to the standalone
-        C-engine-backed class in ``c_engine_ex`` — see ``c_engine_ex.pyi``.
+        C-engine-backed class in ``c_engine_ex`` - see ``c_engine_ex.pyi``.
         Use this class only when the thread-based timer variant is intended.
 
     Attributes:

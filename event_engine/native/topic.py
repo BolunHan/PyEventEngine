@@ -749,7 +749,7 @@ class PyTopic:
                 'literal': None,
             }
 
-            # Determine which side is exact (neither → fail-fast)
+            # Determine which side is exact (neither -> fail-fast)
             if part_a.ttype == PyTopicType.TOPIC_PART_EXACT:
                 part_exact, part_other = part_a, part_b
             elif part_b.ttype == PyTopicType.TOPIC_PART_EXACT:
@@ -774,7 +774,7 @@ class PyTopic:
                     and part_exact.part in part_other._options
                 )
             elif part_other.ttype == PyTopicType.TOPIC_PART_PATTERN:
-                # POSIX ERE regexec is unanchored → use re.search
+                # POSIX ERE regexec is unanchored -> use re.search
                 matched = (
                     isinstance(part_exact, PyTopicPartExact)
                     and isinstance(part_other, PyTopicPartPattern)

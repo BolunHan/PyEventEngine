@@ -347,7 +347,7 @@ class Topic:
         >>> t6.value
         'Realtime..TickData'
 
-        This inconsistency between the literal string and parsed parts can be confusing—use with caution.
+        This inconsistency between the literal string and parsed parts can be confusing-use with caution.
 
     Notes on internalization and lifecycle
         - Topic instances internalize their literal content into a shared global StrMap.

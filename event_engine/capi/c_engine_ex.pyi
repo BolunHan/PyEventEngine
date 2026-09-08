@@ -17,7 +17,7 @@ class Empty(Exception):
 
 
 class EventHookMap(dict[str, EventHook]):
-    """Synchronized topic → ``EventHook`` mapping backed by a C bytemap.
+    """Synchronized topic -> ``EventHook`` mapping backed by a C bytemap.
 
     The C bytemap stores the raw ``evt_hook*`` pointer as the value, so the
     C engine's trigger can dispatch entries directly while this dict keeps

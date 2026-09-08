@@ -128,7 +128,7 @@ cdef class AllocatorTestToolkit:
 
     Exposes the live ``EE_CFG_*`` globals, the allocator protocol struct
     configurations (lock/shm/freelist flags and backing allocator presence),
-    and the ``EEConfigContext`` activation path — all of which are internal
+    and the ``EEConfigContext`` activation path - all of which are internal
     C state that the public Python API does not otherwise expose.
 
     Note:

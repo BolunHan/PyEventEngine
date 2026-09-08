@@ -639,7 +639,7 @@ cdef class EngineTestToolkit:
         """Average seconds per put/get round trip on a raw C message queue.
 
         Allocates a standalone ``message_queue`` and a single payload, then
-        times ``n`` put/get cycles on the bare C API — no engine, no Python
+        times ``n`` put/get cycles on the bare C API - no engine, no Python
         dispatch, no handler invocation. Returns seconds per operation.
 
         Args:

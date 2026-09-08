@@ -43,7 +43,7 @@ typedef struct evt_engine_timer_ctx {
        head is always the next timer ctx to tick. One ctx exists per registered
        interval; every task in the ctx fires together on each tick. */
     struct evt_engine_timer_ctx* next;
-    /* Firing switch for this ctx's tasks — there is no per-task gating.
+    /* Firing switch for this ctx's tasks - there is no per-task gating.
        Registering (re)arms the ctx, so any registration reactivates a paused
        timer; c_evt_engine_set_timer_active pauses/resumes every ctx without
        releasing tasks. */
@@ -52,19 +52,19 @@ typedef struct evt_engine_timer_ctx {
     double           next_due;          // next tick timestamp (aligned to interval boundaries)
     size_t           capacity;          // allocated task buffer capacity
     size_t           n_task;            // registered task count in this ctx
-    evt_engine_task* task;              // OWNED — contiguous task buffer (registration order)
+    evt_engine_task* task;              // OWNED - contiguous task buffer (registration order)
 } evt_engine_timer_ctx;
 
 typedef struct evt_engine {
-    message_queue*        mq;                   // OWNED — message queue backing the engine
-    bytemap*              exact_topic_hooks;    // OWNED — exact-topic hook registry
-    bytemap*              generic_topic_hooks;  // OWNED — generic-topic hook registry
+    message_queue*        mq;                   // OWNED - message queue backing the engine
+    bytemap*              exact_topic_hooks;    // OWNED - exact-topic hook registry
+    bytemap*              generic_topic_hooks;  // OWNED - generic-topic hook registry
     double                mq_timeout_seconds;   // timeout for hybrid get
     uint64_t              mq_spin_limit;        // spin limit for hybrid get
     _Atomic uint64_t      seq_id;               // publish sequence counter; atomic ops only
     atomic_bool           active;               // loop switch; atomic store/load only
-    evt_engine_timer_ctx* timer;                // OWNED — timer ctx linked-list head (sorted by next_due)
-    bytemap*              timer_topics;         // OWNED — timer topic key → ctx registry (filters duplicates)
+    evt_engine_timer_ctx* timer;                // OWNED - timer ctx linked-list head (sorted by next_due)
+    bytemap*              timer_topics;         // OWNED - timer topic key -> ctx registry (filters duplicates)
     size_t                n_timer;              // registered timer task count (across all ctxs)
     double                next_timer_due;       // cached earliest next tick (head ctx next_due)
 } evt_engine;
@@ -263,7 +263,7 @@ static inline uint64_t c_evt_engine_get_seq_id(const evt_engine* engine) {
 // ========== Public APIs (Timer Management) ==========
 
 /* Monotonic seconds since an arbitrary epoch, for drift-free scheduling.
-   Single implementation lives in c_mqueue.h (c_mq_monotonic_seconds) —
+   Single implementation lives in c_mqueue.h (c_mq_monotonic_seconds) -
    QPC on Windows, CLOCK_MONOTONIC elsewhere. */
 static inline double c_evt_engine_monotonic_seconds(void) {
     return c_mq_monotonic_seconds();
@@ -271,7 +271,7 @@ static inline double c_evt_engine_monotonic_seconds(void) {
 
 /* Next interval-aligned tick: the smallest multiple of interval strictly
    greater than now. Every next_due is therefore a whole multiple of its
-   interval — drift-free, and all timers of the same interval tick at the
+   interval - drift-free, and all timers of the same interval tick at the
    same instants. */
 static inline double c_evt_engine_timer_align(double now, double interval_seconds) {
     return (floor(now / interval_seconds) + 1.0) * interval_seconds;
@@ -297,9 +297,9 @@ static inline void c_evt_engine_timer_unlink(evt_engine* engine, evt_engine_time
 }
 
 /* Fire one tick of the (head) timer ctx. Every task in the ctx dispatches
-   together — payloads are embedded and go directly to hooks, never queued.
+   together - payloads are embedded and go directly to hooks, never queued.
    Afterwards the ctx advances to its next aligned boundary (coalescing any
-   boundaries missed by a late wake — at most one tick per poll per interval,
+   boundaries missed by a late wake - at most one tick per poll per interval,
    matching the original engine) and relinks to its sorted position. */
 static inline void c_evt_engine_timer_fire(evt_engine* engine, evt_engine_timer_ctx* ctx, double now) {
     if (atomic_load_explicit(&ctx->active, memory_order_acquire)) {
@@ -313,7 +313,7 @@ static inline void c_evt_engine_timer_fire(evt_engine* engine, evt_engine_timer_
     ctx->next_due += ctx->interval_seconds;
     while (ctx->next_due <= now) ctx->next_due += ctx->interval_seconds;
 
-    // The head has moved on — relink it to its sorted position
+    // The head has moved on - relink it to its sorted position
     engine->timer = ctx->next;
     ctx->next = NULL;
     c_evt_engine_timer_insert(engine, ctx);
@@ -342,11 +342,11 @@ static inline void c_evt_engine_timer_poll(evt_engine* engine) {
  * @brief Register a timer task on the engine.
  *
  * The task payload is embedded in its ctx's contiguous task buffer and
- * carries @p payload_args as its user data; it is never queued — each tick
+ * carries @p payload_args as its user data; it is never queued - each tick
  * dispatches it directly to the matching hooks. There is one timer ctx per
  * interval: tasks sharing an interval share one ctx and fire together on the
  * same (interval-aligned) boundaries, while different intervals tick
- * independently. The topic registry filters out already-registered topics —
+ * independently. The topic registry filters out already-registered topics -
  * re-registering the same topic returns EVT_RET_ERR_DUPLICATE instead of
  * overriding the payload or double firing.
  *
@@ -369,7 +369,7 @@ static inline int c_evt_engine_register_timer(evt_engine* engine, evt_topic* top
     allocator_protocol* allocator = c_ap_protocol_from_ptr(engine);
     const double        now = c_evt_engine_monotonic_seconds();
 
-    // One ctx per interval — locate it or create one aligned to the interval
+    // One ctx per interval - locate it or create one aligned to the interval
     // boundaries (next_due is always a whole multiple of interval_seconds).
     bool ctx_is_new = false;
     ctx = engine->timer;
@@ -411,7 +411,7 @@ static inline int c_evt_engine_register_timer(evt_engine* engine, evt_topic* top
     task->payload.fn_dealloc = NULL;
     ctx->n_task += 1;
 
-    // Publish the topic → ctx entry; roll back the task on registry failure
+    // Publish the topic -> ctx entry; roll back the task on registry failure
     if (c_bytemap_set(engine->timer_topics, topic->key, topic->key_len, (void*) ctx, NULL) != BYTEMAP_OK) {
         ctx->n_task -= 1;
         if (ctx_is_new) {
@@ -424,7 +424,7 @@ static inline int c_evt_engine_register_timer(evt_engine* engine, evt_topic* top
     if (ctx_is_new) c_evt_engine_timer_insert(engine, ctx);
     engine->n_timer += 1;
 
-    // Registration (re)arms the ctx — see evt_engine_timer_ctx.active
+    // Registration (re)arms the ctx - see evt_engine_timer_ctx.active
     atomic_store_explicit(&ctx->active, true, memory_order_release);
     return EVT_RET_OK;
 }
@@ -460,7 +460,7 @@ static inline int c_evt_engine_unregister_timer(evt_engine* engine, evt_topic* t
             break;
         }
     }
-    if (!found) return EVT_RET_ERR_NOT_FOUND;  // registry/task mismatch — defensive
+    if (!found) return EVT_RET_ERR_NOT_FOUND;  // registry/task mismatch - defensive
 
     evt_engine_task* task = &ctx->task[idx];
     if (task->payload.fn_dealloc) task->payload.fn_dealloc(&task->payload);
@@ -483,7 +483,7 @@ static inline int c_evt_engine_unregister_timer(evt_engine* engine, evt_topic* t
 /**
  * @brief Atomically set the engine timer firing state without releasing tasks.
  *
- * Affects every timer ctx — there is no per-task gating. A later
+ * Affects every timer ctx - there is no per-task gating. A later
  * c_evt_engine_register_timer call re-arms its ctx, discarding a paused state.
  *
  * @param engine Engine whose timer to update (may be NULL).
@@ -502,7 +502,7 @@ static inline void c_evt_engine_set_timer_active(evt_engine* engine, bool active
 
 /* Blocking-wait timeout for one loop iteration. The wait is capped at the
    earliest timer tick so ticks fire on their own cadence instead of arriving
-   in bursts on queue wake-ups. Pure C — makes no GIL assumptions. */
+   in bursts on queue wake-ups. Pure C - makes no GIL assumptions. */
 static inline double c_evt_engine_mq_wait_seconds(const evt_engine* engine) {
     double timeout = engine->mq_timeout_seconds;
     if (engine->timer && engine->n_timer &&
@@ -510,7 +510,7 @@ static inline double c_evt_engine_mq_wait_seconds(const evt_engine* engine) {
         engine->next_timer_due > 0) {
         double wait = engine->next_timer_due - c_evt_engine_monotonic_seconds();
         if (wait <= 0) {
-            timeout = 1e-6;  // tick already due — wake immediately
+            timeout = 1e-6;  // tick already due - wake immediately
         }
         else if (wait < timeout) {
             timeout = wait;
@@ -520,7 +520,7 @@ static inline double c_evt_engine_mq_wait_seconds(const evt_engine* engine) {
 }
 
 /**
- * @brief Run the engine dispatch loop. Pure C — blocks on the queue wait
+ * @brief Run the engine dispatch loop. Pure C - blocks on the queue wait
  * without touching the GIL; callers needing GIL release around the blocking
  * wait should use c_evt_engine_loop_gil instead.
  *
@@ -583,7 +583,7 @@ static inline void c_evt_engine_trigger(evt_engine* engine, evt_message_payload*
 }
 
 /**
- * @brief Publish a payload to the engine queue. Pure C — blocks on the put
+ * @brief Publish a payload to the engine queue. Pure C - blocks on the put
  * without touching the GIL; callers needing GIL release around the blocking
  * wait should use c_evt_engine_publish_gil instead.
  *
@@ -616,7 +616,7 @@ static inline int c_evt_engine_publish(evt_engine* engine, evt_message_payload* 
 
 /* Fetch the function pointer stored in a callback entry. Every union variant
    stores the function pointer at the same address, so no type dispatch is
-   needed — read it through any member. */
+   needed - read it through any member. */
 static inline const void* c_evt_callback_fn(const evt_callback* callback) {
     return callback ? (const void*) callback->fn.bare : NULL;
 }

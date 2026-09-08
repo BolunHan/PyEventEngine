@@ -10,7 +10,7 @@
    Every function in this header MUST be entered with the GIL held from a
    thread that owns a Python thread state (Python threads satisfy both; raw
    pthreads must call PyGILState_Ensure first). The GIL is released only
-   around blocking queue waits — all dispatch (trigger, hook callbacks,
+   around blocking queue waits - all dispatch (trigger, hook callbacks,
    payload release) runs under the GIL. */
 
 // ========== Forward Declarations ==========
@@ -25,7 +25,7 @@ static inline int c_evt_engine_publish_gil(evt_engine* engine, evt_message_paylo
  * @brief Run the engine dispatch loop with the GIL held on entry.
  *
  * Releases the GIL only around the blocking queue wait, so every dispatch
- * runs under the GIL. Identical loop body to c_evt_engine_loop — the pure
+ * runs under the GIL. Identical loop body to c_evt_engine_loop - the pure
  * variant keeps the GIL semantics out of the C layer.
  *
  * @param engine Engine to run (must be initialized).

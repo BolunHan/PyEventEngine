@@ -5,7 +5,7 @@ NT test runner — discovers and runs unittest suites from the project's tests/ 
 The test tree is organized into three suites:
     tests/capi/     contract tests for the Cython (capi) layer
     tests/native/   contract tests for the pure-Python native layer
-    tests/nt/       fallback mechanism / cross-target package tests
+    tests/windows/  fallback mechanism / cross-target package tests
 
 Usage:
     python tests/nt_main.py            # discover and run all suites
@@ -22,7 +22,7 @@ import unittest
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_DIR = os.path.join(PROJECT_ROOT, "tests")
-SUITES = ("capi", "native", "nt")
+SUITES = ("capi", "native", "windows")
 
 
 def _discover_suite(loader: unittest.TestLoader, pattern: str) -> unittest.TestSuite:

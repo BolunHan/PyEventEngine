@@ -36,6 +36,12 @@ def _discover_suite(loader: unittest.TestLoader, pattern: str) -> unittest.TestS
 
 
 def main():
+    # Ensure the project root is on sys.path so test modules can import
+    # `tests._common` regardless of how discovery names them.
+    os.chdir(PROJECT_ROOT)
+    if PROJECT_ROOT not in sys.path:
+        sys.path.insert(0, PROJECT_ROOT)
+
     # Parse simple flags
     argv = sys.argv[1:]
     verbosity = 1

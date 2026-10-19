@@ -7,8 +7,8 @@ from contextlib import suppress
 from pathlib import Path
 
 import cbase
-from cbase.cython_injection import inject_cython_includes as _inject_cython_includes
 from Cython.Build import cythonize
+from cbase.cython_injection import inject_cython_includes as _inject_cython_includes
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 

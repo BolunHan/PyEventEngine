@@ -1,4 +1,4 @@
-__version__ = '1.0.2.post1'
+__version__ = '1.0.3'
 
 import functools
 import pathlib

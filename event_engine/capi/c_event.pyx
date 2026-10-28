@@ -117,10 +117,14 @@ cdef class MessagePayload:
 
 
 cdef class EventHook:
-    def __cinit__(self, Topic topic, object logger=None):
+    def __init__(self, Topic topic, object logger=None):
+        if topic is None or not topic.header:
+            raise ValueError('Must provide a valid topic.')
+
         self.header = c_evt_hook_new(topic.header, EE_HEAP_ALLOCATOR)
         if not self.header:
             raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
+
         self.callables = NULL
         self.topic = topic
         self.logger = LOGGER.getChild(f'EventHook.{topic}') if logger is None else logger
@@ -263,7 +267,7 @@ cdef class EventHook:
         self.callables = NULL
 
     def __call__(self, MessagePayload msg):
-        c_evt_hook_invoke(self.header, msg.header)
+        self.trigger(msg)
 
     def __iadd__(self, object py_callable):
         self.add_handler(py_callable, None, True)
@@ -274,6 +278,8 @@ cdef class EventHook:
         return self
 
     def __len__(self):
+        if not self.header:
+            return 0
         return self.header.n_callbacks
 
     def __repr__(self):
@@ -288,9 +294,14 @@ cdef class EventHook:
         return self.c_contains_py_callable(<PyObject*> py_callable)
 
     def trigger(self, MessagePayload msg):
+        if not self.header:
+            raise RuntimeError(f'{self.__class__.__name__} is uninitialized!')
         c_evt_hook_invoke(self.header, msg.header)
 
     def add_handler(self, object py_callable, object logger=None, bint deduplicate=False):
+        if not self.header:
+            raise RuntimeError(f'{self.__class__.__name__} is uninitialized!')
+
         cdef object sig = inspect.signature(py_callable)
         cdef object param
         cdef bint with_topic = False
@@ -343,7 +354,12 @@ cdef inline void c_hook_exit(evt_hook* hook, evt_hook_watcher_type watcher_type,
 
 
 cdef class EventHookEx(EventHook):
-    def __cinit__(self, Topic topic, object logger=None):
+    def __init__(self, Topic topic, object logger=None):
+        super().__init__(topic, logger)
+
+        if not self.header:
+            return
+
         c_evt_hook_add_watcher(self.header, c_hook_enter, <void*> &self.hook_stats, evt_hook_watcher_type.EVT_HOOK_WATCHER_PRE_INVOKED)
         c_evt_hook_add_watcher(self.header, c_hook_exit, <void*> &self.hook_stats, evt_hook_watcher_type.EVT_HOOK_WATCHER_POST_INVOKED)
 

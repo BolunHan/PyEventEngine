@@ -85,8 +85,12 @@ class EventHook:
         Initialize an ``EventHook``.
 
         Args:
-            topic: The topic associated with this hook.
+            topic: The topic associated with this hook. It must be a valid,
+                initialized topic.
             logger: Optional logger instance.
+
+        Raises:
+            ValueError: If ``topic`` is None or has not been initialized.
         """
 
     def __call__(self, msg: MessagePayload) -> None:
@@ -97,6 +101,9 @@ class EventHook:
 
         Args:
             msg: The message payload to dispatch to handlers.
+
+        Raises:
+            RuntimeError: If the hook is an uninitialized husk.
         """
 
     def __iadd__(self, handler: Callable) -> EventHook:
@@ -150,6 +157,9 @@ class EventHook:
 
         Args:
             msg: The message payload to dispatch.
+
+        Raises:
+            RuntimeError: If the hook is an uninitialized husk.
         """
 
     def add_handler(self, handler: Callable, logger: Logger = None, deduplicate: bool = False) -> None:
@@ -203,16 +213,20 @@ class HandlerStats(TypedDict):
 
 class EventHookEx(EventHook):
     """
-    Extended ``EventHook`` that tracks per-handler execution statistics.
+    Extended ``EventHook`` that tracks hook-level execution statistics.
     """
 
-    def __init__(self, topic: object, logger: object = None) -> None:
+    def __init__(self, topic: Topic, logger: Logger = None) -> None:
         """
         Initialize an ``EventHookEx``.
 
         Args:
-            topic: The topic associated with this hook.
+            topic: The topic associated with this hook. It must be a valid,
+                initialized topic.
             logger: Optional logger instance.
+
+        Raises:
+            ValueError: If ``topic`` is None or has not been initialized.
         """
 
     @property

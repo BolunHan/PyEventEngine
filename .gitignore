@@ -24,6 +24,8 @@ event_engine/includes/
 # IDE
 .idea/
 .vscode/
+.orbit/
+.claude/
 
 # Test Artifacts
 tests/**/artifacts/**

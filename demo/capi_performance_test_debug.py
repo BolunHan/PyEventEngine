@@ -2,7 +2,6 @@ import os
 import sys
 import time
 import threading
-import signal
 import faulthandler
 
 # Enable faulthandler to get better stack traces on segfault
@@ -13,7 +12,7 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from event_engine.capi import EventEngine, PyTopic  # type: ignore
+from event_engine.capi import EventEngine, Topic  # type: ignore
 
 
 def test_basic_single_message():
@@ -23,7 +22,7 @@ def test_basic_single_message():
     print("=" * 60)
     
     engine = EventEngine(capacity=16)
-    topic = PyTopic("test.topic")
+    topic = Topic("test.topic")
     
     received = []
     done = threading.Event()
@@ -46,7 +45,7 @@ def test_basic_single_message():
     if done.wait(timeout=2):
         print(f"�� Handler executed successfully, received: {received}")
     else:
-        print(f"✗ Timeout waiting for handler")
+        print("✗ Timeout waiting for handler")
     
     engine.stop()
     print("Engine stopped\n")
@@ -60,7 +59,7 @@ def test_producer_thread():
     
     total_messages = 63
     engine = EventEngine(capacity=64)
-    topic = PyTopic("perf.topic")
+    topic = Topic("perf.topic")
     
     count = [0]  # Use list to avoid closure issues
     done = threading.Event()
@@ -83,20 +82,20 @@ def test_producer_thread():
             except Exception as e:
                 print(f"Producer: ERROR putting message {i}: {e}")
                 break
-        print(f"Producer thread finished")
+        print("Producer thread finished")
     
     producer_thread = threading.Thread(target=producer, name="producer", daemon=False)
     
     print("Starting engine...")
     engine.start()
-    print(f"Engine started (consumer tid likely different)")
+    print("Engine started (consumer tid likely different)")
     
     time.sleep(0.1)  # Let engine initialize
     
     print("Starting producer thread...")
     producer_thread.start()
     
-    print(f"Waiting for messages (timeout=5s)...")
+    print("Waiting for messages (timeout=5s)...")
     if done.wait(timeout=5):
         print(f"✓ All {count[0]} messages processed")
     else:
@@ -108,7 +107,7 @@ def test_producer_thread():
     print("Joining producer thread...")
     producer_thread.join(timeout=2)
     
-    print(f"Test complete\n")
+    print("Test complete\n")
 
 
 def main():

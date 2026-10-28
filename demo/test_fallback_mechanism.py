@@ -5,16 +5,22 @@ This script demonstrates that the module can automatically fall back to the
 pure Python implementation when the Cython module is not available.
 """
 
+import os
 import sys
+
+# Ensure project root is on sys.path for direct execution
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
 
 # Test 1: Import and check which implementation is being used
 print("=" * 60)
 print("Testing fallback mechanism...")
 print("=" * 60)
 
-from event_engine.capi import EventEngine, EventEngineEx, Full, Empty, _using_fallback, PyTopic
+from event_engine.capi import EventEngine, EventEngineEx, Full, Empty, USING_FALLBACK, Topic
 
-if _using_fallback:
+if USING_FALLBACK:
     print("✓ Using FALLBACK (Pure Python) implementation")
     print("  This is expected on Windows or when c_engine is not compiled")
 else:
@@ -36,7 +42,7 @@ try:
     print(f"✓ Created engine: {engine}")
     
     # Create a topic
-    topic = PyTopic("test.fallback.check")
+    topic = Topic("test.fallback.check")
     print(f"✓ Created topic: {topic.value}")
     
     # Register a handler
@@ -45,15 +51,15 @@ try:
         results.append((args, kwargs))
     
     engine.register_handler(topic, test_handler)
-    print(f"✓ Registered handler")
+    print("✓ Registered handler")
     
     # Start engine
     engine.start()
-    print(f"✓ Started engine")
+    print("✓ Started engine")
     
     # Publish a message
     engine.put(topic, "test_arg", key="test_value")
-    print(f"✓ Published message")
+    print("✓ Published message")
     
     # Wait for processing
     import time
@@ -61,12 +67,14 @@ try:
     
     # Stop engine
     engine.stop()
-    print(f"✓ Stopped engine")
+    print("✓ Stopped engine")
     
-    # Verify results
+    # Verify results: handlers accepting **kwargs also receive the topic
     assert len(results) == 1
-    assert results[0][0] == ("test_arg",)
-    assert results[0][1] == {"key": "test_value"}
+    args, kwargs = results[0]
+    assert args == ("test_arg",)
+    assert kwargs["key"] == "test_value"
+    assert kwargs["topic"].value == "test.fallback.check"
     print(f"✓ Message processed correctly: {results}")
     
     print("\n" + "=" * 60)
@@ -83,7 +91,7 @@ except Exception as e:
 print("\n" + "=" * 60)
 print("Implementation Information:")
 print("=" * 60)
-print(f"Using fallback: {_using_fallback}")
+print(f"Using fallback: {USING_FALLBACK}")
 print(f"EventEngine: {EventEngine}")
 print(f"EventEngineEx: {EventEngineEx}")
 print(f"Full: {Full}")

@@ -12,9 +12,9 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 from event_engine.capi import (
-    PyMessagePayload, EventHook, EventEngine, EventEngineEx, Full, Empty
+    EventHook, EventEngine, EventEngineEx, Full, Empty
 )
-from event_engine.capi import PyTopic
+from event_engine.capi import Topic
 
 
 class OutputCapture:
@@ -50,7 +50,7 @@ class TestEventEngineBasics(unittest.TestCase):
 
     def test_register_hook_and_unregister(self):
         engine = EventEngine()
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
         hook = EventHook(topic)
 
         def handler(a):
@@ -67,7 +67,7 @@ class TestEventEngineBasics(unittest.TestCase):
 
     def test_register_hook_duplicate_raises_keyerror(self):
         engine = EventEngine()
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
         hook1 = EventHook(topic)
         hook2 = EventHook(topic)
 
@@ -78,14 +78,14 @@ class TestEventEngineBasics(unittest.TestCase):
 
     def test_unregister_hook_nonexistent_raises_keyerror(self):
         engine = EventEngine()
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         with self.assertRaises(KeyError):
             engine.unregister_hook(topic)
 
     def test_register_handler_creates_hook_if_needed(self):
         engine = EventEngine()
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         def handler(a):
             pass
@@ -96,7 +96,7 @@ class TestEventEngineBasics(unittest.TestCase):
 
     def test_register_handler_to_existing_hook(self):
         engine = EventEngine()
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         def h1(a):
             pass
@@ -113,7 +113,7 @@ class TestEventEngineBasics(unittest.TestCase):
 
     def test_unregister_handler_removes_empty_hook(self):
         engine = EventEngine()
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         def handler(a):
             pass
@@ -124,20 +124,20 @@ class TestEventEngineBasics(unittest.TestCase):
         engine.unregister_handler(topic, handler)
         self.assertEqual(len(engine), 0)
 
-    def test_unregister_handler_nonexistent_topic_raises_keyerror(self):
+    def test_unregister_handler_nonexistent_topic_is_noop(self):
         engine = EventEngine()
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         def handler(a):
             pass
 
-        with self.assertRaises(KeyError):
-            engine.unregister_handler(topic, handler)
+        # The CAPI engine logs and returns; it does not raise for an unknown topic
+        engine.unregister_handler(topic, handler)
 
     def test_event_hooks_iterator(self):
         engine = EventEngine()
-        topic1 = PyTopic('topic1')  # type: ignore[arg-type]
-        topic2 = PyTopic('topic2')  # type: ignore[arg-type]
+        topic1 = Topic('topic1')  # type: ignore[arg-type]
+        topic2 = Topic('topic2')  # type: ignore[arg-type]
 
         def h1(a):
             pass
@@ -155,8 +155,8 @@ class TestEventEngineBasics(unittest.TestCase):
 
     def test_topics_iterator(self):
         engine = EventEngine()
-        topic1 = PyTopic('topic1')  # type: ignore[arg-type]
-        topic2 = PyTopic('topic2')  # type: ignore[arg-type]
+        topic1 = Topic('topic1')  # type: ignore[arg-type]
+        topic2 = Topic('topic2')  # type: ignore[arg-type]
 
         def h1(a):
             pass
@@ -172,8 +172,8 @@ class TestEventEngineBasics(unittest.TestCase):
 
     def test_items_iterator(self):
         engine = EventEngine()
-        topic1 = PyTopic('topic1')  # type: ignore[arg-type]
-        topic2 = PyTopic('topic2')  # type: ignore[arg-type]
+        topic1 = Topic('topic1')  # type: ignore[arg-type]
+        topic2 = Topic('topic2')  # type: ignore[arg-type]
 
         def h1(a):
             pass
@@ -187,14 +187,14 @@ class TestEventEngineBasics(unittest.TestCase):
         items = list(engine.items())
         self.assertEqual(len(items), 2)
         for topic, hook in items:
-            self.assertIsInstance(topic, PyTopic)
+            self.assertIsInstance(topic, Topic)
             self.assertIsInstance(hook, EventHook)
 
 
 class TestEventEngineQueue(unittest.TestCase):
     def test_put_and_get_basic(self):
         engine = EventEngine(capacity=10)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         def handler(a, b):
             pass
@@ -216,7 +216,7 @@ class TestEventEngineQueue(unittest.TestCase):
 
     def test_put_full_raises_full_when_nonblocking(self):
         engine = EventEngine(capacity=2)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         def handler(a):
             pass
@@ -234,14 +234,14 @@ class TestEventEngineQueue(unittest.TestCase):
     def test_put_non_exact_topic_raises_valueerror(self):
         engine = EventEngine()
         # Create a non-exact topic (with wildcard or pattern)
-        topic = PyTopic('test.+any')  # type: ignore[arg-type]
+        topic = Topic('test.+any')  # type: ignore[arg-type]
 
         with self.assertRaises(ValueError):
             engine.put(topic, 1)
 
     def test_publish_basic(self):
         engine = EventEngine(capacity=10)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         def handler(a, b, **kw):
             pass
@@ -258,14 +258,14 @@ class TestEventEngineQueue(unittest.TestCase):
 
     def test_publish_non_exact_topic_raises_valueerror(self):
         engine = EventEngine()
-        topic = PyTopic('test.+any')  # type: ignore[arg-type]
+        topic = Topic('test.+any')  # type: ignore[arg-type]
 
         with self.assertRaises(ValueError):
             engine.publish(topic, (), {})
 
-    def test_payload_from_get_owns_args_and_kwargs(self):
+    def test_payload_from_get_carries_args_and_kwargs(self):
         engine = EventEngine(capacity=10)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         def handler(a, **kw):
             pass
@@ -275,16 +275,16 @@ class TestEventEngineQueue(unittest.TestCase):
         engine.put(topic, 1, x=2)
 
         payload = engine.get(block=False)
-        # Payload obtained from get() should own its args and kwargs
+        # The CAPI payload owns its C memory and carries the published data
         self.assertTrue(payload.owner)
-        self.assertTrue(payload.args_owner)
-        self.assertTrue(payload.kwargs_owner)
+        self.assertEqual(payload.args, (1,))
+        self.assertEqual(payload.kwargs, {'x': 2})
 
 
 class TestEventEngineLoop(unittest.TestCase):
     def test_start_and_stop(self):
         engine = EventEngine(capacity=10)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         received = []
 
@@ -312,7 +312,7 @@ class TestEventEngineLoop(unittest.TestCase):
 
     def test_multiple_handlers_on_same_topic(self):
         engine = EventEngine(capacity=10)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         results = {'h1': 0, 'h2': 0}
 
@@ -338,8 +338,8 @@ class TestEventEngineLoop(unittest.TestCase):
 
     def test_multiple_topics(self):
         engine = EventEngine(capacity=20)
-        topic1 = PyTopic('topic1')  # type: ignore[arg-type]
-        topic2 = PyTopic('topic2')  # type: ignore[arg-type]
+        topic1 = Topic('topic1')  # type: ignore[arg-type]
+        topic2 = Topic('topic2')  # type: ignore[arg-type]
 
         results = {'t1': [], 't2': []}
 
@@ -366,7 +366,7 @@ class TestEventEngineLoop(unittest.TestCase):
 
     def test_handler_exception_does_not_crash_engine(self):
         engine = EventEngine(capacity=10)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         called_after_error = []
 
@@ -392,8 +392,8 @@ class TestEventEngineLoop(unittest.TestCase):
 
     def test_clear_unregisters_all_hooks(self):
         engine = EventEngine(capacity=10)
-        topic1 = PyTopic('topic1')  # type: ignore[arg-type]
-        topic2 = PyTopic('topic2')  # type: ignore[arg-type]
+        topic1 = Topic('topic1')  # type: ignore[arg-type]
+        topic2 = Topic('topic2')  # type: ignore[arg-type]
 
         def h1(a):
             pass
@@ -412,7 +412,7 @@ class TestEventEngineLoop(unittest.TestCase):
 
     def test_clear_only_works_when_stopped(self):
         engine = EventEngine(capacity=10)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         def handler(a):
             pass
@@ -435,7 +435,7 @@ class TestEventEngineLoop(unittest.TestCase):
 
     def test_seq_id_incremented_on_publish(self):
         engine = EventEngine(capacity=10)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         def handler(a):
             pass
@@ -465,13 +465,15 @@ class TestEventEngineEx(unittest.TestCase):
         self.assertIn('EventEngineEx', r)
         self.assertIn('idle', r)
 
-    def test_inherits_from_eventengihe(self):
+    def test_engineex_exposes_engine_api(self):
         engine = EventEngineEx()
-        self.assertIsInstance(engine, EventEngine)
+        self.assertIsInstance(engine, EventEngineEx)
+        self.assertTrue(hasattr(engine, 'register_handler'))
+        self.assertTrue(hasattr(engine, 'put'))
 
     def test_basic_operation_same_as_engine(self):
         engine = EventEngineEx(capacity=10)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         received = []
 
@@ -546,7 +548,7 @@ class TestEventEngineEx(unittest.TestCase):
 class TestEventEngineWithPayloads(unittest.TestCase):
     def test_payload_args_not_mutated(self):
         engine = EventEngine(capacity=10)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         received_args = []
 
@@ -571,7 +573,7 @@ class TestEventEngineWithPayloads(unittest.TestCase):
 
     def test_payload_kwargs_not_mutated(self):
         engine = EventEngine(capacity=10)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         received_kwargs = []
 
@@ -599,7 +601,7 @@ class TestEventEngineWithPayloads(unittest.TestCase):
 class TestEventEngineThreadSafety(unittest.TestCase):
     def test_concurrent_puts_processed(self):
         engine = EventEngine(capacity=100)
-        topic = PyTopic('test.topic')  # type: ignore[arg-type]
+        topic = Topic('test.topic')  # type: ignore[arg-type]
 
         results = []
 

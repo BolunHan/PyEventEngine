@@ -1,8 +1,16 @@
 """
 Test script for fallback_engine.py to verify cross-platform compatibility.
 """
+import os
+import sys
+
+# Ensure project root is on sys.path for direct execution
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
 from event_engine.capi.fallback_engine import EventEngine, EventEngineEx, Full, Empty
-from event_engine.capi.c_topic import PyTopic
+from event_engine.capi.c_topic import Topic
 from event_engine.capi.c_event import EventHook
 
 
@@ -13,8 +21,8 @@ def test_basic_engine():
     engine = EventEngine(capacity=100)
     print(f"Created: {engine}")
     # Create topics
-    topic1 = PyTopic("test.topic.one")
-    topic2 = PyTopic("test.topic.two")
+    topic1 = Topic("test.topic.one")
+    topic2 = Topic("test.topic.two")
     # Register handlers
     results = []
 
@@ -51,7 +59,7 @@ def test_get_put():
     """Test get/put operations."""
     print("\nTesting get/put operations...")
     engine = EventEngine(capacity=10)
-    topic = PyTopic("test.message")
+    topic = Topic("test.message")
     # Test put without starting engine
     engine.put(topic, "arg1", "arg2", kwarg1="value1")
     print(f"Queue occupied: {engine.occupied}")
@@ -83,10 +91,10 @@ def test_wildcard_topic():
     print("\nTesting wildcard topic matching...")
     engine = EventEngine()
     # Create a wildcard topic pattern
-    pattern_topic = PyTopic("test.{category}.data")
-    exact_topic1 = PyTopic("test.stock.data")
-    exact_topic2 = PyTopic("test.forex.data")
-    exact_topic3 = PyTopic("test.crypto.info")  # Should not match
+    pattern_topic = Topic("test.{category}.data")
+    exact_topic1 = Topic("test.stock.data")
+    exact_topic2 = Topic("test.forex.data")
+    exact_topic3 = Topic("test.crypto.info")  # Should not match
     results = []
 
     def wildcard_handler(*args, **kwargs):
@@ -136,7 +144,7 @@ def test_hook_operations():
     """Test EventHook operations."""
     print("\nTesting EventHook operations...")
     engine = EventEngine()
-    topic = PyTopic("test.hook")
+    topic = Topic("test.hook")
     # Create hook manually
     hook = EventHook(topic)
     handler_calls = []
@@ -161,7 +169,7 @@ def test_publish_method():
     """Test the publish method with explicit args/kwargs."""
     print("\nTesting publish method...")
     engine = EventEngine()
-    topic = PyTopic("test.publish")
+    topic = Topic("test.publish")
     results = []
 
     def handler(*args, **kwargs):
@@ -185,7 +193,7 @@ def test_multiple_handlers_same_topic():
     """Test multiple handlers on the same topic."""
     print("\nTesting multiple handlers on same topic...")
     engine = EventEngine()
-    topic = PyTopic("test.multi")
+    topic = Topic("test.multi")
     calls = []
 
     def handler1(*args, **kwargs):
@@ -216,7 +224,7 @@ def test_unregister_handler():
     """Test unregistering handlers."""
     print("\nTesting unregister handler...")
     engine = EventEngine()
-    topic = PyTopic("test.unregister")
+    topic = Topic("test.unregister")
     calls = []
 
     def handler1(*args, **kwargs):
@@ -244,8 +252,8 @@ def test_clear():
     """Test clearing all hooks."""
     print("\nTesting clear...")
     engine = EventEngine()
-    topic1 = PyTopic("test.clear.one")
-    topic2 = PyTopic("test.clear.two")
+    topic1 = Topic("test.clear.one")
+    topic2 = Topic("test.clear.two")
 
     def handler(*args, **kwargs):
         pass
@@ -262,9 +270,9 @@ def test_iter_methods():
     """Test iteration methods."""
     print("\nTesting iteration methods...")
     engine = EventEngine()
-    topic1 = PyTopic("test.iter.one")
-    topic2 = PyTopic("test.iter.two")
-    topic3 = PyTopic("test.iter.{wildcard}")
+    topic1 = Topic("test.iter.one")
+    topic2 = Topic("test.iter.two")
+    topic3 = Topic("test.iter.{wildcard}")
 
     def handler(*args, **kwargs):
         pass

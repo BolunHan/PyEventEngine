@@ -1,42 +1,49 @@
+import os
+import sys
 import unittest
+
+# Ensure project root is on sys.path for direct execution
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
 from event_engine.capi import (
-    PyTopicPartExact,
-    PyTopicPartAny,
-    PyTopicPartRange,
-    PyTopicPartPattern,
-    PyTopic,
-    PyTopicType
+    TopicPartExact,
+    TopicPartAny,
+    TopicPartRange,
+    TopicPartPattern,
+    Topic
 )
 
 
 class TestTopicParsing(unittest.TestCase):
 
     def _assert_part_exact(self, part, expected: str):
-        self.assertIsInstance(part, PyTopicPartExact)
+        self.assertIsInstance(part, TopicPartExact)
         self.assertEqual(part.part, expected)
 
     def _assert_part_any(self, part, expected_name: str):
-        self.assertIsInstance(part, PyTopicPartAny)
+        self.assertIsInstance(part, TopicPartAny)
         self.assertEqual(part.name, expected_name)
 
     def _assert_part_range(self, part, expected_options):
-        self.assertIsInstance(part, PyTopicPartRange)
+        self.assertIsInstance(part, TopicPartRange)
         self.assertEqual(list(part.options()), expected_options)
 
     def _assert_part_pattern(self, part, expected_pattern: str):
-        self.assertIsInstance(part, PyTopicPartPattern)
+        self.assertIsInstance(part, TopicPartPattern)
         self.assertEqual(part.pattern, expected_pattern)
 
     def test_basic_tokens(self):
         cases = [
-            ("exact", [PyTopicPartExact]),
-            ("+valid", [PyTopicPartAny]),
-            ("(a|b)", [PyTopicPartRange]),
-            ("./pat/.", [PyTopicPartPattern]),
+            ("exact", [TopicPartExact]),
+            ("+valid", [TopicPartAny]),
+            ("(a|b)", [TopicPartRange]),
+            ("./pat/.", [TopicPartPattern]),
         ]
         for topic_str, expected_types in cases:
             with self.subTest(topic=topic_str):
-                t = PyTopic(topic_str)
+                t = Topic(topic_str)
                 self.assertEqual(len(t), 1)
                 self.assertIsInstance(list(t)[0], expected_types[0])
 
@@ -71,7 +78,7 @@ class TestTopicParsing(unittest.TestCase):
 
         for topic_str, expected_parts in test_cases:
             with self.subTest(topic=topic_str):
-                t = PyTopic(topic_str)
+                t = Topic(topic_str)
                 parts = list(t)
                 self.assertEqual(len(parts), len(expected_parts))
                 for part, (ptype, pvalue) in zip(parts, expected_parts):
@@ -87,33 +94,33 @@ class TestTopicParsing(unittest.TestCase):
     def test_wildcard_edge_cases(self):
         """Test that lone '+' is treated as EXACT, not ANY."""
         # Case 1: trailing .+
-        t = PyTopic(r'pre.+')
+        t = Topic(r'pre.+')
         parts = list(t)
         self.assertEqual(len(parts), 2)
         self._assert_part_exact(parts[0], 'pre')
         self._assert_part_exact(parts[1], '+')  # NOT Any!
 
         # Case 2: standalone +
-        t = PyTopic(r'+')
+        t = Topic(r'+')
         self.assertEqual(len(t), 1)
         self._assert_part_exact(t[0], '+')
 
         # Case 3: + with name → valid ANY
-        t = PyTopic(r'+abc')
+        t = Topic(r'+abc')
         self.assertEqual(len(t), 1)
         self._assert_part_any(t[0], 'abc')
 
         # Case 4: pattern followed by lone +
-        t = PyTopic(r'./pat/.+')
+        t = Topic(r'./pat/.+')
         parts = list(t)
         self.assertEqual(len(parts), 2)
         self._assert_part_pattern(parts[0], 'pat')
         self._assert_part_exact(parts[1], '+')
-        self._assert_part_pattern(PyTopic(r'/^[0-9]{6}\.(SZ|SH)$/.abc.(user|guest|admin)')[0], "^[0-9]{6}\.(SZ|SH)$")
-        self._assert_part_pattern(PyTopic(r'abc.(user|guest|admin)./^[0-9]{6}\.(SZ|SH)$/')[-1], "^[0-9]{6}\.(SZ|SH)$")
+        self._assert_part_pattern(Topic(r'/^[0-9]{6}\.(SZ|SH)$/.abc.(user|guest|admin)')[0], r"^[0-9]{6}\.(SZ|SH)$")
+        self._assert_part_pattern(Topic(r'abc.(user|guest|admin)./^[0-9]{6}\.(SZ|SH)$/')[-1], r"^[0-9]{6}\.(SZ|SH)$")
 
         # Case 5: + in middle with name
-        t = PyTopic(r'a.+b.c')
+        t = Topic(r'a.+b.c')
         parts = list(t)
         self.assertEqual(len(parts), 3)
         self._assert_part_exact(parts[0], 'a')
@@ -122,7 +129,7 @@ class TestTopicParsing(unittest.TestCase):
 
     def test_range_edge_cases(self):
         # Empty range "()" → should be EXACT
-        t = PyTopic(r'pre.().post')
+        t = Topic(r'pre.().post')
         parts = list(t)
         self.assertEqual(len(parts), 3)
         self._assert_part_exact(parts[0], 'pre')
@@ -130,37 +137,37 @@ class TestTopicParsing(unittest.TestCase):
         self._assert_part_exact(parts[2], 'post')
 
         # Single char range → valid
-        t = PyTopic(r'(x)')
+        t = Topic(r'(x)')
         self.assertEqual(len(t), 1)
         self._assert_part_range(t[0], ['x'])
 
         # No closing → EXACT
-        t = PyTopic(r'(unclosed')
+        t = Topic(r'(unclosed')
         self.assertEqual(len(t), 1)
         self._assert_part_exact(t[0], '(unclosed')
 
     def test_malformed_pattern(self):
         # Unclosed pattern → should raise
         with self.assertRaises(Exception):  # MemoryError or RuntimeError
-            PyTopic(r'abc./unclosed')
+            Topic(r'abc./unclosed')
 
         # Pattern at end without closing → error
         with self.assertRaises(Exception):
-            PyTopic(r'./no_close')
+            Topic(r'./no_close')
 
     def test_special_characters(self):
         # Literal dot in exact
-        t = PyTopic(r'file.v1')
+        t = Topic(r'file.v1')
         self.assertEqual(len(t), 2)
         self._assert_part_exact(t[0], 'file')
         self._assert_part_exact(t[1], 'v1')
 
         # Escaped dot preserved in pattern
-        t = PyTopic(r'./a\.b/.')
+        t = Topic(r'./a\.b/.')
         self._assert_part_pattern(t[0], r'a\.b')
 
     def test_unicode_support(self):
-        t = PyTopic('用户.+操作')
+        t = Topic('用户.+操作')
         parts = list(t)
         self.assertEqual(len(parts), 2)
         self._assert_part_exact(parts[0], '用户')
@@ -170,63 +177,63 @@ class TestTopicParsing(unittest.TestCase):
 class TestTopicMatching(unittest.TestCase):
 
     def test_exact_match(self):
-        t1 = PyTopic('a.b.c')
-        t2 = PyTopic('a.b.c')
+        t1 = Topic('a.b.c')
+        t2 = Topic('a.b.c')
         match = t1.match(t2)
         self.assertTrue(match)
 
     def test_wildcard_match(self):
         # Valid ANY matches any single token
-        t1 = PyTopic('base.+value')
-        t2 = PyTopic('base.test')
+        t1 = Topic('base.+value')
+        t2 = Topic('base.test')
         match = t1.match(t2)
         self.assertTrue(match)
 
         # But lone '+' is EXACT, so must match literal '+'
-        t1 = PyTopic('cmd.+')
-        t2 = PyTopic('cmd.+')  # both have EXACT "+"
+        t1 = Topic('cmd.+')
+        t2 = Topic('cmd.+')  # both have EXACT "+"
         match = t1.match(t2)
         self.assertTrue(match)
 
-        t1 = PyTopic('cmd.+')
-        t2 = PyTopic('cmd.x')  # t1 expects literal '+', t2 has 'x'
+        t1 = Topic('cmd.+')
+        t2 = Topic('cmd.x')  # t1 expects literal '+', t2 has 'x'
         match = t1.match(t2)
         self.assertFalse(match)
 
     def test_range_match(self):
-        t1 = PyTopic('event.(user|admin).action')
-        t2 = PyTopic('event.admin.action')
+        t1 = Topic('event.(user|admin).action')
+        t2 = Topic('event.admin.action')
         self.assertTrue(t1.match(t2))
 
-        t2 = PyTopic('event.guest.action')
+        t2 = Topic('event.guest.action')
         self.assertFalse(t1.match(t2))
 
     def test_pattern_match(self):
-        t1 = PyTopic(r'log./[0-9]{6}/.+suffix')
-        t2 = PyTopic.join(['log', '123456', 'extra.suffix'])
+        t1 = Topic(r'log./[0-9]{6}/.+suffix')
+        t2 = Topic.join(['log', '123456', 'extra.suffix'])
         self.assertTrue(t1.match(t2))
 
-        t2 = PyTopic('log.123.extra.suffix')  # too short
+        t2 = Topic('log.123.extra.suffix')  # too short
         self.assertFalse(t1.match(t2))
 
     def test_real_world_case(self):
-        template = PyTopic(r'abc.(user|guest|admin)./^[0-9]{6}\.(SZ|SH)$/.+suffix')
-        valid = PyTopic.join(['abc', 'user', '600000.SZ', 'extra.suffix'])
+        template = Topic(r'abc.(user|guest|admin)./^[0-9]{6}\.(SZ|SH)$/.+suffix')
+        valid = Topic.join(['abc', 'user', '600000.SZ', 'extra.suffix'])
         self.assertTrue(template.match(valid))
 
-        invalid_range = PyTopic('abc.hacker.600000.SZ.extra.suffix')
+        invalid_range = Topic('abc.hacker.600000.SZ.extra.suffix')
         self.assertFalse(template.match(invalid_range))
 
-        invalid_pattern = PyTopic('abc.user.123.SZ.extra.suffix')
+        invalid_pattern = Topic('abc.user.123.SZ.extra.suffix')
         self.assertFalse(template.match(invalid_pattern))
 
     def test_length_mismatch(self):
-        self.assertFalse(PyTopic('a.b').match(PyTopic('a.b.c')))
-        self.assertFalse(PyTopic('a.b.c').match(PyTopic('a.b')))
+        self.assertFalse(Topic('a.b').match(Topic('a.b.c')))
+        self.assertFalse(Topic('a.b.c').match(Topic('a.b')))
 
     def test_match_result_introspection(self):
-        t1 = PyTopic('a.+x')
-        t2 = PyTopic('a.test')
+        t1 = Topic('a.+x')
+        t2 = Topic('a.test')
         match = t1.match(t2)
         self.assertTrue(match)
         res = list(match)
@@ -239,8 +246,8 @@ class TestTopicMatching(unittest.TestCase):
     def test_multi_wildcard_match_results(self):
         """Test that all parts are returned in match results, not just first and last."""
         # Test case from the bug report: a.{b}.{c}.{d}.{e} vs a.2.3.4.5
-        t1 = PyTopic('a.{b}.{c}.{d}.{e}')
-        t2 = PyTopic('a.2.3.4.5')
+        t1 = Topic('a.{b}.{c}.{d}.{e}')
+        t2 = Topic('a.2.3.4.5')
         match = t1.match(t2)
         self.assertTrue(match)
         res = list(match)
@@ -261,15 +268,15 @@ class TestTopicMatching(unittest.TestCase):
 
     def test_realtime_ticker_dtype_match(self):
         """Test the specific example from the bug report."""
-        t1 = PyTopic('realtime.{ticker}.{dtype}')
-        t2 = PyTopic('realtime.600010.SH.TransactionData')
+        t1 = Topic('realtime.{ticker}.{dtype}')
+        t2 = Topic('realtime.600010.SH.TransactionData')
         match = t1.match(t2)
         # This should not match because t1 has 3 parts but t2 has 4 parts
         self.assertFalse(match)
 
         # Corrected version with proper structure
-        t1_corrected = PyTopic('realtime.{ticker}.{dtype}')
-        t2_corrected = PyTopic('realtime.600010.TransactionData')
+        t1_corrected = Topic('realtime.{ticker}.{dtype}')
+        t2_corrected = Topic('realtime.600010.TransactionData')
         match = t1_corrected.match(t2_corrected)
         self.assertTrue(match)
         res = list(match)
@@ -293,7 +300,7 @@ class TestTopicFormatMap(unittest.TestCase):
 
     def test_format_map_strict_true_all_keys_present(self):
         """Test format_map with strict=True when all keys are present."""
-        template = PyTopic('realtime.{ticker}.{dtype}')
+        template = Topic('realtime.{ticker}.{dtype}')
         formatted = template.format_map({'ticker': '600010.SH', 'dtype': 'TickData'}, strict=True)
 
         self.assertEqual(formatted.value, 'realtime.600010.SH.TickData')
@@ -302,7 +309,7 @@ class TestTopicFormatMap(unittest.TestCase):
 
     def test_format_map_strict_true_missing_key(self):
         """Test format_map with strict=True raises KeyError when key is missing."""
-        template = PyTopic('realtime.{ticker}.{dtype}')
+        template = Topic('realtime.{ticker}.{dtype}')
 
         with self.assertRaises(KeyError) as cm:
             template.format_map({'ticker': '600010.SH'}, strict=True)
@@ -311,7 +318,7 @@ class TestTopicFormatMap(unittest.TestCase):
 
     def test_format_map_strict_false_all_keys_present(self):
         """Test format_map with strict=False when all keys are present."""
-        template = PyTopic('realtime.{ticker}.{dtype}')
+        template = Topic('realtime.{ticker}.{dtype}')
         formatted = template.format_map({'ticker': '600010.SH', 'dtype': 'TickData'}, strict=False)
 
         self.assertEqual(formatted.value, 'realtime.600010.SH.TickData')
@@ -320,7 +327,7 @@ class TestTopicFormatMap(unittest.TestCase):
 
     def test_format_map_strict_false_missing_key(self):
         """Test format_map with strict=False keeps wildcards when key is missing."""
-        template = PyTopic('realtime.{ticker}.{dtype}')
+        template = Topic('realtime.{ticker}.{dtype}')
         formatted = template.format_map({'ticker': '600010.SH'}, strict=False)
 
         # Should keep the {dtype} wildcard as-is
@@ -330,17 +337,17 @@ class TestTopicFormatMap(unittest.TestCase):
 
         # Check parts
         parts = list(formatted)
-        self.assertIsInstance(parts[0], PyTopicPartExact)
+        self.assertIsInstance(parts[0], TopicPartExact)
         self.assertEqual(parts[0].part, 'realtime')
-        self.assertIsInstance(parts[1], PyTopicPartExact)
+        self.assertIsInstance(parts[1], TopicPartExact)
         self.assertEqual(parts[1].part, '600010.SH')
-        self.assertIsInstance(parts[2], PyTopicPartAny)
+        self.assertIsInstance(parts[2], TopicPartAny)
         self.assertEqual(parts[2].name, 'dtype')
-        self.assertTrue(formatted.match(PyTopic.join(["realtime", "600010.SH", "TickData"])))
+        self.assertTrue(formatted.match(Topic.join(["realtime", "600010.SH", "TickData"])))
 
     def test_format_map_strict_false_no_keys(self):
         """Test format_map with strict=False and no keys keeps all wildcards."""
-        template = PyTopic('realtime.{ticker}.{dtype}')
+        template = Topic('realtime.{ticker}.{dtype}')
         formatted = template.format_map({}, strict=False)
 
         # Should keep both wildcards as-is
@@ -350,16 +357,16 @@ class TestTopicFormatMap(unittest.TestCase):
 
         # Check parts
         parts = list(formatted)
-        self.assertIsInstance(parts[0], PyTopicPartExact)
+        self.assertIsInstance(parts[0], TopicPartExact)
         self.assertEqual(parts[0].part, 'realtime')
-        self.assertIsInstance(parts[1], PyTopicPartAny)
+        self.assertIsInstance(parts[1], TopicPartAny)
         self.assertEqual(parts[1].name, 'ticker')
-        self.assertIsInstance(parts[2], PyTopicPartAny)
+        self.assertIsInstance(parts[2], TopicPartAny)
         self.assertEqual(parts[2].name, 'dtype')
 
     def test_format_map_strict_false_partial_replacement(self):
         """Test format_map with strict=False replaces some wildcards and keeps others."""
-        template = PyTopic('{env}.{service}.{region}.{instance}')
+        template = Topic('{env}.{service}.{region}.{instance}')
         formatted = template.format_map({'env': 'prod', 'region': 'us-east-1'}, strict=False)
 
         # Should replace env and region, keep service and instance
@@ -369,18 +376,18 @@ class TestTopicFormatMap(unittest.TestCase):
 
         # Check parts
         parts = list(formatted)
-        self.assertIsInstance(parts[0], PyTopicPartExact)
+        self.assertIsInstance(parts[0], TopicPartExact)
         self.assertEqual(parts[0].part, 'prod')
-        self.assertIsInstance(parts[1], PyTopicPartAny)
+        self.assertIsInstance(parts[1], TopicPartAny)
         self.assertEqual(parts[1].name, 'service')
-        self.assertIsInstance(parts[2], PyTopicPartExact)
+        self.assertIsInstance(parts[2], TopicPartExact)
         self.assertEqual(parts[2].part, 'us-east-1')
-        self.assertIsInstance(parts[3], PyTopicPartAny)
+        self.assertIsInstance(parts[3], TopicPartAny)
         self.assertEqual(parts[3].name, 'instance')
 
     def test_format_default_strict_false(self):
         """Test that format() method defaults to strict=False."""
-        template = PyTopic('realtime.{ticker}.{dtype}')
+        template = Topic('realtime.{ticker}.{dtype}')
         formatted = template.format(ticker='600010.SH')
 
         # Should keep dtype wildcard
@@ -389,7 +396,7 @@ class TestTopicFormatMap(unittest.TestCase):
 
     def test_call_syntax_strict_false(self):
         """Test that __call__ syntax defaults to strict=False."""
-        template = PyTopic('realtime.{ticker}.{dtype}')
+        template = Topic('realtime.{ticker}.{dtype}')
         formatted = template(ticker='600010.SH')
 
         # Should keep dtype wildcard
@@ -398,7 +405,7 @@ class TestTopicFormatMap(unittest.TestCase):
 
     def test_format_map_internalized_parameter(self):
         """Test that internalized parameter works correctly."""
-        template = PyTopic('realtime.{ticker}')
+        template = Topic('realtime.{ticker}')
 
         # With internalized=True (default)
         formatted1 = template.format_map({'ticker': '600010.SH'}, internalized=True, strict=False)

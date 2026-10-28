@@ -259,11 +259,11 @@ class TestEventHookEx(unittest.TestCase):
 
 
 class TestEventHookHusk(unittest.TestCase):
-    """Contract: empty husks are safe to inspect and reject dispatch."""
+    """Contract: __new__ husks are safe; constructors require a valid topic."""
 
-    def test_00_empty_husk_is_safe(self):
-        """len/repr work on a husk; add_handler and trigger raise."""
-        hook = EventHook()
+    def test_00_new_husk_is_safe(self):
+        """len/repr work on a __new__ husk; add_handler and trigger raise."""
+        hook = EventHook.__new__(EventHook)
         payload, _ = make_payload()
         self.assertEqual(len(hook), 0)
         self.assertIn('NO_TOPIC', repr(hook))
@@ -273,6 +273,20 @@ class TestEventHookHusk(unittest.TestCase):
             hook.trigger(payload)
         with self.assertRaises(RuntimeError):
             hook(payload)
+
+    def test_01_constructor_requires_topic(self):
+        """Hook construction rejects a missing, None, or uninitialized topic."""
+        with self.assertRaises(TypeError):
+            EventHook()
+        with self.assertRaises(ValueError):
+            EventHook(None)
+        with self.assertRaises(TypeError):
+            EventHookEx()
+        with self.assertRaises(ValueError):
+            EventHookEx(None)
+        empty_topic = Topic.__new__(Topic, alloc=False)
+        with self.assertRaises(ValueError):
+            EventHook(empty_topic)
 
 
 class TestEventHookRepr(unittest.TestCase):

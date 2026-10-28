@@ -209,7 +209,7 @@ cdef class EventEngine:
 
         cdef int ret_code = c_bytemap_get(hook_map, topic_ptr.key, topic_ptr.key_len, <void**> &hook_ptr)
         if ret_code == bytemap_ret_code.BYTEMAP_ERR_NOT_FOUND:
-            event_hook = EventHook.__new__(EventHook, topic, self.logger)
+            event_hook = EventHook(topic, self.logger)
             c_bytemap_set(hook_map, topic_ptr.key, topic_ptr.key_len, <void*> <PyObject*> event_hook, NULL)
             Py_INCREF(event_hook)
         elif not hook_ptr:

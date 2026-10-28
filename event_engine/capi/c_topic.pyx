@@ -21,10 +21,7 @@ class TopicType(enum.IntEnum):
 
 
 cdef class TopicPart:
-    def __cinit__(self, *arg, bint alloc=False, **kwargs):
-        if not alloc:
-            return
-
+    def __init__(self, *arg, **kwargs):
         self.header = <evt_topic_part_variant*> c_ap_alloc(sizeof(evt_topic_part_variant), EE_HEAP_ALLOCATOR)
         if not self.header:
             raise MemoryError('Failed to allocate memory!')
@@ -37,7 +34,7 @@ cdef class TopicPart:
 
     @staticmethod
     cdef TopicPart c_from_header(evt_topic_part_variant* header, bint owner=False):
-        cdef TopicPart instance = TopicPart.__new__(TopicPart, alloc=False)
+        cdef TopicPart instance = TopicPart.__new__(TopicPart)
         instance.header = header
         instance.owner = owner
         return instance
@@ -46,13 +43,13 @@ cdef class TopicPart:
         cdef uint8_t ttype = self.header.header.ttype
         cdef object casted
         if ttype == evt_topic_type.TOPIC_PART_EXACT:
-            casted = TopicPartExact.__new__(TopicPartExact, alloc=False)
+            casted = TopicPartExact.__new__(TopicPartExact)
         elif ttype == evt_topic_type.TOPIC_PART_ANY:
-            casted = TopicPartAny.__new__(TopicPartAny, alloc=False)
+            casted = TopicPartAny.__new__(TopicPartAny)
         elif ttype == evt_topic_type.TOPIC_PART_RANGE:
-            casted = TopicPartRange.__new__(TopicPartRange, alloc=False)
+            casted = TopicPartRange.__new__(TopicPartRange)
         elif ttype == evt_topic_type.TOPIC_PART_PATTERN:
-            casted = TopicPartPattern.__new__(TopicPartPattern, alloc=False)
+            casted = TopicPartPattern.__new__(TopicPartPattern)
         else:
             raise ValueError(f'Invalid ttype {ttype}')
         (<TopicPart> casted).header = self.header
@@ -80,11 +77,8 @@ cdef class TopicPart:
 
 
 cdef class TopicPartExact(TopicPart):
-    def __cinit__(self, str part=None, *arg, bint alloc=False, **kwargs):
-        if not alloc:
-            if part:
-                raise RuntimeError('Can not assign part string when uninitialized!')
-            return
+    def __init__(self, str part=None, *arg, **kwargs):
+        super().__init__()
 
         if not part:
             return
@@ -121,11 +115,8 @@ cdef class TopicPartExact(TopicPart):
 
 
 cdef class TopicPartAny(TopicPart):
-    def __cinit__(self, str name=None, *arg, bint alloc=False, **kwargs):
-        if not alloc:
-            if name:
-                raise RuntimeError('Can not assign name string when uninitialized!')
-            return
+    def __init__(self, str name=None, *arg, **kwargs):
+        super().__init__()
 
         if not name:
             return
@@ -159,11 +150,8 @@ cdef class TopicPartAny(TopicPart):
 
 
 cdef class TopicPartRange(TopicPart):
-    def __cinit__(self, list options=None, *arg, bint alloc=False, **kwargs):
-        if not alloc:
-            if options:
-                raise RuntimeError('Can not assign options when uninitialized!')
-            return
+    def __init__(self, list options=None, *arg, **kwargs):
+        super().__init__()
 
         if not options:
             return
@@ -242,11 +230,8 @@ cdef class TopicPartRange(TopicPart):
 
 
 cdef class TopicPartPattern(TopicPart):
-    def __cinit__(self, str regex=None, *arg, bint alloc=False, **kwargs):
-        if not alloc:
-            if regex:
-                raise RuntimeError('Can not assign regex string when uninitialized!')
-            return
+    def __init__(self, str regex=None, *arg, **kwargs):
+        super().__init__()
 
         if not regex:
             return

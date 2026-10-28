@@ -45,11 +45,11 @@ class TopicPart:
 
     owner: bool
 
-    def __init__(self, *args: Any, alloc: bool = False, **kwargs: Any) -> None:
-        """Create or attach to a topic part.
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Create an allocated, empty topic part.
 
-        Args:
-            alloc: If True, allocate and initialize internal C structures.
+        Construction always allocates the underlying C structure. Use
+        ``TopicPart.__new__(TopicPart)`` to obtain an uninitialized husk.
         """
 
     def next(self) -> TopicPart:
@@ -74,12 +74,11 @@ class TopicPart:
 class TopicPartExact(TopicPart):
     """Topic part representing an exact literal segment."""
 
-    def __init__(self, part: str = None, *args: Any, alloc: bool = False, **kwargs: Any) -> None:
+    def __init__(self, part: str = None, *args: Any, **kwargs: Any) -> None:
         """Create an exact topic part.
 
         Args:
-            part: Literal string to store. If omitted and alloc is True, an empty initialized part is created.
-            alloc: If True, allocate underlying C memory.
+            part: Literal string to store. If omitted, an empty initialized part is created.
         """
 
     def __repr__(self) -> str:
@@ -96,12 +95,11 @@ class TopicPartExact(TopicPart):
 class TopicPartAny(TopicPart):
     """Topic part representing a named wildcard."""
 
-    def __init__(self, name: str = None, *args: Any, alloc: bool = False, **kwargs: Any) -> None:
+    def __init__(self, name: str = None, *args: Any, **kwargs: Any) -> None:
         """Create an 'any' topic part.
 
         Args:
             name: Optional name for the wildcard.
-            alloc: If True, allocate underlying C memory.
         """
 
     def __repr__(self) -> str:
@@ -115,12 +113,11 @@ class TopicPartAny(TopicPart):
 class TopicPartRange(TopicPart):
     """Topic part representing a range (choice) among multiple literals."""
 
-    def __init__(self, options: list[str] = None, *args: Any, alloc: bool = False, **kwargs: Any) -> None:
+    def __init__(self, options: list[str] = None, *args: Any, **kwargs: Any) -> None:
         """Create a range part.
 
         Args:
             options: List of literal option strings.
-            alloc: If True, allocate underlying C memory.
         """
 
     def __repr__(self) -> str:
@@ -143,12 +140,11 @@ class TopicPartRange(TopicPart):
 class TopicPartPattern(TopicPart):
     """Topic part representing a regex pattern."""
 
-    def __init__(self, regex: str = None, *args: Any, alloc: bool = False, **kwargs: Any) -> None:
+    def __init__(self, regex: str = None, *args: Any, **kwargs: Any) -> None:
         """Create a pattern topic part.
 
         Args:
             regex: Regular expression string.
-            alloc: If True, allocate underlying C memory.
         """
 
     def __repr__(self) -> str:
@@ -317,9 +313,9 @@ class Topic:
         To avoid unwanted splitting, construct the topic from explicit parts:
 
         >>> t4 = Topic.from_parts([
-        ...     TopicPartExact("Realtime", alloc=True),
-        ...     TopicPartExact("TickData", alloc=True),
-        ...     TopicPartExact("600010.SH", alloc=True),
+        ...     TopicPartExact("Realtime"),
+        ...     TopicPartExact("TickData"),
+        ...     TopicPartExact("600010.SH"),
         ... ])
         >>> assert t4.value == "Realtime.TickData.600010.SH"
         >>> t4[-1]

@@ -430,6 +430,50 @@ class TestEventHookTrigger(unittest.TestCase):
         self.assertIn("trigger.repr", repr(hook))
 
 
+class TestEventHookHusk(unittest.TestCase):
+    """Contract: __new__ husks stay safe; constructors require a valid topic."""
+
+    def test_00_new_husk_is_safe(self) -> None:
+        """A __new__ husk has no header and never dereferences NULL."""
+        hook = EventHook.__new__(EventHook)
+        self.assertIsNone(hook.topic)
+        self.assertFalse(hook.owner)
+        self.assertEqual(len(hook), 0)
+        self.assertIn("NO_TOPIC", repr(hook))
+        hook.clear()
+        with self.assertRaises(RuntimeError):
+            hook.add_handler(lambda a: None)
+
+    def test_01_constructor_requires_topic(self) -> None:
+        """EventHook() and EventHook(None) are rejected."""
+        with self.assertRaises(TypeError):
+            EventHook()
+        with self.assertRaises(ValueError):
+            EventHook(None)
+
+    def test_02_constructor_rejects_uninitialized_topic(self) -> None:
+        """An uninitialized Topic husk is not a valid hook topic."""
+        empty_topic = Topic.__new__(Topic, alloc=False)
+        with self.assertRaises(ValueError):
+            EventHook(empty_topic)
+
+    def test_03_hookex_requires_topic(self) -> None:
+        """EventHookEx enforces the same topic contract."""
+        with self.assertRaises(TypeError):
+            EventHookEx()
+        with self.assertRaises(ValueError):
+            EventHookEx(None)
+
+    def test_04_dispatch_on_husk_raises(self) -> None:
+        """trigger() and __call__() reject an uninitialized husk."""
+        hook = EventHook.__new__(EventHook)
+        payload, _ = make_payload()
+        with self.assertRaises(RuntimeError):
+            hook.trigger(payload)
+        with self.assertRaises(RuntimeError):
+            hook(payload)
+
+
 class TestEventHookEx(unittest.TestCase):
     """Contract: EventHookEx adds hook-level stats via C watchers."""
 

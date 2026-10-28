@@ -163,9 +163,9 @@ class TestTopicAlignment(unittest.TestCase):
         native_out = _topic_outcome(lambda: native_pkg.PyTopic.join(["a", "b", "c"]))
         self.assertEqual(capi_out, native_out)
 
-        capi_parts = [capi_pkg.TopicPartExact("a", alloc=True),
-                      capi_pkg.TopicPartAny("b", alloc=True),
-                      capi_pkg.TopicPartRange(["x", "y"], alloc=True)]
+        capi_parts = [capi_pkg.TopicPartExact("a"),
+                      capi_pkg.TopicPartAny("b"),
+                      capi_pkg.TopicPartRange(["x", "y"])]
         native_parts = [native_pkg.PyTopicPartExact("a", alloc=True),
                         native_pkg.PyTopicPartAny("b", alloc=True),
                         native_pkg.PyTopicPartRange(["x", "y"], alloc=True)]
@@ -177,7 +177,7 @@ class TestTopicAlignment(unittest.TestCase):
         native_out = _topic_outcome(lambda: native_pkg.PyTopic("a") + native_pkg.PyTopic("b"))
         self.assertEqual(capi_out, native_out)
 
-        capi_out = _topic_outcome(lambda: capi_pkg.Topic("a").append(capi_pkg.TopicPartAny("n", alloc=True)))
+        capi_out = _topic_outcome(lambda: capi_pkg.Topic("a").append(capi_pkg.TopicPartAny("n")))
         native_out = _topic_outcome(lambda: native_pkg.PyTopic("a").append(native_pkg.PyTopicPartAny("n", alloc=True)))
         self.assertEqual(capi_out, native_out)
 

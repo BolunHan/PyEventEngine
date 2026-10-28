@@ -101,11 +101,11 @@ class TestTopicParsingContract(unittest.TestCase):
             topic[-4]
 
     def test_05_constructed_parts(self) -> None:
-        """Parts can be constructed directly with alloc=True."""
-        exact = TopicPartExact("x", alloc=True)
-        any_part = TopicPartAny("name", alloc=True)
-        range_part = TopicPartRange(["a", "b", "c"], alloc=True)
-        pattern = TopicPartPattern("[0-9]+", alloc=True)
+        """Parts allocate their C header on direct construction."""
+        exact = TopicPartExact("x")
+        any_part = TopicPartAny("name")
+        range_part = TopicPartRange(["a", "b", "c"])
+        pattern = TopicPartPattern("[0-9]+")
 
         self.assertEqual(exact.part, "x")
         self.assertEqual(any_part.name, "name")
@@ -121,12 +121,21 @@ class TestTopicParsingContract(unittest.TestCase):
     def test_06_repr(self) -> None:
         """repr of topics and parts carries the value."""
         self.assertIn("a.b.c", repr(Topic("a.b.c")))
-        self.assertIn("x", repr(TopicPartExact("x", alloc=True)))
-        self.assertIn("name", repr(TopicPartAny("name", alloc=True)))
-        r = repr(TopicPartRange(["a", "b"], alloc=True))
+        self.assertIn("x", repr(TopicPartExact("x")))
+        self.assertIn("name", repr(TopicPartAny("name")))
+        r = repr(TopicPartRange(["a", "b"]))
         self.assertIn("a", r)
         self.assertIn("b", r)
-        self.assertIn("z", repr(TopicPartPattern("z", alloc=True)))
+        self.assertIn("z", repr(TopicPartPattern("z")))
+
+    def test_07_empty_husk(self) -> None:
+        """__new__ yields an uninitialized, safely destructible husk."""
+        part = TopicPartExact.__new__(TopicPartExact)
+        self.assertIsNone(part.addr)
+        self.assertFalse(part.owner)
+        self.assertIn("uninitialized", repr(part))
+        with self.assertRaises(RuntimeError):
+            _ = part.ttype
 
 
 class TestTopicPropertiesContract(unittest.TestCase):
@@ -196,9 +205,9 @@ class TestTopicBuildersContract(unittest.TestCase):
     def test_01_from_parts(self) -> None:
         """from_parts rebuilds a topic from parts, keeping wildcards."""
         parts = [
-            TopicPartExact("a", alloc=True),
-            TopicPartAny("b", alloc=True),
-            TopicPartRange(["x", "y"], alloc=True),
+            TopicPartExact("a"),
+            TopicPartAny("b"),
+            TopicPartRange(["x", "y"]),
         ]
         topic = Topic.from_parts(parts)
         self.assertEqual(topic.value, "a.{b}.(x|y)")
@@ -208,7 +217,7 @@ class TestTopicBuildersContract(unittest.TestCase):
     def test_02_append_exact_keeps_exact(self) -> None:
         """Appending an exact part keeps is_exact True."""
         topic = Topic("a.b")
-        topic.append(TopicPartExact("c", alloc=True))
+        topic.append(TopicPartExact("c"))
         self.assertEqual(topic.value, "a.b.c")
         self.assertTrue(topic.is_exact)
         self.assertEqual(len(topic), 3)
@@ -216,7 +225,7 @@ class TestTopicBuildersContract(unittest.TestCase):
     def test_03_append_any_breaks_exact(self) -> None:
         """Appending a non-exact part flips is_exact and re-renders the value."""
         topic = Topic("a.b")
-        result = topic.append(TopicPartAny("name", alloc=True))
+        result = topic.append(TopicPartAny("name"))
         self.assertIs(result, topic)
         self.assertEqual(topic.value, "a.b.{name}")
         self.assertFalse(topic.is_exact)
@@ -230,7 +239,7 @@ class TestTopicBuildersContract(unittest.TestCase):
         self.assertEqual(t1.value, "a.b")
         self.assertEqual(t2.value, "c.d")
 
-        t4 = t1 + TopicPartExact("z", alloc=True)
+        t4 = t1 + TopicPartExact("z")
         self.assertEqual(t4.value, "a.b.z")
 
     def test_05_iadd_in_place(self) -> None:
@@ -250,7 +259,7 @@ class TestTopicBuildersContract(unittest.TestCase):
         """Appending an owner part transfers ownership and succeeds."""
         # A fully allocated empty exact part — the fast path takes it
         topic = Topic("a")
-        part = TopicPartExact(alloc=True, part="z")
+        part = TopicPartExact(part="z")
         result = topic.append(part)
         self.assertIs(result, topic)
         self.assertEqual(topic.value, "a.z")
@@ -258,7 +267,7 @@ class TestTopicBuildersContract(unittest.TestCase):
     def test_08_update_literal(self) -> None:
         """update_literal regenerates the internal literal from parts."""
         topic = Topic("a.b")
-        part = TopicPartExact("c", alloc=True)
+        part = TopicPartExact("c")
         topic.append(part)
         topic.update_literal()
         self.assertEqual(topic.value, "a.b.c")

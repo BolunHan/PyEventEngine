@@ -72,6 +72,7 @@ cdef extern from "event_engine/capi/c_topic.h":
 
     bytemap* c_get_global_internal_map(allocator_protocol* allocator) noexcept nogil
     evt_topic* c_topic_new(const char* key, size_t key_len, allocator_protocol* allocator) noexcept nogil
+    void c_topic_clear(evt_topic* topic) noexcept nogil
     void c_topic_free(evt_topic* topic) noexcept nogil
     int c_topic_internalize(evt_topic* topic, const char* key, size_t key_len) noexcept nogil
     int c_topic_append(evt_topic* topic, const char* s, size_t len, evt_topic_type ttype) noexcept nogil

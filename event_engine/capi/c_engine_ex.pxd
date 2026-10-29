@@ -5,7 +5,7 @@ from cbase.allocator_protocol.c_allocator_protocol cimport allocator_protocol
 from cbase.bytemap.c_bytemap cimport BoundByteMap, bytemap
 
 from .c_engine cimport message_queue
-from .c_event cimport evt_message_payload
+from .c_event cimport evt_callback_type, evt_hook, evt_message_payload
 from .c_topic cimport Topic, evt_topic
 
 
@@ -32,11 +32,22 @@ cdef extern from "event_engine/capi/c_engine.h":
         size_t                n_timer
         double                next_timer_due
 
-    evt_engine* c_evt_engine_new(allocator_protocol* allocator) except NULL
-    void c_evt_engine_free(evt_engine* engine)
+    void c_evt_engine_pin_cpu() noexcept nogil
 
+    evt_engine* c_evt_engine_new(allocator_protocol* allocator) except NULL
+    int c_evt_engine_init(evt_engine* engine, allocator_protocol* allocator)
+    void c_evt_engine_free(evt_engine* engine)
+    void c_evt_engine_dealloc(evt_engine* engine)
+
+    int c_evt_engine_loop(evt_engine* engine)
     evt_message_payload* c_evt_engine_get(evt_engine* engine, c_bool block, size_t max_spin, double timeout)
     void c_evt_engine_trigger(evt_engine* engine, evt_message_payload* msg)
+    int c_evt_engine_publish(evt_engine* engine, evt_message_payload* payload, c_bool block, size_t max_spin, double timeout)
+
+    int c_evt_engine_register_hook(evt_engine* engine, evt_hook* hook) noexcept nogil
+    int c_evt_engine_unregister_hook(evt_engine* engine, evt_topic* topic, evt_hook** out_hook) noexcept nogil
+    int c_evt_engine_register_handler(evt_engine* engine, evt_topic* topic, const void* fn, evt_callback_type ftype, void* user_data, c_bool deduplicate) noexcept nogil
+    int c_evt_engine_unregister_handler(evt_engine* engine, evt_topic* topic, const void* fn, evt_callback_type ftype) noexcept nogil
 
     c_bool c_evt_engine_is_active(const evt_engine* engine) noexcept nogil
     void c_evt_engine_set_active(evt_engine* engine, c_bool active) noexcept nogil

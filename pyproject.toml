@@ -9,7 +9,6 @@ description = "Python Basic EventEngine"
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "Han Bolun", email = "Bolun.Han@outlook.com" }]
-#license = { text = "PROPRIETARY" }
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
@@ -25,15 +24,18 @@ Homepage = "https://github.com/BolunHan/PyEventEngine"
 Repository = "https://github.com/BolunHan/PyEventEngine"
 Issues = "https://github.com/BolunHan/PyEventEngine/issues"
 
-[tool.setuptools.packages.find]
-exclude = ["demo*", "docs*"]
-include = ["event_engine*"]
-
 [tool.setuptools.package-data]
 "event_engine" = ["*.pyi", "*.pyx", "*.pxd", "*.h", "*.c"]
 "event_engine.base" = ["*.pyi", "*.pyx", "*.pxd", "*.h", "*.c"]
 "event_engine.capi" = ["*.pyi", "*.pyx", "*.pxd", "*.h", "*.c"]
 "event_engine.includes" = ["**/*.h", "**/*.c", "**/*.cpp"]
+
+[tool.setuptools.packages.find]
+exclude = [
+    "test", "test.*",
+    "docs", "docs.*",
+    "demo", "demo.*"
+]
 
 [tool.setuptools.dynamic]
 version = { attr = "event_engine.__version__" }

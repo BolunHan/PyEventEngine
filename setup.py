@@ -59,7 +59,14 @@ class BuildExtWithConfig(build_ext):
         super().initialize_options()
         self.parallel = N_THREADS
 
+    def prune_stale_test_extensions(self) -> None:
+        stale = Path(self.build_lib, "tests")
+        if stale.exists():
+            shutil.rmtree(stale)
+            print(f"[build_py] Removed stale test extensions -> {stale}")
+
     def run(self):
+        self.prune_stale_test_extensions()
         self.pre_compile()
 
         super().run()
